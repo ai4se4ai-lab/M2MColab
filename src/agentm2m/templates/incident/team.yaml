@@ -1,0 +1,44 @@
+# IncidentResponseTeam: Monitor -> Triage -> Remediation -> Postmortem.
+# Incident2Action uses a Lift binding (`self <- @llm(...)`): one JSON answer
+# fills several attributes, rejected unless it conforms to the metamodel.
+name: incident
+
+views:
+  Alerts:
+    owner: Monitor
+    classes:
+      Alert: {attributes: [id, source, message]}
+    root: {class: AlertsModel, slots: {alerts: Alert}}
+    seed:
+      alerts:
+        - {id: A1, source: payments-api, message: 5xx error rate spiked to 12 percent on the payments API over the last 5 minutes}
+        - {id: A2, source: auth-service, message: auth-service p99 latency exceeded 2 seconds for 10 consecutive minutes}
+
+  Incidents:
+    owner: Triage
+    classes:
+      Incident:
+        attributes: [id, severity, summary]
+        references: {alert: Alerts.Alert}
+    root: {class: IncidentsModel, slots: {incidents: Incident}}
+
+  Actions:
+    owner: Remediation
+    classes:
+      RemediationAction:
+        attributes: [id, name, command, risk_level, dryRun]
+        references: {incident: Incidents.Incident}
+    root: {class: ActionsModel, slots: {actions: RemediationAction}}
+
+  Reports:
+    owner: Postmortem
+    classes:
+      PostmortemReport:
+        attributes: [id, narrative]
+        references: {action: Actions.RemediationAction}
+    root: {class: ReportsModel, slots: {reports: PostmortemReport}}
+
+handoffs:
+  - {name: Alert2Incident,  rule: rules/Alert2Incident.agentm2m}
+  - {name: Incident2Action, rule: rules/Incident2Action.agentm2m}
+  - {name: Action2Report,   rule: rules/Action2Report.agentm2m}

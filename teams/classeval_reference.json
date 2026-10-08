@@ -1,0 +1,39 @@
+{
+  "name": "reference",
+  "goal_view": "Goal",
+  "agents": [
+    {"name": "Tester", "role": "You write focused unit tests from a method's documentation.", "tools": ["exec"]},
+    {"name": "Developer", "role": "You implement one method so that its tests and documented examples pass.", "tools": ["exec"]}
+  ],
+  "views": {
+    "Goal": {"classes": {
+      "Task": {"attributes": {"name": "string", "description": "string", "skeleton": "string"}},
+      "Method": {"attributes": {"name": "string", "signature": "string", "docstring": "string", "examples": "string?"},
+                 "references": {"task": {"type": "Goal.Task", "required": true}}}}},
+    "Test": {"classes": {"MethodTest": {"attributes": {"name": "string", "code": "string"},
+                                        "references": {"method": {"type": "Goal.Method", "required": true}}}}},
+    "Code": {"classes": {"MethodImpl": {"attributes": {"name": "string", "code": "string"},
+                                        "references": {"method": {"type": "Goal.Method", "required": true}}}}}
+  },
+  "writes": {"Tester": ["Test"], "Developer": ["Code"]},
+  "handoffs": [
+    {"name": "Goal2Test", "sources": ["Goal"], "target": "Test", "rules": [{
+      "name": "Method2Test", "from": [{"var": "m", "type": "Goal!Method"}],
+      "to": {"var": "t", "type": "Test!MethodTest"}, "bind": {"name": "m.name", "method": "m"},
+      "llm": [{"feature": "code", "prompt": "Write unit tests for this method of the class.",
+               "footprint": ["m.task.skeleton", "m.name", "m.docstring"],
+               "validator": [{"id": "test_valid", "args": {"method": "m"}}]}]}]},
+    {"name": "Goal2Code", "sources": ["Goal", "Test"], "target": "Code", "rules": [{
+      "name": "Method2Impl", "from": [{"var": "m", "type": "Goal!Method"}, {"var": "t", "type": "Test!MethodTest"}],
+      "guard": "t.method = m",
+      "to": {"var": "i", "type": "Code!MethodImpl"}, "bind": {"name": "m.name", "method": "m"},
+      "llm": [{"feature": "code", "prompt": "Implement this method of the class.",
+               "footprint": ["m.task.skeleton", "m.signature", "m.docstring", "t.code"],
+               "validator": [{"id": "examples_run", "args": {"method": "m"}},
+                             {"id": "passes_tests", "args": {"method": "m", "tests": "t.code"}}]}]}]}
+  ],
+  "goal": [{"class": "Method", "scope": "all", "kind": "checked"},
+           {"class": "Method", "scope": "all", "kind": "delivered"}],
+  "deliverable": {"view": "Code", "class": "MethodImpl", "feature": "code", "for": "method"},
+  "done": ["cover(G)", "valid", "fresh", "noObl"]
+}

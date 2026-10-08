@@ -1,0 +1,17 @@
+{
+  "name": "agentm2m",
+  "version": "0.2.0",
+  "description": "Run LLM agent teams whose hand-offs are model-to-model transformations: a deterministic engine owns structure and trace links, Claude only fills footprint-bounded values that validators accept, and changes propagate as exact obligations.",
+  "author": {
+    "name": "agentm2m authors"
+  },
+  "license": "MIT",
+  "keywords": [
+    "multi-agent",
+    "model-driven engineering",
+    "traceability",
+    "change impact",
+    "ATL",
+    "M2M"
+  ]
+}

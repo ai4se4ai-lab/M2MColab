@@ -1,0 +1,18 @@
+-- 04 (Literature-Reviewer -> Experiment-Designer): a plain 1:1 hand-off,
+-- included so the n:m hand-off below (ExpLit2Report.agentm2m) has two
+-- upstream views worth combining -- every ExperimentPlan starts life
+-- derived from exactly one Claim.
+module Lit2Plan;
+create OUT : Experiments from IN : Literature;
+uses 'helpers.py';
+
+rule Claim2Plan {
+  from c : Literature!Claim
+  to  p : Experiments!ExperimentPlan (
+    id     <- c.id,
+    topic  <- c.topic,
+    claim  <- c,
+    method <- @llm('Propose a short experimental method to test this research claim',
+                    c.text),
+    @check method.notTooShort() )
+}

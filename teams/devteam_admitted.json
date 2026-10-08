@@ -1,0 +1,287 @@
+{
+  "name": "devteam",
+  "goal_view": "Req",
+  "agents": [
+    {
+      "name": "Analyst",
+      "role": "Turns requests into user stories with acceptance criteria.",
+      "tools": []
+    },
+    {
+      "name": "Architect",
+      "role": "Designs one API operation per accepted story.",
+      "tools": []
+    },
+    {
+      "name": "Developer",
+      "role": "Implements each operation so that its story's tests pass.",
+      "tools": [
+        "exec"
+      ]
+    },
+    {
+      "name": "Tester",
+      "role": "Writes executable tests for each story's acceptance criteria.",
+      "tools": [
+        "exec"
+      ]
+    }
+  ],
+  "views": {
+    "Req": {
+      "classes": {
+        "UserStory": {
+          "attributes": {
+            "id": "string",
+            "title": "string",
+            "status": "string"
+          },
+          "references": {
+            "criteria": {
+              "type": "Req.Criterion",
+              "many": true
+            }
+          }
+        },
+        "Criterion": {
+          "attributes": {
+            "id": "string",
+            "text": "string"
+          },
+          "references": {
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Arch": {
+      "classes": {
+        "Operation": {
+          "attributes": {
+            "name": "string",
+            "signature": "string"
+          },
+          "references": {
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Test": {
+      "classes": {
+        "TestSuite": {
+          "attributes": {
+            "name": "string",
+            "code": "string"
+          },
+          "references": {
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Code": {
+      "classes": {
+        "CodeEdit": {
+          "attributes": {
+            "file": "string",
+            "body": "string"
+          },
+          "references": {
+            "operation": {
+              "type": "Arch.Operation",
+              "required": true
+            },
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "writes": {
+    "Analyst": [
+      "Req"
+    ],
+    "Architect": [
+      "Arch"
+    ],
+    "Developer": [
+      "Code"
+    ],
+    "Tester": [
+      "Test"
+    ]
+  },
+  "handoffs": [
+    {
+      "name": "Req2Arch",
+      "sources": [
+        "Req"
+      ],
+      "target": "Arch",
+      "rules": [
+        {
+          "name": "Story2Operation",
+          "from": [
+            {
+              "var": "s",
+              "type": "Req!UserStory"
+            }
+          ],
+          "guard": "s.status = 'accepted'",
+          "to": {
+            "var": "op",
+            "type": "Arch!Operation"
+          },
+          "bind": {
+            "name": "s.title",
+            "story": "s"
+          },
+          "llm": [
+            {
+              "feature": "signature",
+              "prompt": "Derive an API signature",
+              "footprint": [
+                "s.title",
+                "s.criteria"
+              ],
+              "validator": [
+                {
+                  "id": "compiles"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Req2Test",
+      "sources": [
+        "Req"
+      ],
+      "target": "Test",
+      "rules": [
+        {
+          "name": "Story2TestSuite",
+          "from": [
+            {
+              "var": "s",
+              "type": "Req!UserStory"
+            }
+          ],
+          "guard": "s.status = 'accepted'",
+          "to": {
+            "var": "ts",
+            "type": "Test!TestSuite"
+          },
+          "bind": {
+            "name": "s.id",
+            "story": "s"
+          },
+          "llm": [
+            {
+              "feature": "code",
+              "prompt": "Write one executable test per acceptance criterion",
+              "footprint": [
+                "s.title",
+                "s.criteria"
+              ],
+              "validator": [
+                {
+                  "id": "test_valid",
+                  "args": {
+                    "method": "s"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Arch2Code",
+      "sources": [
+        "Arch",
+        "Test",
+        "Req"
+      ],
+      "target": "Code",
+      "rules": [
+        {
+          "name": "Op2Edit",
+          "from": [
+            {
+              "var": "op",
+              "type": "Arch!Operation"
+            },
+            {
+              "var": "ts",
+              "type": "Test!TestSuite"
+            }
+          ],
+          "guard": "ts.story = op.story",
+          "to": {
+            "var": "e",
+            "type": "Code!CodeEdit"
+          },
+          "bind": {
+            "file": "op.name",
+            "operation": "op",
+            "story": "op.story"
+          },
+          "llm": [
+            {
+              "feature": "body",
+              "prompt": "Implement the operation",
+              "footprint": [
+                "op.signature",
+                "op.story.criteria"
+              ],
+              "validator": [
+                {
+                  "id": "passes_tests",
+                  "args": {
+                    "method": "op.story",
+                    "tests": "ts.code"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "goal": [
+    {
+      "class": "Criterion",
+      "scope": "c.story.status = 'accepted'"
+    }
+  ],
+  "deliverable": {
+    "view": "Code",
+    "class": "CodeEdit",
+    "feature": "body",
+    "for": "story"
+  },
+  "done": [
+    "cover(G)",
+    "valid",
+    "fresh",
+    "noObl"
+  ]
+}

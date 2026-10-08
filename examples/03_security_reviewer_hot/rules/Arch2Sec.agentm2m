@@ -1,0 +1,17 @@
+-- T5 (Architect -> Security Reviewer), added at runtime by a HOT
+-- (Sec III-D): "add a Security Reviewer with view M_sec related to
+-- Operation" -- Fig. 1's dashed edge.
+module Arch2Sec;
+create OUT : Sec from IN : Arch;
+uses 'helpers.py';
+
+rule Operation2Review {
+  from op : Arch!Operation
+  to  sr : Sec!SecurityReview (
+    operation <- op,
+    notes     <- @llm('Summarize any authentication/authorization concerns for this operation signature',
+                       op.signature),
+    risk      <- @llm('Rate the security risk of this operation as low, medium, or high. Respond with exactly one of those three words.',
+                       op.signature),
+    @check risk.parsesRisk() )
+}

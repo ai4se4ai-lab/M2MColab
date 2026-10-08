@@ -1,0 +1,649 @@
+% ICSE Research Track submission -- 10 pages main text + 2 page references.
+% The CfP mandates exactly \documentclass[10pt,conference]{IEEEtran};
+% no compsoc/compsocconf options, no spacing or font-size alterations.
+\documentclass[10pt,conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+% --- Symbols & Custom Marks ---
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\newcommand{\pmark}{\ding{109}} % partial coverage
+
+% --- Core Packages ---
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsthm,amsfonts}
+\usepackage[expansion=false]{microtype}
+\usepackage{booktabs, multirow}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{textcomp}
+
+% --- Visualization ---
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+
+% --- Algorithms & Code ---
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{listings}
+
+% --- Layout & Utility ---
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{cleveref}
+% Double-anonymous: keep PDF metadata free of author information.
+\hypersetup{hidelinks, pdfauthor={}, pdfsubject={}, pdfkeywords={}}
+
+% --- Theorem environments ---
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+
+% --- Listing style (view-metamodel / rule snippets) ---
+\lstdefinelanguage{ATL}{
+  morekeywords={module,create,from,rule,to,lazy,unique,helper,def,
+                context,uses,thisModule,and,or,not,in},
+  morekeywords=[2]{@llm,@check}, alsoletter={@},
+  sensitive=true, morecomment=[l]{--}, morestring=[b]'}
+\lstdefinelanguage{KM3}{
+  morekeywords={package,class,attribute,reference,container,
+                enumeration,literal,datatype,oppositeOf},
+  sensitive=true, morecomment=[l]{--}}
+\lstset{frame=single, backgroundcolor=\color{gray!5},
+        basicstyle=\ttfamily\scriptsize, breaklines=true,
+        showstringspaces=false, numbers=none, upquote=true,
+        keywordstyle=\bfseries, keywordstyle={[2]\bfseries\color{purple}},
+        commentstyle=\itshape\color{black!60},
+        captionpos=t, abovecaptionskip=2pt, belowcaptionskip=5pt, framesep=2pt,
+        aboveskip=6pt, belowskip=4pt, xleftmargin=2pt, xrightmargin=2pt}
+\renewcommand{\lstlistingname}{Listing}
+% IEEEtran's \@makecaption lets listing frames overlap the caption; use a plain one.
+\makeatletter
+\def\lst@makecaption#1#2{{\centering\footnotesize #1.\ #2\par}\vspace{4pt}}
+\makeatother
+\crefname{lstlisting}{Listing}{Listings}
+\Crefname{lstlisting}{Listing}{Listings}
+\crefname{algorithm}{Algorithm}{Algorithms}
+% unique hyperref anchors for algorithmic line numbers across algorithms
+\makeatletter\newcommand{\theHALG@line}{\thealgorithm.\arabic{ALG@line}}\makeatother
+
+% --- Math shorthands (AgentM2M) ---
+\newcommand{\tool}{\textsc{AgentM2M}}
+\newcommand{\auto}{\textsc{AutoM2M}}
+\newcommand{\devteam}{\textsc{DevTeam}}
+\newcommand{\MM}{\mathit{MM}}
+\newcommand{\Mods}[1]{\mathcal{M}(#1)}
+\newcommand{\TL}{\mathit{TL}}
+\newcommand{\team}{\mathcal{T}}
+\newcommand{\Team}{\Theta}
+\newcommand{\str}{\mathrm{str}}
+\newcommand{\sem}{\mathrm{sem}}
+\newcommand{\Dist}[1]{\mathcal{D}(#1)}
+\newcommand{\cls}[1]{\textsf{#1}}
+\newcommand{\W}[1]{\textsf{W#1}}
+\newcommand{\D}[1]{\textsf{D#1}}
+\newcommand{\RC}[1]{\textbf{RC#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\step}[1]{\textcircled{\scriptsize #1}}
+\newcommand{\fp}{\mathit{fp}}
+\newcommand{\Obl}{\mathit{Obl}}
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\DeclareRobustCommand{\tracemark}{\tikz[baseline=-0.6ex]\node[draw,diamond,fill=black!70,inner sep=1.1pt]{};}
+\IfFileExists{tables/numbers.tex}{\input{tables/numbers.tex}}{}
+
+\begin{document}
+
+\title{\textsc{AutoM2M}: Checking the Composition of\\Automatically Assembled LLM Agent Teams}
+
+% --- Double-anonymous review: no author block in the submission. ---
+% \author{...}
+
+\maketitle
+
+\begin{abstract}
+\todo{abstract}
+\end{abstract}
+
+\begin{IEEEkeywords}
+LLM-based multi-agent systems, model transformations, architectural mismatch, failure attribution, code generation
+\end{IEEEkeywords}
+
+% ===========================================================================
+\section{Introduction}\label{sec:intro}
+% ===========================================================================
+\todo{intro}
+
+% ===========================================================================
+\section{Background}\label{sec:background}
+% ===========================================================================
+
+\auto{} builds on \tool{}~\cite{agentm2m2026}, which treats every hand-off
+between two LLM agents as a model-to-model (M2M) transformation. We introduce
+its concepts on one running example and state them as definitions that
+\Cref{sec:approach} builds on.
+
+\subsection{Running example}\label{sec:example}
+
+\devteam{} builds a small to-do service. The \emph{Analyst} turns requests into
+user stories with acceptance criteria; the \emph{Architect} designs one API
+operation per accepted story; the \emph{Tester} writes executable tests; the
+\emph{Developer} implements each operation. The requirements contain story
+\code{S1} \emph{create a task} (criterion \code{S1.1}: a title is required),
+\code{S2} \emph{mark a task done} (\code{S2.1}: completing a done task is
+rejected) and \code{S3}, a draft. In a team built by CaptainAgent or
+AutoAgents~\cite{song2024captain,chen2024autoagents}, these four agents would be
+four role prompts and a plan in prose. In \tool{}, each is a form, and each
+hand-off is a rule set.
+
+\subsection{Views, models and hybrid rules}
+
+\begin{definition}[View metamodel, model]\label{def:mm}
+A \emph{view metamodel} $\MM=(C,F)$ is a set of classes $C$ and typed
+features $F$: attributes with a primitive type, and references to classes
+(possibly of other views), each with a lower bound (\emph{mandatory} if
+$\ge 1$) and an upper bound. A \emph{model} $M\in\Mods{\MM}$ is a set of
+objects that \emph{conforms} to $\MM$.
+\end{definition}
+
+Each agent owns one view, the form it fills in (\Cref{lst:views}). The
+Architect's \cls{Operation} knows nothing about stories except through a
+reference, so each agent stays in its own vocabulary, as in view-based
+development~\cite{klare2021vitruvius,bruneliere2019views}.
+
+\begin{lstlisting}[language=KM3, caption={View metamodels of \devteam{} (KM3-like).}, label={lst:views}]
+package Req  { class UserStory { attribute id, title, status : String;
+                 reference criteria[0-*] : Criterion; }
+               class Criterion { attribute id, text : String;
+                 reference story[1] : UserStory; } }
+package Arch { class Operation { attribute name, signature : String;
+                 reference story[1] : Req!UserStory; } }
+package Test { class TestSuite { attribute name, code : String;
+                 reference story[1] : Req!UserStory; } }
+package Code { class CodeEdit  { attribute file, body : String;
+                 reference operation[1] : Arch!Operation;
+                 reference story[1] : Req!UserStory; } }
+\end{lstlisting}
+
+\begin{definition}[Hybrid rule]\label{def:rule}
+A \emph{hybrid rule} $r$ has a source pattern (typed variables over
+source views), an optional guard, and a target pattern creating one object of
+class $D$. Its bindings are partitioned into \emph{structural bindings}
+$f\leftarrow e$, where $e$ is a navigation path or literal evaluated by a
+deterministic engine, and \emph{stochastic bindings}
+$f\leftarrow\code{@llm}(p,\fp)$ with a prompt $p$, a \emph{footprint} $\fp$
+(the set of navigation paths an LLM may read), and a \emph{validator}
+$\mathit{chk}$ that a sampled value must pass. A \emph{hand-off} $T$ is a set
+of rules with source views $\mathit{src}(T)$ and one target view
+$\mathit{tgt}(T)$.
+\end{definition}
+
+\begin{lstlisting}[language=ATL, caption={Hand-off \code{Arch2Code} of \devteam{}. \code{@llm} marks a value an LLM writes; \code{@check} its validator.}, label={lst:rule}]
+rule Op2Edit {
+  from op : Arch!Operation, ts : Test!TestSuite (ts.story = op.story)
+  to   e  : Code!CodeEdit (
+       file <- op.name, operation <- op, story <- op.story,  -- structural
+       body <- @llm('Implement the operation',
+                    Sequence{op.signature, op.story.criteria}), -- footprint
+       @check body.passes_tests(op.story, ts.code) ) }        -- validator
+\end{lstlisting}
+
+The engine computes the structure of the hand-off: for every match of the
+source pattern it creates one target object, fills structural bindings and
+resolves references, as ATL's matched rules do~\cite{jouault2008atl}. Only a
+value no formula can compute, here an implementation, is sampled from an
+LLM, which sees only the footprint. A sample is kept only if the validator
+accepts it; otherwise the engine re-samples, at most $k$ times, and then
+escalates. Because \code{Op2Edit} matches \emph{every} pair of an operation
+and its test suite, no operation can be forgotten by an LLM.
+
+\begin{definition}[Trace link, stamp, obligation]\label{def:trace}
+When rule $r$ fires on match $m$ and creates $t$, the engine records a
+\emph{trace link} $(m,t,r)$~\cite{jouault2005traceability,vara2014metagem}.
+For every accepted stochastic value $t.f$ it records a \emph{stamp}, the digest
+of the footprint's value at acceptance time. A value whose stamp differs
+from the digest of its current footprint is an \emph{obligation}.
+\end{definition}
+
+Stamps make change propagation exact: when the Analyst edits \code{S2.1},
+only the values whose footprints read \code{S2.1} become obligations. For
+this paper, the important consequence is different: the complete input of
+every LLM-written value is recorded and small, which is the information that
+failure attribution needs~\cite{chen2026traceelephant}.
+
+\begin{definition}[Team model, acceptance]\label{def:team}
+A \emph{team model} $\team=(A,V,\mathbf{T},\omega,\varphi)$ has agents $A$,
+views $V$, hand-offs $\mathbf{T}$, write rights $\omega:A\to 2^V$, and an
+\emph{acceptance predicate} $\varphi$ evaluated by the engine: every match is
+covered by a trace link, no obligation or escalation is open, all stamps are
+fresh, and all validators pass.
+\end{definition}
+
+The team is done when $\varphi$ holds, not when an agent says so. Adding an
+agent at runtime is a higher-order transformation (HOT)~\cite{tisi2009hot}
+over $\team$, kept causally connected to the running team
+(models@run.time~\cite{blair2009runtime}).
+
+\subsection{What \tool{} leaves open}
+
+\tool{}'s team model, metamodels and rules are written by a person. Its
+evaluation on DevBench~\cite{li2024devbench} named ``learning the glue'' as
+its first open problem. For an automatically assembled team, the team
+builder is the architect: it must write the forms, the rules and $\varphi$, and
+nothing guarantees that it writes good ones. The composition gap does not
+disappear; it moves from the messages to the team specification. The next
+section checks that specification.
+
+% ===========================================================================
+\section{Approach}\label{sec:approach}
+% ===========================================================================
+
+\auto{} lifts \tool{}'s division of labour one level up. \tool{} lets an LLM
+write \emph{values} while a deterministic engine owns the \emph{structure} of
+each hand-off. \auto{} lets an LLM \emph{propose a team} while a
+deterministic checker owns the decision to \emph{admit} it
+(\Cref{fig:pipeline}). Algorithm~\ref{alg:admit} admits a team;
+Algorithm~\ref{alg:run} runs it, attributes failures and repairs it.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\sffamily\scriptsize, >={Stealth[length=3pt]},
+  llm/.style={draw=purple!70!black, fill=purple!6, rounded corners=2pt, align=center, minimum height=7mm, inner sep=2pt},
+  eng/.style={draw=green!40!black, fill=green!6, rounded corners=2pt, align=center, minimum height=7mm, inner sep=2pt},
+  lbl/.style={font=\sffamily\tiny, align=center}]
+  \node[draw, rounded corners=2pt, minimum height=7mm, align=center] (task) at (0,0) {Task};
+  \node[llm] (build) at (1.45,0) {A: Builder\\proposes $\Team$};
+  \node[eng] (check) at (3.35,0) {B: Checker\\\W1--\W6};
+  \node[eng] (run) at (5.2,0) {D: \tool{}\\runtime};
+  \node[eng] (done) at (6.95,0) {$\varphi$ holds};
+  \node[eng] (attr) at (5.2,-1.35) {E: Attribution\\trace + replay};
+  \node[llm] (delta) at (2.4,-1.35) {F: Builder\\proposes $\Delta$};
+  \draw[->] (task) -- (build); \draw[->] (build) -- (check);
+  \draw[->] (check) -- node[above, lbl] {admit} (run);
+  \draw[->] (run) -- (done);
+  \draw[->] (check.north) to[bend right=30] node[above, lbl] {C: diagnostics} (build.north);
+  \draw[->] (run) -- node[right, lbl] {$\varphi$ fails} (attr);
+  \draw[->] (attr) -- node[above, lbl] {fault report} (delta);
+  \draw[->] (delta) -| node[pos=0.3, below, lbl] {check $\Team\oplus\Delta$} (check);
+\end{tikzpicture}
+\caption{\auto{}. LLM steps (purple) propose; deterministic steps (green)
+decide. A team runs only after the checker admits it; every repair passes the
+same checker.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Step A: typed teams}\label{sec:typed}
+
+\begin{definition}[Typed team]\label{def:typed}
+A \emph{typed team} is $\Team=(A,V,\mathbf{T},\omega,\kappa,\tau,G,\varphi)$: a
+team model (\Cref{def:team}) whose views include a \emph{goal view} $\MM_0$
+into which the task is lifted, extended with $\kappa:A\to 2^{\mathit{Tools}}$,
+the tools of each agent; $\tau$, the tools each stochastic binding's validator
+needs; and a set $G$ of \emph{goal obligations} $(C,s,k)$, a goal-view class
+$C$, a scope $s$ and a kind $k\in\{\mathit{checked},\mathit{delivered}\}$.
+Every validator comes from a library that declares its \emph{strength}
+(\emph{form}: parses, compiles; \emph{behaviour}: executes the value against
+examples or tests) and its tool needs.
+\end{definition}
+
+A builder fills a constrained JSON format, not free ATL: footprints are
+navigation paths and validators are library entries. Agents keep free-text
+role prompts; how an agent \emph{thinks} remains prose, but what it receives
+and produces is typed. \Cref{lst:proposal} renders a first proposal for
+\devteam{} that we wrote to contain one instance of each defect class.
+
+\begin{lstlisting}[caption={Seeded proposal for \devteam{} (rendering of its JSON; defects marked).}, label={lst:proposal}]
+agents: Analyst{} Architect{} Developer{exec} Tester{}        -- D5
+writes: Analyst:Req Architect:Arch Developer:Code,Test Tester:Test -- D3
+goal:   (Criterion, c.story.status='accepted', checked)
+rule Story2Operation { from s:Req!UserStory (s.status='accepted')
+   to op:Arch!Operation(name<-s.title, story<-s,
+      signature<-@llm('Derive an API signature', s.title) @check compiles) }
+rule Op2Edit { from op:Arch!Operation  to e:Code!CodeEdit(
+      body<-@llm('Implement', {op.signature, op.returnType})     -- D2
+      @check compiles) }
+rule Edit2TestRun { from e:Code!CodeEdit  to r:Test!TestRun(   -- D1
+      verdict<-@llm('Run and judge', e.body) @check runs) }
+done:  cover(G), valid, fresh, noObl, Tester.says('ALL TESTS PASS') -- D4
+\end{lstlisting}
+
+\subsection{Step B: six well-formedness conditions}\label{sec:check}
+
+The checker decides six conditions on $\Team$ alone, with no task data, LLM
+call or execution. Two graphs support them. The \emph{type graph}
+$\mathcal{G}_\Team$ has an edge $C\to D$ for every rule with $C$ in its source
+pattern that creates $D$. The \emph{feature-level data-flow graph}
+$\mathcal{F}_\Team$ has an edge $(C,f)\to(D,g)$ whenever a binding that writes
+feature $g$ of $D$ reads feature $f$ of $C$: in its expression, its footprint,
+or an argument that its validator reads (\code{op.story.criteria} reads
+\code{Operation.story}, \code{UserStory.criteria} and the attributes of
+\cls{Criterion}). Let $B$ be the set of features written by stochastic bindings
+with a behavioural validator.
+
+\paragraph*{\W1, hand-offs are well typed} Every rule of $T$ reads only
+classes of $\mathit{src}(T)$ and creates a class of $\mathit{tgt}(T)$; every
+bound feature exists and its expression type-conforms; every footprint and
+validator-argument path type-checks against $\mathit{src}(T)$; stochastic
+bindings target attributes and have at least one validator. \emph{Rules out
+the formal part of \D2}: \code{op.returnType} in \Cref{lst:proposal} names
+information no one produces.
+
+\paragraph*{\W2, one writer per artefact} The sets $\omega(a)$ are pairwise
+disjoint and cover $V\setminus\{\MM_0\}$, and each class is created by exactly
+one rule. \emph{Rules out \D3}: Developer and Tester both write \cls{Test}.
+
+\paragraph*{\W3, targets are complete} Every mandatory feature of a created
+class is bound exactly once, and every structural reference binding is
+\emph{resolvable}: the source class it yields equals the reference type, or
+some rule maps it there. \emph{Rules out the content part of \D2}: no consumer
+receives an empty mandatory slot or a dangling link.
+
+\paragraph*{\W4, every obligation reaches a check that reads it} (a)~For each
+$(C,s,\mathit{checked})\in G$, some feature of $C$ reaches $B$ in
+$\mathcal{F}_\Team$ (\emph{anchored coverage}); for each
+$(C,s,\mathit{delivered})\in G$, the declared deliverable feature is in $B$,
+references $C$, and is reachable from a feature of $C$. (b)~Every view is
+reachable from $\MM_0$ in the hand-off graph and reaches a view containing a
+feature of $B$. \emph{Rules out \D1}: in \Cref{lst:proposal} no binding reads
+any feature of \cls{Criterion}. A path in $\mathcal{G}_\Team$ is not enough:
+a builder can create one test per criterion whose oracle never sees the
+criterion (\Cref{sec:rq2static}). Guards are not decidable in general; the
+checker warns when a guard on an obligation's flow differs from its scope,
+and the runtime clause $\mathit{cover}(G)$ enforces coverage per instance.
+
+\paragraph*{\W5, the engine decides completion} $\varphi$ is exactly the
+engine clauses $\mathit{cover}(G)$ (every in-scope goal object has a
+validated descendant, and a validated deliverable if delivered),
+$\mathit{valid}$, $\mathit{fresh}$ and $\mathit{noObl}$, and the hand-off
+graph is acyclic~\cite{klare2023termination}. \emph{Rules out \D4}:
+\code{Tester.says(...)} is not engine-checkable.
+
+\paragraph*{\W6, work goes to agents that can do it} For every stochastic
+binding $b$ of a hand-off whose target view agent $a$ owns,
+$\tau(b)\subseteq\kappa(a)$. \emph{Rules out \D5}: \code{runs} needs code
+execution, which the Tester lacks.
+
+\begin{proposition}[Cost]\label{prop:cost}
+\W1--\W6 are decidable in time polynomial in $|\Team|$ (classes, features,
+rules, bindings, path segments).
+\end{proposition}
+\noindent\emph{Sketch.} \W1 navigates each path once; \W2, \W3, \W6 compare
+finite sets; \W4 is reachability in $\mathcal{F}_\Team$, whose size is bounded
+by bindings times path segments, and in the hand-off graph; the cycle test of
+\W5 is a topological sort.
+
+\begin{proposition}[Admission guarantees]\label{prop:guarantee}
+If $\Team$ is admitted and the runtime stops with $\varphi$ true, then (i)~every
+in-scope goal object has a descendant whose value passed a behavioural
+validator, and for \emph{delivered} obligations a validated deliverable,
+whose inputs read data derived from that object; (ii)~no object has two
+producers and no view two writers; (iii)~every LLM-written value was produced
+from a recorded footprint under a stamp and passed its validator;
+(iv)~completion was decided by engine clauses only.
+\end{proposition}
+\noindent\emph{Sketch.} (i) combines \W4(a) at type level with ATL's
+matched-rule semantics and $\mathit{cover}(G)$ at instance level; (ii) is
+\W2; (iii) is \W1 with the runtime; (iv) is \W5. \emph{Not guaranteed}: that
+the forms capture what the task needs, that validators are strong enough, or
+that agents reason correctly.
+
+\subsection{Step C: diagnostics and admission}\label{sec:admit}
+
+A failed condition yields a \emph{diagnostic}: the condition, the offending
+element, and how to fix it. \Cref{lst:diag} is the checker's actual output on
+\Cref{lst:proposal}: one violation per seeded defect and nothing else.
+Diagnostics are complete for the conditions checked and name a rule, path or
+write right rather than ``improve coordination''. Algorithm~\ref{alg:admit}
+feeds them back to the builder for at most $k_{\mathit{adm}}$ rounds.
+
+\begin{lstlisting}[caption={Checker output on the seeded proposal.}, label={lst:diag}]
+W1 Op2Edit.body: footprint path 'op.returnType': Arch!Operation has no
+   feature 'returnType' (its features are ['name','signature','story'])
+W2 view Test written by ['Developer', 'Tester']; needs exactly one writer
+W4 goal obligation (Criterion, ...): no behavioural validator reads data
+   derived from Criterion
+W5 done-clause Tester.says('ALL TESTS PASS') is not engine-checkable
+W6 Edit2TestRun.verdict needs ['exec']; owner Tester has []
+REJECTED: 5 violation(s)
+\end{lstlisting}
+
+\begin{algorithm}[t]
+\caption{Admission (Steps A--C)}\label{alg:admit}
+\small
+\begin{algorithmic}[1]
+\Require task $x$, builder LLM $\mathcal{B}$, budget $k_{\mathit{adm}}$
+\State $\MM_0, M_0 \gets \Call{Lift}{x}$ \Comment{goal view and model, deterministic}
+\State $\Team \gets \mathcal{B}.\Call{Propose}{x, \MM_0}$; $i\gets 0$
+\Loop
+  \State $\mathit{diag}\gets\emptyset$
+  \For{$c \in \langle\W1,\dots,\W6\rangle$}
+     \State $\mathit{diag}\gets\mathit{diag}\cup\Call{Violations}{c,\Team,\mathcal{G}_\Team,\mathcal{F}_\Team}$
+  \EndFor
+  \If{$\mathit{diag}=\emptyset$} \Return \Call{Compile}{$\Team$, $M_0$} \Comment{admitted}
+  \EndIf
+  \If{$i = k_{\mathit{adm}}$} \Return $\textsc{NotAdmitted}(\mathit{diag})$ \EndIf
+  \State $\Team \gets \mathcal{B}.\Call{Revise}{\Team,\mathit{diag}}$; $i\gets i+1$
+\EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Steps D--F: run, attribute, repair}\label{sec:runloop}
+
+An admitted team is compiled onto the unchanged \tool{} runtime: views become
+metamodels, hand-offs become rule modules with \code{@check} expressions over
+the validator library, and the task is lifted into the goal model.
+Algorithm~\ref{alg:run} runs it to a fixpoint and evaluates $\varphi$, then
+attributes and repairs failures.
+
+\paragraph*{Locate} A failed $\mathit{valid}$ or $\mathit{noObl}$ clause names
+a pair (target object, stochastic binding); through the trace this gives the
+rule, the hand-off, the owning agent and the stamped footprint. A failed
+$\mathit{cover}(G)$ clause names a goal object with no validated descendant.
+Failures that are consequences of a located one (the coverage gap of the same
+goal object, stale stamps behind an escalation) are not attributed again.
+Location is a lookup, not an inference over a transcript.
+
+\paragraph*{Classify} Because the footprint is recorded and small, the engine
+replays the binding (lines~\ref{l:val}--\ref{l:spec}): a validator that gives
+two verdicts on the same value is a \emph{validator fault}; if a replay on
+the same footprint passes, a \emph{sampling fault}; if a replay on the
+footprint widened by one hop (every attribute of each source variable and of
+the objects its references reach) passes, a \emph{footprint fault}, an
+instance of \D2; if re-sampling an LLM-written value in the footprint lets the
+binding pass, an \emph{upstream fault}, attributed to that upstream binding
+and its agent; otherwise a \emph{specification fault}. With $r$ replays per
+step the procedure makes at most $2r+2r$ LLM calls per failure.
+
+\paragraph*{Repair} Each fault class has a remedy, and every team change is
+checked before it is applied (line~\ref{l:checkdelta}): sampling faults get a
+fresh budget; upstream faults turn the upstream value into an obligation;
+footprint faults widen the footprint by the paths that made the replay pass;
+specification and coverage faults go back to the builder, which proposes a
+team delta $\Delta$. An admitted delta is applied to the \emph{running} team:
+rule-level edits regenerate one module and invalidate exactly the stamps whose
+prompt, validator or footprint changed; additive edits (new views, agents,
+hand-offs) are a HOT; anything else rebuilds the team. Accepted values outside
+the change are kept, which a free-form builder, rebuilding from scratch,
+cannot do.
+
+\begin{algorithm}[t]
+\caption{Run, attribute and repair (Steps D--F)}\label{alg:run}
+\small
+\begin{algorithmic}[1]
+\Require admitted $\Team$, goal model $M_0$, budgets $k$ (samples), $k_{\mathit{rep}}$, $r$
+\For{$j = 0,\dots,k_{\mathit{rep}}$}
+  \State $\mathit{fails}\gets\Call{RunToFixpoint}{\Team, M_0, k}$; \textbf{if} $\varphi$ \textbf{then return} \textsc{Done}
+  \If{$j = k_{\mathit{rep}}$} \Return \textsc{Failed}(\textit{fails}) \EndIf
+  \For{$f\in\Call{Roots}{\mathit{fails}}$} \Comment{drop consequential failures}
+    \State $(t,b,\rho,a,\fp)\gets\Call{Locate}{f,\TL}$ \Comment{trace lookup}
+    \If{$\mathit{chk}_b(v)\neq\mathit{chk}_b(v)$} $c\gets$ validator \label{l:val}
+    \ElsIf{$\exists$ pass among $r$ samples on $\fp$} $c\gets$ sampling
+    \ElsIf{$\exists$ pass among $r$ samples on $\Call{Widen}{\fp}$} $c\gets$ footprint
+    \ElsIf{$\exists u\in\fp$ written by $b'$: re-sampling $b'$ lets $b$ pass} $c\gets$ upstream$(b')$
+    \Else\ $c\gets$ specification \label{l:spec}
+    \EndIf
+    \State $\mathit{report}\gets\mathit{report}\cup\{(c,t,b,\rho,a)\}$
+  \EndFor
+  \State $\Delta\gets\Call{Remedy}{\mathit{report}}\cup\mathcal{B}.\Call{ProposeDelta}{\Team,\mathit{report}}$
+  \If{$\Call{Check}{\Team\oplus\Delta}=\emptyset$} $\Team\gets\Call{ApplyInPlace}{\Team,\Delta}$ \label{l:checkdelta}
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph*{What \auto{} does not solve} The checker verifies that a team fits
+together, not that its forms capture the task: an essential concept missing
+from the goal view is invisible to it. \W4 demands a behavioural validator but
+not a strong one; weak validators turn wrong values into accepted ones. And
+errors inside one agent's reasoning are outside any composition check; at
+best they are classified as sampling or specification faults.
+
+% ===========================================================================
+\section{Related Work}\label{sec:related}
+% ===========================================================================
+
+\paragraph*{Automatic team construction} Team builders generate roles, plans,
+state machines or workflow code per task:
+CaptainAgent, AutoAgents, AgentVerse, DyLAN, EvoAgent, MetaAgent and
+MAS-Zero~\cite{song2024captain,chen2024autoagents,chen2024agentverse,liu2024dylan,yuan2025evoagent,zhang2025metaagent,ke2025maszero},
+and offline searches over workflows and topologies such as ADAS, AFlow,
+GPTSwarm and MaAS~\cite{hu2025adas,zhang2025aflow,zhuge2024gptswarm,zhang2025maas}.
+Their quality signal is an end-to-end score, an LLM critic or observer, or
+execution feedback; MetaAgent's finite state machine makes control explicit
+but not the content passed between states~\cite{zhang2025metaagent}, and
+self-improving builders recover feedback from traces as textual
+gradients~\cite{he2026tpgo}. \auto{} does not propose a new search
+strategy; it proposes a target representation that any of them could emit
+and a check that any of them could run inside its loop. Hand-designed
+software teams (MetaGPT, ChatDev, self-collaboration)~\cite{hong2024metagpt,qian2024chatdev,dong2024selfcollab}
+fix roles and hand-offs by hand; He, Treude and Lo survey the
+area~\cite{he2025lma}.
+
+\paragraph*{Failure analysis and attribution} MAST locates most multi-agent
+failures in system design and inter-agent misalignment~\cite{cemri2025mast};
+AgentAsk places them on hand-off edges and intervenes with clarification
+questions~\cite{lin2026agentask}; Kim et al.\ show that whether a team helps
+depends on whether its structure fits the task~\cite{kim2025scaling}; Lu et
+al.\ report that frameworks complete about half of programmable tasks and
+that communication is rarely analysed~\cite{lu2025exploring}. Who\&When and
+TraceElephant attribute failures from transcripts and find agent- and
+step-level attribution
+unreliable~\cite{zhang2025whowhen,chen2026traceelephant}. \auto{} attacks the
+same hand-offs statically and makes attribution a lookup plus a bounded
+replay over recorded footprints.
+
+\paragraph*{Structured communication} MetaGPT's documents, DSPy signatures,
+schema-validated shared state (PatchBoard), Agora's protocol documents, and
+MCP/A2A make individual messages well formed or reliably
+transported~\cite{hong2024metagpt,khattab2024dspy,zhang2026patchboard,marro2024agora,mcp2024,a2a2025};
+La Malfa et al.\ argue that LLM teams ignore classical coordination
+protocols~\cite{lamalfa2025miss}, which KQML-style languages
+provided~\cite{finin1994kqml}. These approaches check \emph{messages}.
+\auto{} checks the \emph{team}: coverage of obligations, single writers,
+complete targets, engine-decided completion and capabilities, across all
+hand-offs.
+
+\paragraph*{Software architecture and agent-oriented SE} Architectural
+mismatch~\cite{garlan1995mismatch,garlan2009mismatch}, design by
+contract~\cite{meyer1992dbc} and formal connectors~\cite{allen1997connection}
+motivate our conditions, and Gaia's role schemas already stated
+responsibilities, permissions and protocols~\cite{wooldridge2000gaia}. Ad hoc
+teamwork studies agents that meet without prior
+coordination~\cite{stone2010adhoc,wang2024oaht}; a team builder is in the
+opposite position, since it creates all teammates and can coordinate them in
+advance.
+
+\paragraph*{Model-driven engineering} \auto{} reuses ATL's execution model
+and typing~\cite{jouault2008atl}, persisted
+traceability~\cite{jouault2005traceability,vara2014metagem}, incremental
+execution~\cite{jouault2010incremental}, HOTs~\cite{tisi2009hot},
+models@run.time~\cite{blair2009runtime}, and termination results for
+transformation networks~\cite{stevens2020networks,klare2023termination}. Work
+on LLM-generated domain models and model completion studies the quality of
+single generated
+models~\cite{chen2023domainmodeling,chaaben2023fewshot,clariso2023mdpe}; we
+check how generated models and transformations fit together, a
+well-formedness problem for transformation networks whose authors are LLMs and
+whose values are stochastic.
+
+% ===========================================================================
+\section{Evaluation}\label{sec:eval}
+% ===========================================================================
+
+We ask three research questions, one per claim of the problem statement.
+\textbf{RQ1 (Diagnosis):} do automatically assembled teams lack interfaces,
+and how often is the decisive cause of their failures a composition defect?
+\textbf{RQ2 (Prevention):} does the checker detect composition defects, and
+how do typed, checked teams compare with free-form teams in task success,
+reliability of completion, and cost?
+\textbf{RQ3 (Attribution and repair):} when a typed team fails, does
+trace-based attribution identify the responsible binding, agent and fault
+class more accurately than transcript-based attribution, and does a checked
+in-place repair preserve work?
+
+\subsection{Setup}\label{sec:setup}
+
+\paragraph*{Benchmarks} \emph{ClassEval}~\cite{du2024classeval} (100
+class-level Python tasks, 4.1 methods per class on average, hidden unit tests
+per method) is our primary benchmark: a class decomposes naturally into
+per-method hand-offs, so composition matters. A task succeeds if all hidden
+tests pass; we also report the per-test pass rate as a sensitive secondary
+metric. \emph{HumanEval+}~\cite{chen2021codex,liu2023evalplus} (164
+single-function tasks with extended hidden tests) is a control on which a
+team should not help~\cite{kim2025scaling}. Teams, validators and builders
+see only the task's skeleton and docstrings; hidden tests are used only for
+scoring. Run on our sandbox, the reference solutions pass
+\nCanonCE/100 ClassEval and \nCanonHE/164 HumanEval+ tasks (a few ClassEval
+tests are time- or randomness-dependent).
+
+\paragraph*{Models} We use two open-weight models served locally by Ollama,
+for every role in every condition (builder, agents, critic, attribution):
+\emph{Qwen2.5-Coder-7B}~\cite{hui2024qwen25coder} and
+\emph{Qwen3.8-27B}~\cite{qwen2025qwen3} (thinking disabled), at temperature
+0.6, a 16k context, and a cap of \nBudget{} generated tokens per run, equal
+for all conditions.
+
+\paragraph*{Conditions} We re-implemented the alternatives in one harness, so
+that model, tools, worked example and budget are identical; each gets the
+same execution tool, which runs the public docstring examples and any tests
+the agents write. \textbf{Single}: one agent writes the solution and gets two
+rounds of execution feedback. \textbf{Free}: a CaptainAgent-style
+builder~\cite{song2024captain} writes 2--4 prose roles and a plan; the agents
+talk in a round-robin group chat of at most 8 turns, which ends when an agent
+says \code{TERMINATE}. \textbf{Critic}: Free, plus an LLM critic that reviews
+the team for \D1--\D5 before it runs, and one revision. \textbf{Schema}: the
+same roles exchange JSON patches to one shared board validated against a
+schema, in the style of PatchBoard~\cite{zhang2026patchboard}.
+\textbf{Typed-unchecked}: the \auto{} builder's first typed team, run
+without the checker and without repair, which separates the format from the
+check. \textbf{\auto{}}: Algorithms~\ref{alg:admit} and~\ref{alg:run} with
+$k_{\mathit{adm}}=3$, $k=3$, $k_{\mathit{rep}}=2$, $r=1$.
+\textbf{Typed-ref}: the hand-written admitted reference team (Tester and
+Developer per method) run by Algorithm~\ref{alg:run}, which separates the
+builder from the runtime. Every builder gets one worked example for the same
+out-of-benchmark task (a \code{ParkingMeter} class), in its own format.
+
+\paragraph*{Runs and statistics} \nRunsTotal{} runs in total. The 7B model runs
+every condition on all ClassEval tasks with three seeds and on all
+HumanEval+ tasks with two; the 27B model, about five times slower on our
+hardware, runs one seed on a fixed subset of \nCESubset{} ClassEval and
+\nHESubset{} HumanEval+ tasks (every fifth/fourth task, chosen before any
+result was seen). We average success over seeds per task and compare
+conditions per task with Wilcoxon signed-rank tests (Holm-corrected within
+each benchmark--model cell), report exact McNemar counts on seed~1, paired
+bootstrap 95\% confidence intervals, and Cliff's
+$\delta$~\cite{arcuri2014guide}.
+
+\todo{results}
+
+% ===========================================================================
+\section{Conclusion}\label{sec:conclusion}
+% ===========================================================================
+\todo{conclusion}
+
+\noindent\textbf{Data availability.}\label{sec:data} \todo{artifact}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

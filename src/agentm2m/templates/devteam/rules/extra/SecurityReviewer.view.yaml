@@ -1,0 +1,8 @@
+# View spec for the Security Reviewer added by the HOT (team_evolve):
+#   agent: SecurityReviewer, view: Sec, handoff: Arch2Sec,
+#   rule: rules/extra/Arch2Sec.agentm2m
+classes:
+  SecurityReview:
+    attributes: [name, notes, risk]
+    references: {operation: Arch.Operation}
+root: {class: SecModel, slots: {reviews: SecurityReview}}

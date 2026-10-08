@@ -1,0 +1,14 @@
+-- T2 (Architect -> Developer).
+module Arch2Code;
+create OUT : Code from IN : Arch;
+uses 'helpers.py';
+
+rule Operation2CodeEdit {
+  from op : Arch!Operation
+  to  ce : Code!CodeEdit (
+    name      <- op.name,
+    operation <- op,
+    body      <- @llm('Implement the function body for this operation',
+                       op.signature),
+    @check body.compiles() )
+}

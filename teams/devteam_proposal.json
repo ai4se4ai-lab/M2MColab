@@ -1,0 +1,253 @@
+{
+  "name": "devteam",
+  "goal_view": "Req",
+  "agents": [
+    {
+      "name": "Analyst",
+      "role": "Turns requests into user stories with acceptance criteria.",
+      "tools": []
+    },
+    {
+      "name": "Architect",
+      "role": "Designs one API operation per accepted story.",
+      "tools": []
+    },
+    {
+      "name": "Developer",
+      "role": "Implements each operation so that its story's tests pass.",
+      "tools": [
+        "exec"
+      ]
+    },
+    {
+      "name": "Tester",
+      "role": "Writes executable tests for each story's acceptance criteria.",
+      "tools": []
+    }
+  ],
+  "views": {
+    "Req": {
+      "classes": {
+        "UserStory": {
+          "attributes": {
+            "id": "string",
+            "title": "string",
+            "status": "string"
+          },
+          "references": {
+            "criteria": {
+              "type": "Req.Criterion",
+              "many": true
+            }
+          }
+        },
+        "Criterion": {
+          "attributes": {
+            "id": "string",
+            "text": "string"
+          },
+          "references": {
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Arch": {
+      "classes": {
+        "Operation": {
+          "attributes": {
+            "name": "string",
+            "signature": "string"
+          },
+          "references": {
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Test": {
+      "classes": {
+        "TestRun": {
+          "attributes": {
+            "name": "string",
+            "verdict": "string"
+          }
+        }
+      }
+    },
+    "Code": {
+      "classes": {
+        "CodeEdit": {
+          "attributes": {
+            "file": "string",
+            "body": "string"
+          },
+          "references": {
+            "operation": {
+              "type": "Arch.Operation",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "writes": {
+    "Analyst": [
+      "Req"
+    ],
+    "Architect": [
+      "Arch"
+    ],
+    "Developer": [
+      "Code",
+      "Test"
+    ],
+    "Tester": [
+      "Test"
+    ]
+  },
+  "handoffs": [
+    {
+      "name": "Req2Arch",
+      "sources": [
+        "Req"
+      ],
+      "target": "Arch",
+      "rules": [
+        {
+          "name": "Story2Operation",
+          "from": [
+            {
+              "var": "s",
+              "type": "Req!UserStory"
+            }
+          ],
+          "guard": "s.status = 'accepted'",
+          "to": {
+            "var": "op",
+            "type": "Arch!Operation"
+          },
+          "bind": {
+            "name": "s.title",
+            "story": "s"
+          },
+          "llm": [
+            {
+              "feature": "signature",
+              "prompt": "Derive an API signature",
+              "footprint": [
+                "s.title"
+              ],
+              "validator": [
+                {
+                  "id": "compiles"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Arch2Code",
+      "sources": [
+        "Arch"
+      ],
+      "target": "Code",
+      "rules": [
+        {
+          "name": "Op2Edit",
+          "from": [
+            {
+              "var": "op",
+              "type": "Arch!Operation"
+            }
+          ],
+          "to": {
+            "var": "e",
+            "type": "Code!CodeEdit"
+          },
+          "bind": {
+            "file": "op.name",
+            "operation": "op"
+          },
+          "llm": [
+            {
+              "feature": "body",
+              "prompt": "Implement",
+              "footprint": [
+                "op.signature",
+                "op.returnType"
+              ],
+              "validator": [
+                {
+                  "id": "compiles"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Code2Test",
+      "sources": [
+        "Code"
+      ],
+      "target": "Test",
+      "rules": [
+        {
+          "name": "Edit2TestRun",
+          "from": [
+            {
+              "var": "e",
+              "type": "Code!CodeEdit"
+            }
+          ],
+          "to": {
+            "var": "r",
+            "type": "Test!TestRun"
+          },
+          "bind": {
+            "name": "e.file"
+          },
+          "llm": [
+            {
+              "feature": "verdict",
+              "prompt": "Run and judge",
+              "footprint": [
+                "e.body"
+              ],
+              "validator": [
+                {
+                  "id": "runs"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "goal": [
+    {
+      "class": "Criterion",
+      "scope": "c.story.status = 'accepted'"
+    }
+  ],
+  "deliverable": null,
+  "done": [
+    "cover(G)",
+    "valid",
+    "fresh",
+    "noObl",
+    "Tester.says('ALL TESTS PASS')"
+  ]
+}

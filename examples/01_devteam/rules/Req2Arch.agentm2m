@@ -1,0 +1,21 @@
+-- T1 (Analyst -> Architect): the paper's own running example (Sec III-B).
+module Req2Arch;
+create OUT : Arch from IN : Req;
+uses 'helpers.py';
+
+rule Epic2Component {
+  from e : Req!Epic
+  to  c : Arch!Component ( name <- e.name )
+}
+
+rule Story2Operation {
+  from s : Req!UserStory
+           (s.status = #accepted)  -- guard
+  to  op : Arch!Operation (
+    name      <- s.id.toOpName(),  -- structural
+    component <- s.epic,           -- resolved via trace (Epic -> Component)
+    signature <- @llm('Derive an API signature for this user story',
+                       s.criteria),  -- footprint
+    @check signature.parses()
+           and signature.params->notEmpty() )
+}
