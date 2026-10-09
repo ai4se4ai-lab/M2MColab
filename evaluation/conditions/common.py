@@ -7,6 +7,7 @@ import json
 import re
 from dataclasses import dataclass, field
 
+from agentm2m.auto.pywork import _FENCE
 from evaluation.benchmarks import tasks as T
 
 MAX_TRANSCRIPT_CHARS = 14000
@@ -36,7 +37,7 @@ def answer_format(task: T.Task) -> str:
 
 def find_solution(task: T.Task, text: str) -> str | None:
     """A python block that defines the class / function under test."""
-    for block in reversed(T._FENCE.findall(text or "")):
+    for block in reversed(_FENCE.findall(text or "")):
         if task.kind == "class" and re.search(rf"^\s*class\s+{re.escape(task.entry)}\b", block, re.M):
             if T._parses(block):
                 return block
@@ -47,7 +48,7 @@ def find_solution(task: T.Task, text: str) -> str | None:
 
 
 def find_tests(text: str) -> str | None:
-    for block in reversed(T._FENCE.findall(text or "")):
+    for block in reversed(_FENCE.findall(text or "")):
         if ("unittest" in block or re.search(r"^\s*def test_", block, re.M)) and T._parses(block):
             return block
     return None
