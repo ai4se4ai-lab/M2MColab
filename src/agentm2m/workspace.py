@@ -824,6 +824,9 @@ class Workspace:
             if not _inside(self.dir, rule_path):
                 raise WorkspaceError(f"rule path {rule!r} escapes the workspace directory")
             wrote = False
+            if rule_text is not None and rule_path.suffix != ".agentm2m":
+                # rule_text must never create Python: a `uses` clause would load it into the engine
+                raise WorkspaceError(f"rule_text can only create a .agentm2m rule module, not {rule_path.name!r}")
             if rule_text is not None:
                 if rule_path.exists():
                     raise WorkspaceError(f"{rule} already exists; omit rule_text to use it as is")

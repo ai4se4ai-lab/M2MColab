@@ -75,6 +75,7 @@ class AutoM2M:
         self.repair_enabled = repair_enabled
         self.workdir = Path(workdir or tempfile.mkdtemp(prefix="am2m_run_"))
         self.log = log or (lambda *a, **k: None)
+        self.session: Session | None = None  # the last run's session (kept for persistence/inspection)
 
     # ---- LLM steps ----------------------------------------------------
     def _builder(self, prompt: str) -> dict | None:
@@ -130,6 +131,7 @@ class AutoM2M:
             return out
         ctx = RunContext(bench)
         session = Session(ct, self.llm, ctx, k=self.k, temperature=self.temperature)
+        self.session = session
         bench.bind(session.current_bodies)
         res = session.run()
         for j in range(self.k_rep if self.repair_enabled else 0):
@@ -147,6 +149,7 @@ class AutoM2M:
             out.repairs.append(info)
             if info["mode"] == "none":
                 break
+            self.session = session
             res = session.run()
         out.deliverables, out.accepted, out.phi = res.deliverables, res.accepted, res.phi
         out.final_team = session.ct.typed.raw

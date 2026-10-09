@@ -1,5 +1,5 @@
 {
-  "description": "agentm2m: announce a workspace at session start; re-validate the team after edits to its spec, rules or helpers",
+  "description": "agentm2m: announce a workspace (and an AutoM2M team) at session start; re-validate the team after edits to its spec, rules, helpers or typed-team JSON",
   "hooks": {
     "SessionStart": [
       {

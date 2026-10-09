@@ -11,7 +11,7 @@
       "name": "agentm2m",
       "source": "./agentm2m",
       "description": "Agent teams whose hand-offs are model-to-model transformations with trace-based change propagation.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "development"
     }
   ]

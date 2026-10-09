@@ -275,7 +275,7 @@ def compile_team(team: TypedTeam, task: TaskLike, workdir: Path | None = None) -
 class _NullLLM(LLMBackend):
     name = "null"
 
-    def generate(self, prompt: str, *, temperature: float = 0.2) -> str:  # pragma: no cover
+    def generate(self, prompt: str, *, temperature: float = 0.2, **kw) -> str:  # pragma: no cover
         return ""
 
 

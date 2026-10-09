@@ -36,6 +36,48 @@ Requires [uv](https://docs.astral.sh/uv/) (the engine is a Python package starte
 Templates: `devteam` (the running example of the agentm2m paper), `research` (multi-source hand-off),
 `incident` (Lift binding and executable validator). Custom teams: `/agentm2m:author-handoff`.
 
+### AutoM2M: let Claude build the team, let the checker admit it
+
+```
+/agentm2m:auto-build calculator.py   # task -> typed team -> W1-W6 check -> run -> phi -> code
+/agentm2m:check team.typed-team.json # W1-W6 on a typed team, with fixes for each violation
+/agentm2m:diagnose                   # phi failed: locate the fault, propose a checked repair
+```
+
+The task is a Python class whose methods to implement are stubs (docstring with `>>>` examples, body
+`pass` / `...` / `raise NotImplementedError`), or one stub function. Claude acts as the **builder** and
+writes a typed team (agents, forms, hand-off rules, footprints, library validators); the deterministic
+checker admits it only if W1-W6 hold (well typed, one writer, complete, anchored coverage, the engine
+decides done, right tools). The engine then runs it; Claude fills each value from its footprint, and the
+library validators (which execute the code against the documented examples and the team's tests)
+decide. The run is done only when the engine's phi holds. State lives in `.agentm2m/auto/`.
+
+## Use the hosted service instead of a local engine
+
+The same tools are served over HTTP by `agentm2m serve` (web app, REST API and `/mcp` in one process).
+Create an API key on its web page (Services -> API keys). Then either:
+
+**Keep the plugin, run on the service.** Start Claude Code with
+
+```
+AGENTM2M_URL=https://<host> AGENTM2M_API_KEY=<api key> claude
+```
+
+(optionally `AGENTM2M_PROJECT=<name>`; every key has its own projects). The plugin's MCP server then
+forwards every tool call to the service under the same tool names, so all skills, subagents and hooks
+work unchanged; nothing is stored in `.agentm2m/` locally.
+
+**Or connect without the plugin:**
+
+```
+claude mcp add --transport http agentm2m https://<host>/mcp --header "Authorization: Bearer <api key>"
+```
+
+(tools are then named `mcp__agentm2m__*`; add `--header "X-AgentM2M-Project: <name>"` to pick a project).
+
+A hosted server executes submitted code only in an isolating sandbox (see the main README); its Status
+tab shows whether code execution is enabled.
+
 ## How values get produced
 
 | `AGENTM2M_LLM` | Who fills `@llm` bindings |
@@ -52,6 +94,8 @@ Set it in the environment Claude Code starts in, e.g. `AGENTM2M_LLM=anthropic LL
 - `.agentm2m/rules/*.agentm2m`: hand-off rules (ATL-style, with `@llm` and `@check`).
 - `.agentm2m/rules/helpers.py`: validators and helper functions.
 - `.agentm2m/state/state.json`: view models, trace links, stamps, and runtime team changes. Managed by the engine.
+- `.agentm2m/auto/`: AutoM2M `task.json`, the admitted `team.json`, `state.json` (run state) and
+  `history.json` (admission rounds, runs, faults). Managed by the engine; change the team with `auto_submit_team`.
 
 ## Security and privacy
 

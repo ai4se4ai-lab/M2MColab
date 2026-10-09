@@ -1,23 +1,49 @@
 """Anthropic Messages API backend."""
 from __future__ import annotations
 
+import json
+
 import requests
 
 from .base import LLMBackend, LLMError
+
+_JSON_HINT = "Respond with one JSON object only: no prose, no code fences."
 
 
 class AnthropicBackend(LLMBackend):
     name = "anthropic"
 
-    def __init__(self, api_key: str, model: str, *, timeout: float = 120.0) -> None:
+    def __init__(self, api_key: str, model: str, *, timeout: float = 300.0, max_tokens: int = 4096) -> None:
         if not api_key:
             raise LLMError("ANTHROPIC_API_KEY is not set")
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
+        self.max_tokens = max_tokens
 
-    def generate(self, prompt: str, *, temperature: float = 0.2) -> str:
+    def generate(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        format: str | dict | None = None,
+        system: str | None = None,
+        max_tokens: int | None = None,
+    ) -> str:
         self.last_usage = None
+        sys_parts = [system] if system else []
+        if format is not None:
+            # No native JSON mode: ask for it, and (for a schema) show the schema.
+            sys_parts.append(_JSON_HINT if format == "json" else f"{_JSON_HINT} It must conform to this JSON Schema:\n"
+                             + json.dumps(format))
+        body: dict = {
+            "model": self.model,
+            "max_tokens": int(max_tokens or self.max_tokens),
+            "temperature": temperature,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if sys_parts:
+            body["system"] = "\n\n".join(sys_parts)
         try:
             resp = requests.post(
                 "https://api.anthropic.com/v1/messages",
@@ -26,12 +52,7 @@ class AnthropicBackend(LLMBackend):
                     "anthropic-version": "2023-06-01",
                     "content-type": "application/json",
                 },
-                json={
-                    "model": self.model,
-                    "max_tokens": 1024,
-                    "temperature": temperature,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
+                json=body,
                 timeout=self.timeout,
             )
             resp.raise_for_status()

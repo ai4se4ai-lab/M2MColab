@@ -116,8 +116,68 @@ print(out.status, out.admission_rounds, list(out.deliverables))
 deliverables, the first and final team, every diagnostic, fault report and repair, and timing.
 `llm.by_role()` breaks token use down by pipeline step (builder, binding, attribution, …).
 
-> The builder currently needs the **Ollama** backend: it relies on `generate(format="json",
-> max_tokens=...)` and `chat()`, which the Anthropic, OpenAI, mock and host backends do not accept.
+Every backend now accepts `generate(format=..., system=..., max_tokens=...)`, so the builder also
+runs on Anthropic and OpenAI. The multi-turn baselines in `evaluation/` still need Ollama's `chat()`.
+
+### Drive it step by step (host mode: Claude, or you, is the builder)
+
+`agentm2m auto` keeps an AutoM2M session in `.agentm2m/auto/` (task, admitted team, run state,
+history), so the loop can be driven step by step and resumed:
+
+```bash
+agentm2m auto task calculator.py           # a class with stub methods (docstrings with >>> examples), or a stub function
+agentm2m auto propose --prompt-only        # the builder prompt; answer it with a typed-team JSON
+agentm2m auto submit team.json             # W1-W6: admitted, or rejected with diagnostics (propose then gives a revise prompt)
+agentm2m auto run                          # fixpoint + phi; open values are pending
+agentm2m auto bindings                     # footprint-bounded prompts to answer
+agentm2m auto fill <target_key> <binding> answer.txt <footprint_version>
+agentm2m auto status --brief               # phi
+agentm2m auto deliverable --code           # the assembled class
+agentm2m auto check teams/*.json           # the checker alone
+agentm2m auto --llm anthropic solve calculator.py   # or the whole loop unattended with an engine LLM
+```
+
+The same operations are MCP tools (`auto_task_set`, `auto_check`, `auto_propose`, `auto_submit_team`,
+`auto_run`, `auto_next_bindings`, `auto_submit_binding`, `auto_status`, `auto_attribute`,
+`auto_deliverable`, `auto_solve`, `auto_reset`) and, in the Claude Code plugin, the skills
+`/agentm2m:auto-build`, `/agentm2m:check` and `/agentm2m:diagnose`.
+
+## Run the service (web app + REST API + MCP)
+
+One process serves the project site, a **Services** tab (status, API keys, checker playground, API
+docs, pricing), the REST API and the MCP endpoint:
+
+```bash
+pip install -e ".[serve]" && (cd web && npm ci && npm run build)
+agentm2m serve --port 8765          # http://localhost:8765, MCP at /mcp, API docs at /api/docs
+# or: docker compose up --build
+```
+
+Create an API key in Services → API keys (self-service, no login; keys are stored hashed, every key
+is on the free tier and nothing is restricted yet), then connect Claude Code:
+
+```bash
+claude mcp add --transport http agentm2m http://localhost:8765/mcp --header "Authorization: Bearer <key>"
+```
+
+or keep the Claude Code plugin and point it at the service: `AGENTM2M_URL=http://localhost:8765
+AGENTM2M_API_KEY=<key> claude` (its MCP server then forwards every tool call there).
+
+**Code execution.** Behaviour validators run the submitted code (examples, tests). On a shared
+service that is code from every key holder, so the server **fails closed**: it executes code only in
+an isolating sandbox, `AGENTM2M_SANDBOX=bwrap` (bubblewrap: no network, own PID namespace, only system
+directories mounted read-only, so the data directory and other tenants are invisible) or
+`AGENTM2M_SANDBOX=command` with your own wrapper in `AGENTM2M_SANDBOX_CMD` (nsjail, firejail, a VM).
+The sandbox is self-tested at start-up; if it cannot run, `/api/health` and the Status tab say so and
+those values are refused with 403, while checking, task/team submission and status keep working.
+`AGENTM2M_ALLOW_UNSANDBOXED_EXEC=1` turns the protection off for a deployment where every key holder
+is trusted. The local CLI and plugin keep the default `process` mode (you run your own team's code).
+
+Each key gets its own projects (`X-AgentM2M-Project` header, default `default`). By default the server
+never calls an LLM: the client's Claude is the builder and fills the values. Set `AGENTM2M_SOLVE_LLM`
+(e.g. `anthropic`, with `ANTHROPIC_API_KEY` and `LLM_MODEL`) to enable unattended `auto_solve`. Keys and
+projects live in `$AGENTM2M_DATA_DIR` (default `~/.agentm2m-service`). Tiers are defined in
+[`server/keys.py`](src/agentm2m/server/keys.py) (`TIERS`, `enforce`), ready for paid plans.
 
 ---
 
@@ -127,8 +187,11 @@ deliverables, the first and final team, every diagnostic, fault report and repai
 |---|---|
 | [`src/agentm2m/auto/`](src/agentm2m/auto/) | **AutoM2M**: typed-team format ([`typed_team.py`](src/agentm2m/auto/typed_team.py)), validator library ([`vlib.py`](src/agentm2m/auto/vlib.py)), checker, compiler, loop, attribution, repair, builder prompts and worked example. |
 | [`src/agentm2m/llm/metered.py`](src/agentm2m/llm/metered.py) | Per-role call accounting, token budget, transcripts. |
-| [`src/agentm2m/`](src/agentm2m/) (rest) | The AgentM2M 0.2.0 engine: metamodels, rule language, bindings, trace, obligations, team runtime, HOTs, workspace, CLI, MCP server. |
-| [`plugin/`](plugin/) | The AgentM2M Claude Code plugin (AgentM2M only; no AutoM2M tools yet). |
+| [`src/agentm2m/auto/workspace.py`](src/agentm2m/auto/workspace.py), [`pywork.py`](src/agentm2m/auto/pywork.py) | Persisted, step-by-step AutoM2M sessions (host mode); the Python task model, skeleton lifting, sandbox and Workbench. |
+| [`src/agentm2m/server/`](src/agentm2m/server/) | The hosted service: FastAPI app, MCP over streamable HTTP at `/mcp`, API keys (SQLite), metrics. |
+| [`src/agentm2m/`](src/agentm2m/) (rest) | The AgentM2M engine: metamodels, rule language, bindings, trace, obligations, team runtime, HOTs, workspace, CLI, MCP server. |
+| [`plugin/`](plugin/) | The Claude Code plugin: AgentM2M and AutoM2M tools, skills, agents and hooks. |
+| [`web/`](web/) | The project site and the Services tab (React + Vite). |
 | [`teams/`](teams/) | Hand-written typed teams: the seeded DevTeam proposal, admitted teams (G1/G2), the AgentM2M `chakin` pilot team and its repair, and the ClassEval reference team. |
 | [`evaluation/`](evaluation/) | Benchmarks (ClassEval, HumanEval+), sandbox, baselines (`single`, `free`, `critic`, `schema`), the run matrix, and the RQ1–RQ3 scripts and analysis. |
 | [`examples/`](examples/) | AgentM2M examples (hand-written teams). |
@@ -223,7 +286,7 @@ infinite loops, exact obligations after edits) carries over. Engine changes are 
 engine-keyed trace identity, a richer Ollama backend and the metered backend.
 
 The AgentM2M CLI (`agentm2m`), MCP server (`agentm2m-mcp`), workspaces and Claude Code plugin still
-work as before; see [`plugin/`](plugin/) and [`examples/`](examples/).
+work as before, and now also expose AutoM2M; see [`plugin/`](plugin/) and [`examples/`](examples/).
 
 ---
 
@@ -236,7 +299,8 @@ The main limits today:
 - **Narrow team language.** Hand-off graphs must be acyclic (no review → fix loops), LLM values cannot
   create new objects (no task decomposition), and W2 allows only one writer per form.
 - **Validator strength is not checked.** Half of the runs where φ held still failed hidden tests.
-- **Not in Claude Code**, no host mode, and no persistence of AutoM2M sessions.
+- **Attribution in host mode only locates faults.** Classifying them needs replays, which need an
+  engine LLM (`auto_attribute` classifies when one is configured).
 
 [`docs/agentm2m-autom2m.md`](docs/agentm2m-autom2m.md) lists all 45 known limitations and a phased
 plan: domain packs and a validator registry, structure-creating bindings and bounded cycles, backend

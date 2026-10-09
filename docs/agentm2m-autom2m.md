@@ -383,6 +383,15 @@ them.
 
 ## 7. The Claude Code plugin: unchanged, and why that matters
 
+> **Update (0.3.0, branch `dev-web-v0`).** Most of this section and items 11, 20, 27, 36 and 37 of
+> Section 10 are now addressed: the plugin and MCP server expose 12 `auto_*` tools, host mode lets
+> Claude act as the builder and fill the values, sessions persist in `.agentm2m/auto/`
+> ([`auto/workspace.py`](../src/agentm2m/auto/workspace.py)), the Workbench and sandbox moved into the
+> library ([`auto/pywork.py`](../src/agentm2m/auto/pywork.py)), every backend accepts
+> `format` / `system` / `max_tokens`, and `agentm2m serve` hosts the web app, REST API and MCP endpoint
+> with API keys ([`server/`](../src/agentm2m/server/)). In host mode `auto_attribute` locates faults but
+> does not classify them (replays need an engine LLM). The text below describes the 0.2.0 state.
+
 The [`plugin/`](../plugin/) directory is the AgentM2M 0.2.0 plugin as it was (see
 [`plugin/DEVELOPMENT_PLAN.md`](../plugin/DEVELOPMENT_PLAN.md) and its
 [CHANGELOG](../plugin/agentm2m/CHANGELOG.md)):

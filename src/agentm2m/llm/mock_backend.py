@@ -19,7 +19,7 @@ class MockBackend(LLMBackend):
         self._script = list(script) if script else None
         self._script_pos = 0
 
-    def generate(self, prompt: str, *, temperature: float = 0.2) -> str:
+    def generate(self, prompt: str, *, temperature: float = 0.2, **kw) -> str:
         if self._script is not None:
             if self._script_pos < len(self._script):
                 value = self._script[self._script_pos]

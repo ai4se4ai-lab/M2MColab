@@ -11,9 +11,6 @@ from __future__ import annotations
 
 import ast
 import re
-import subprocess
-import tempfile
-from pathlib import Path
 
 
 class Rejected:
@@ -66,13 +63,6 @@ def run_pytest_oracle(oracle_body: str, code_body: str, *, timeout: float = 15.0
     Used by examples whose @check needs to actually execute the generated
     test against a stub/implementation rather than just parse it.
     """
-    with tempfile.TemporaryDirectory() as tmp:
-        module_path = Path(tmp) / "candidate.py"
-        module_path.write_text(code_body + "\n\n" + oracle_body)
-        try:
-            result = subprocess.run(
-                ["python3", str(module_path)], capture_output=True, timeout=timeout, cwd=tmp
-            )
-        except subprocess.TimeoutExpired:
-            return False
-        return result.returncode == 0
+    from ..auto.sandbox import run_python  # the one place untrusted code runs
+
+    return run_python(code_body + "\n\n" + oracle_body, timeout=timeout).ok

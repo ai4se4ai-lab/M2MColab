@@ -2,16 +2,14 @@
 
 Validators return a `Rejected(reason)` instead of a bare False so the reason
 is fed back to whoever produces the next attempt. Validators that execute
-generated code run it in a separate process with a timeout.
+generated code run it through agentm2m.auto.sandbox (resource limits, a
+timeout, and real isolation when AGENTM2M_SANDBOX=bwrap|command).
 """
 from __future__ import annotations
 
 import re
-import subprocess
-import sys
-import tempfile
-from pathlib import Path
 
+from agentm2m.auto.sandbox import run_python
 from agentm2m.engine.validators import (
     Rejected,
     python_compiles,
@@ -78,13 +76,10 @@ def failsOnStub(oracle_src: str, timeout: float = 10.0):
         "    sys.exit(0)\n"
         "sys.exit(4)\n"
     )
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "oracle_check.py"
-        path.write_text(harness)
-        try:
-            rc = subprocess.run([sys.executable, str(path)], capture_output=True, timeout=timeout, cwd=tmp).returncode
-        except subprocess.TimeoutExpired:
-            return Rejected(f"oracle did not finish within {timeout:.0f}s")
+    res = run_python(harness, timeout=timeout)  # sandboxed: see agentm2m.auto.sandbox
+    if res.timeout:
+        return Rejected(f"oracle did not finish within {timeout:.0f}s")
+    rc = res.returncode
     if rc == 0:
         return True
     if rc == 3:

@@ -23,5 +23,5 @@ class HostBackend(LLMBackend):
         # are reported as blocked rather than offered with empty context.
         self.incomplete: set[str] = set()
 
-    def generate(self, prompt: str, *, temperature: float = 0.2) -> str:
+    def generate(self, prompt: str, *, temperature: float = 0.2, **kw) -> str:
         raise PendingSample(prompt=prompt, fp_digest="")

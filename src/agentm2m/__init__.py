@@ -5,4 +5,4 @@ See docs/ARCHITECTURE.md for how the modules here map onto the paper
 execution), and Propositions 1-3.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

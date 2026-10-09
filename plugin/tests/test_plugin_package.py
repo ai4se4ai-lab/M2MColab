@@ -34,7 +34,7 @@ def _frontmatter(path: Path) -> dict:
 
 def _server_tools() -> set[str]:
     src = (REPO / "src/agentm2m/mcp_server.py").read_text()
-    return set(re.findall(r"@mcp\.tool\(\)\ndef (\w+)\(", src))
+    return set(re.findall(r"@mcp\.tool\(\)\n(?:@\w+\n)*def (\w+)\(", src))
 
 
 def test_manifests_are_valid_json_and_consistent():
@@ -62,23 +62,24 @@ def test_mcp_config_launches_the_engine_entry_point():
 
 def test_skills_have_frontmatter_and_name_real_tools():
     tools = _server_tools()
-    assert len(tools) == 12
+    assert len(tools) == 24
     skills = sorted((PLUGIN / "skills").glob("*/SKILL.md"))
-    assert {p.parent.name for p in skills} == {"init", "run", "change", "evolve", "status", "author-handoff", "agentm2m-concepts"}
+    assert {p.parent.name for p in skills} == {"init", "run", "change", "evolve", "status", "author-handoff", "agentm2m-concepts",
+                                                "auto-build", "check", "diagnose"}
     for p in skills:
         fm = _frontmatter(p)
         assert fm["name"] == p.parent.name
         assert 40 < len(fm["description"]) < 400
         body = p.read_text()
         for used in re.findall(r"`(\w+)`", body):
-            if used.endswith(("_init", "_status", "_validate", "_show", "_edit", "_binding", "_bindings", "_query", "_evolve")):
+            if used.startswith("auto_") or used.endswith(("_init", "_status", "_validate", "_show", "_edit", "_binding", "_bindings", "_query", "_evolve")):
                 assert used in tools, f"{p.parent.name} mentions unknown tool {used}"
 
 
 def test_agents_only_allowlist_existing_tools():
     tools = _server_tools()
     agents = {p.stem: _frontmatter(p) for p in (PLUGIN / "agents").glob("*.md")}
-    assert set(agents) == {"binding-worker", "handoff-architect"}
+    assert set(agents) == {"binding-worker", "handoff-architect", "team-builder", "auto-binding-worker"}
     for name, fm in agents.items():
         for t in [x.strip() for x in fm["tools"].split(",")]:
             if t.startswith("mcp__"):
@@ -87,6 +88,8 @@ def test_agents_only_allowlist_existing_tools():
     # footprint discipline: the worker cannot read the repository
     worker_tools = {x.strip() for x in agents["binding-worker"]["tools"].split(",")}
     assert worker_tools == {SERVER_PREFIX + "next_bindings", SERVER_PREFIX + "submit_binding"}
+    auto_worker = {x.strip() for x in agents["auto-binding-worker"]["tools"].split(",")}
+    assert auto_worker == {SERVER_PREFIX + "auto_next_bindings", SERVER_PREFIX + "auto_submit_binding"}
 
 
 def test_hooks_reference_executable_scripts():
@@ -155,5 +158,5 @@ def test_claude_sees_all_components():
     r = subprocess.run(["claude", "--plugin-dir", str(PLUGIN), "plugin", "details", "agentm2m"],
                        capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stdout + r.stderr
-    assert "Skills (7)" in r.stdout and "Agents (2)" in r.stdout
+    assert "Skills (10)" in r.stdout and "Agents (4)" in r.stdout
     assert "Hooks (2)" in r.stdout and "MCP servers (1)" in r.stdout

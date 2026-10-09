@@ -1,7 +1,7 @@
 """OCL-callable helpers for the IncidentResponseTeam rule modules.
 
 `passesDryRun` is an executable-oracle validator: it runs the proposed
-dry-run script in a separate Python process (with a timeout) and accepts it
+dry-run script through agentm2m.auto.sandbox (with a timeout) and accepts it
 only if it exits 0.
 """
 from __future__ import annotations

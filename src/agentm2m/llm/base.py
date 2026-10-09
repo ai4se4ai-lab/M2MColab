@@ -18,8 +18,21 @@ class LLMBackend(ABC):
     last_usage: tuple[int, int] | None = None
 
     @abstractmethod
-    def generate(self, prompt: str, *, temperature: float = 0.2) -> str:
-        """Return one sampled completion for `prompt`."""
+    def generate(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        format: str | dict | None = None,
+        system: str | None = None,
+        max_tokens: int | None = None,
+    ) -> str:
+        """Return one sampled completion for `prompt`.
+
+        `format` ("json" or a JSON schema) asks for structured output,
+        `system` replaces the default system prompt and `max_tokens` caps the
+        completion; the AutoM2M builder relies on all three. A backend that
+        cannot honour `format` must still return the text it got."""
         raise NotImplementedError
 
     def count_tokens(self, text: str) -> int:

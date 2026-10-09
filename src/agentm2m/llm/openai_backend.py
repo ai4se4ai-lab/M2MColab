@@ -17,17 +17,29 @@ class OpenAIBackend(LLMBackend):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
-    def generate(self, prompt: str, *, temperature: float = 0.2) -> str:
+    def generate(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        format: str | dict | None = None,
+        system: str | None = None,
+        max_tokens: int | None = None,
+    ) -> str:
         self.last_usage = None
+        messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
+        body: dict = {"model": self.model, "messages": messages, "temperature": temperature}
+        if max_tokens:
+            body["max_tokens"] = int(max_tokens)
+        if format == "json":
+            body["response_format"] = {"type": "json_object"}
+        elif isinstance(format, dict):
+            body["response_format"] = {"type": "json_schema", "json_schema": {"name": "output", "schema": format}}
         try:
             resp = requests.post(
                 f"{self.base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {self.api_key}"},
-                json={
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": temperature,
-                },
+                json=body,
                 timeout=self.timeout,
             )
             resp.raise_for_status()

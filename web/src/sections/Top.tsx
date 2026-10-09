@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Article, GithubLogo, Graph, Quotes, CircleHalf } from '@phosphor-icons/react'
+import { Article, GithubLogo, Graph, Quotes, CircleHalf, Plugs } from '@phosphor-icons/react'
+import type { View } from '../App'
 
 export const REPO = 'https://github.com/ai4se4ai-lab/M2MColab'
 
@@ -13,9 +14,11 @@ const links = [
   ['cite', 'Cite'],
 ] as const
 
-export function Nav({ onTheme }: { onTheme: () => void }) {
+export function Nav({ onTheme, view }: { onTheme: () => void; view: View }) {
   const [current, setCurrent] = useState<string>('')
+  const onProject = view.page === 'project'
   useEffect(() => {
+    if (!onProject) return
     const els = links.map(([id]) => document.getElementById(id)).filter(Boolean) as HTMLElement[]
     const io = new IntersectionObserver(
       (entries) => {
@@ -26,20 +29,32 @@ export function Nav({ onTheme }: { onTheme: () => void }) {
     )
     els.forEach((el) => io.observe(el))
     return () => io.disconnect()
-  }, [])
+  }, [onProject])
   return (
     <header className="nav">
       <div className="wrap">
         <a className="brand" href="#top">
           AutoM2M
         </a>
-        <nav className="nav-links" aria-label="Sections">
-          {links.map(([id, label]) => (
-            <a key={id} href={`#${id}`} aria-current={current === id ? 'true' : undefined}>
-              {label}
-            </a>
-          ))}
-        </nav>
+        <div className="view-switch" role="tablist" aria-label="Site areas">
+          <a href="#top" role="tab" aria-selected={onProject}>
+            Project
+          </a>
+          <a href="#/services/status" role="tab" aria-selected={!onProject}>
+            <Plugs size={14} /> Services
+          </a>
+        </div>
+        {onProject ? (
+          <nav className="nav-links" aria-label="Sections">
+            {links.map(([id, label]) => (
+              <a key={id} href={`#${id}`} aria-current={current === id ? 'true' : undefined}>
+                {label}
+              </a>
+            ))}
+          </nav>
+        ) : (
+          <span className="nav-spacer" />
+        )}
         <button className="theme-btn" onClick={onTheme} aria-label="Toggle light and dark theme">
           <CircleHalf size={14} weight="fill" /> Theme
         </button>
@@ -81,6 +96,9 @@ export function Hero() {
           </a>
           <a className="btn" href="#explorer">
             <Graph size={18} /> Pipeline explorer
+          </a>
+          <a className="btn" href="#/services/status">
+            <Plugs size={18} /> Use the service
           </a>
           <a className="btn" href="#cite">
             <Quotes size={18} /> BibTeX

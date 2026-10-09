@@ -22,7 +22,10 @@ def _is_many(v: Any) -> bool:
 def nav(obj: Any, path: str) -> Any:
     """Navigate `a.b.c` from obj, flattening many-valued references."""
     cur: Any = obj
-    for seg in path.split("."):
+    segs = path.split(".")
+    if any(not seg or seg.startswith("_") for seg in segs):
+        raise ValueError(f"path {path!r} may only navigate model features")
+    for seg in segs:
         if _is_many(cur):
             out = []
             for x in cur:

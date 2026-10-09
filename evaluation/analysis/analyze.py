@@ -349,6 +349,35 @@ def mutation_table():
     (TAB / "rq2_mutation.tex").write_text("\n".join(lines) + "\n")
 
 
+def free_team_audit():
+    """The Who&When specification audit applied to our Free/Critic builders' teams,
+    split by succeeding and failing runs (Who&When has failures only)."""
+    from evaluation.rq1.audit_whowhen import OUTPUT_PAT, wb
+
+    out = {}
+    for bench in BENCH:
+        for model in MODELS:
+            for c in ("free", "critic"):
+                files = glob.glob(str(ROOT / "results" / "runs" / bench / model.replace(":", "_") / c / "*.json"))
+                acc = {True: Counter(), False: Counter()}
+                for f in files:
+                    d = json.loads(Path(f).read_text())
+                    team = (d.get("detail") or {}).get("team") or {}
+                    names = [a["name"] for a in team.get("agents", [])]
+                    k = bool(d.get("success"))
+                    acc[k]["teams"] += 1
+                    for a in team.get("agents", []):
+                        acc[k]["roles"] += 1
+                        acc[k]["roles_naming"] += any(wb(o).search(a.get("role", "")) for o in names if o != a["name"])
+                        acc[k]["roles_output"] += bool(OUTPUT_PAT.search(a.get("role", "")))
+                    plan = team.get("plan", [])
+                    acc[k]["plans_assigning"] += any(wb(n).search(p) for p in plan for n in names)
+                    acc[k]["steps"] += len(plan)
+                    acc[k]["steps_assigned"] += sum(1 for p in plan if any(wb(n).search(p) for n in names))
+                out[f"{bench}|{model}|{c}"] = {("success" if k else "failure"): dict(v) for k, v in acc.items()}
+    S["free_audit"] = out
+
+
 def rq1_analysis():
     out = {}
     for src in ("whowhen", "ours"):
@@ -482,6 +511,7 @@ def main() -> int:
         fig_cost()
     fig_scale()
     mutation_table()
+    free_team_audit()
     rq1_analysis()
     rq3_analysis()
     write_numbers(rows)

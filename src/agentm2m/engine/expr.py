@@ -107,7 +107,20 @@ def eval_expr(node: Tree | Token | Any, scope: Scope, helpers: Helpers | None = 
     raise OCLEvalError(f"cannot evaluate expression node '{data}'")
 
 
+# Rule expressions may come from people other than the operator (a hosted
+# service's tenants), so navigation stays on model features and helpers:
+# private/dunder names would reach Python internals (`x.__class__...`), and
+# str.format can read arbitrary attributes through its format string.
+_FORBIDDEN = frozenset({"format", "format_map", "mro"})
+
+
+def _guard_name(name: str) -> None:
+    if name.startswith("_") or name in _FORBIDDEN:
+        raise OCLEvalError(f"'{name}' is not accessible from rule expressions")
+
+
 def _get_attr(receiver: Any, name: str, helpers: Helpers) -> Any:
+    _guard_name(name)
     if isinstance(receiver, dict) and name in receiver:
         return receiver[name]
     if not isinstance(receiver, dict) and hasattr(receiver, name):
@@ -121,6 +134,7 @@ def _get_attr(receiver: Any, name: str, helpers: Helpers) -> Any:
 
 
 def _call_method(receiver: Any, name: str, args: list[Any], helpers: Helpers) -> Any:
+    _guard_name(name)
     if name in helpers:
         return helpers[name](receiver, *args)
     method = getattr(receiver, name, None)

@@ -171,6 +171,10 @@ def accept_sample(
                     else "it failed the validator: wrong format, or not what was asked"
                 )
         except Exception as exc:  # noqa: BLE001 - a failing @check is a rejection, not a crash
+            from ..auto.sandbox import SandboxRefused
+
+            if isinstance(exc, SandboxRefused):
+                raise  # a policy refusal, not a verdict on the value: no attempt is spent
             ok, reason = False, f"@check raised: {exc}"
 
     if ok:
