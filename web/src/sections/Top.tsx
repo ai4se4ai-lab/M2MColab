@@ -69,23 +69,21 @@ export function Hero() {
       <div className="wrap">
         <p className="eyebrow">When the team writes itself</p>
         <h1>
-          AutoM2M: Checked Composition for <br className="br-lg" />
-          Automatically Assembled LLM Agent Teams
+          AutoM2M: Checking LLM-Assembled <br className="br-lg" />
+          Agent Teams with Model Transformations
         </h1>
         <p className="lede">
-          Team builders describe every agent in prose, so nothing checks that the parts fit. AutoM2M makes the builder hand
-          over a <em>typed team</em>, and lets a deterministic checker decide whether it may run.
+          Team builders describe every agent in prose, so nothing checks that the parts fit: the <em>composition gap</em>.
+          AutoM2M makes the builder hand over a <em>typed team</em> of views and hybrid model-to-model hand-offs, lets a
+          deterministic checker decide whether it may run, and runs it on AgentHOT. LLMs propose; programs decide.
         </p>
-        <div className="authors">
-          Author list forthcoming <span className="ph-tag">placeholder</span>
-        </div>
+        <div className="authors">Majid Babaei</div>
         <div className="affils">
-          <span>
-            <sup>1</sup>AI4SE4AI Lab
-          </span>
+          <span>School of Computing, University of the Fraser Valley, BC, Canada</span>
         </div>
         <p className="note">
-          Builds on AgentM2M: M2M Transformations for Agentic Collaborations in Software Engineering.
+          AgentHOT (Agent Hand-Off Transformations) is AutoM2M's execution layer: a compiler and a runtime in which a
+          deterministic engine fixes the structure of every hand-off and LLMs fill only its values.
         </p>
         <div className="btn-row">
           <a className="btn primary" href="#cite" aria-label="Paper, forthcoming">
@@ -121,7 +119,7 @@ export function Hero() {
             <div className="num">
               5<small>defects</small>
             </div>
-            <p>composition defects a team builder can introduce, each ruled out by one condition</p>
+            <p>composition defects (D1-D5) a team builder can introduce, each ruled out by one condition</p>
           </div>
           <div className="stat">
             <div className="num pending">

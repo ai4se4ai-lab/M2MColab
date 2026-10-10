@@ -1,6 +1,6 @@
 """End-to-end over MCP stdio: the exact process Claude Code launches.
 
-Spawns `agentm2m-mcp` as a subprocess (the same entry point `.mcp.json` runs
+Spawns `autom2m-mcp` as a subprocess (the same entry point `.mcp.json` runs
 through uvx), drives a full host-mode team run to phi through tool calls,
 and checks that user errors surface as readable tool errors.
 """
@@ -30,22 +30,22 @@ EXPECTED_TOOLS = {
 
 TEAMS = REPO / "teams"
 SKELETON = 'def add(a, b):\n    """Return a + b.\n    >>> add(1, 2)\n    3\n    """\n'
-TESTS = "```python\nimport unittest\nclass T(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(2, 2), 4)\n```"
+TESTS = "```python\nimport unittest\nclass T(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(1, 2), 3)\n        self.assertEqual(add(2, 2), 4)\n```"
 CODE = "```python\ndef add(a, b):\n    return a + b\n```"
 
 
 def _server_cmd() -> list[str]:
-    exe = shutil.which("agentm2m-mcp") or str(Path(sys.executable).with_name("agentm2m-mcp"))
+    exe = shutil.which("autom2m-mcp") or str(Path(sys.executable).with_name("autom2m-mcp"))
     if os.path.exists(exe):
         return [exe]
-    return [sys.executable, "-m", "agentm2m.mcp_server"]
+    return [sys.executable, "-m", "autom2m.mcp_server"]
 
 
 def _params(project: Path, **env) -> StdioServerParameters:
     cmd = _server_cmd()
     return StdioServerParameters(
         command=cmd[0], args=cmd[1:],
-        env={"AGENTM2M_PROJECT_DIR": str(project), "PATH": os.environ.get("PATH", ""),
+        env={"AGENTHOT_PROJECT_DIR": str(project), "PATH": os.environ.get("PATH", ""),
              "PYTHONPATH": str(REPO / "src"), **env},
     )
 
@@ -110,7 +110,7 @@ def test_full_host_workflow_over_stdio(project: Path):
 
                 evo = await _call(s, "team_evolve", {
                     "agent": "SecurityReviewer", "view": "Sec", "handoff": "Arch2Sec",
-                    "rule": "rules/extra/Arch2Sec.agentm2m", "view_spec_file": "rules/extra/SecurityReviewer.view.yaml"})
+                    "rule": "rules/extra/Arch2Sec.agenthot", "view_spec_file": "rules/extra/SecurityReviewer.view.yaml"})
                 assert evo["existing_matches"] == 2
                 sec = await _call(s, "next_bindings", {"agent": "SecurityReviewer", "limit": 10})
                 assert len(sec["bindings"]) == 4
@@ -123,14 +123,14 @@ def test_full_host_workflow_over_stdio(project: Path):
                 msg = await _call_err(s, "model_show", {"view": "Nope"})
                 assert "unknown view" in msg
                 msg = await _call_err(s, "team_evolve", {"agent": "a", "view": "V", "handoff": "h", "rule": "r", "view_spec_file": "../../etc/passwd"})
-                assert "inside .agentm2m" in msg
+                assert "inside .agenthot" in msg
 
     anyio.run(main)
 
 
 def test_engine_backend_over_stdio(project: Path):
     async def main():
-        async with stdio_client(_params(project, AGENTM2M_LLM="mock")) as (r, w):
+        async with stdio_client(_params(project, AGENTHOT_LLM="mock")) as (r, w):
             async with ClientSession(r, w) as s:
                 await s.initialize()
                 await _call(s, "team_init", {"template": "research"})
@@ -169,7 +169,7 @@ def test_autom2m_host_workflow_over_stdio(project: Path):
                 assert sub["admitted"] is False
                 assert (await _call(s, "auto_propose", {}))["mode"] == "revise"
 
-                good = (TEAMS / "classeval_reference.json").read_text()
+                good = (TEAMS / "pair_team.json").read_text()
                 sub = await _call(s, "auto_submit_team", {"team_json": good})
                 assert sub["admitted"] is True and sub["mode"] == "admitted"
                 assert (await _call(s, "auto_check", {}))["admitted"] is True
@@ -211,11 +211,11 @@ def hosted(tmp_path, monkeypatch):
 
     import uvicorn
 
-    from agentm2m.server.app import create_app
+    from autom2m.server.app import create_app
 
-    monkeypatch.setenv("AGENTM2M_LLM", "host")
-    monkeypatch.delenv("AGENTM2M_SANDBOX", raising=False)
-    monkeypatch.setenv("AGENTM2M_ALLOW_UNSANDBOXED_EXEC", "1")
+    monkeypatch.setenv("AGENTHOT_LLM", "host")
+    monkeypatch.delenv("AGENTHOT_SANDBOX", raising=False)
+    monkeypatch.setenv("AGENTHOT_ALLOW_UNSANDBOXED_EXEC", "1")
     with socket.socket() as so:
         so.bind(("127.0.0.1", 0))
         port = so.getsockname()[1]
@@ -234,7 +234,7 @@ def hosted(tmp_path, monkeypatch):
     yield url, key
     server.should_exit = True
     th.join(timeout=10)
-    from agentm2m.auto import sandbox
+    from agenthot import sandbox
 
     sandbox.require_isolation(False)
 
@@ -245,12 +245,12 @@ def test_plugin_server_forwards_to_hosted_service(project: Path, hosted):
     url, key = hosted
 
     async def main():
-        env = {"AGENTM2M_URL": url, "AGENTM2M_API_KEY": key, "AGENTM2M_PROJECT": "plug"}
+        env = {"AGENTHOT_URL": url, "AGENTHOT_API_KEY": key, "AGENTHOT_PROJECT": "plug"}
         async with stdio_client(_params(project, **env)) as (r, w):
             async with ClientSession(r, w) as s:
                 await s.initialize()
                 assert (await _call(s, "auto_task_set", {"source": SKELETON}))["task"]["entry"] == "add"
-                assert (await _call(s, "auto_submit_team", {"team_json": (TEAMS / "classeval_reference.json").read_text()}))["admitted"]
+                assert (await _call(s, "auto_submit_team", {"team_json": (TEAMS / "pair_team.json").read_text()}))["admitted"]
                 await _call(s, "auto_run")
                 for value in (TESTS, CODE):
                     (b,) = (await _call(s, "auto_next_bindings"))["bindings"]
@@ -265,7 +265,7 @@ def test_plugin_server_forwards_to_hosted_service(project: Path, hosted):
                 assert "write rights" not in await _call_err(s, "model_show", {"view": "Nope"})
 
     anyio.run(main)
-    assert not (project / ".agentm2m").exists()
+    assert not (project / ".agenthot").exists()
     st = requests.get(f"{url}/api/auto/status?project=plug", headers={"Authorization": f"Bearer {key}"}, timeout=30).json()
     assert st["phi"] is True
 
@@ -274,7 +274,7 @@ def test_plugin_server_reports_a_bad_key(project: Path, hosted):
     url, _key = hosted
 
     async def main():
-        async with stdio_client(_params(project, AGENTM2M_URL=url, AGENTM2M_API_KEY="am2m_wrong")) as (r, w):
+        async with stdio_client(_params(project, AGENTHOT_URL=url, AGENTHOT_API_KEY="am2m_wrong")) as (r, w):
             async with ClientSession(r, w) as s:
                 await s.initialize()
                 msg = await _call_err(s, "auto_status", {})

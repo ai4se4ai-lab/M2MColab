@@ -1,4 +1,4 @@
-"""Host backend: the *host* (Claude Code, through the agentm2m MCP server)
+"""Host backend: the *host* (Claude Code, through the agenthot MCP server)
 fills stochastic bindings instead of an LLM API the engine calls itself.
 
 `generate` is never used for sampling: the executor sees `deferred = True`

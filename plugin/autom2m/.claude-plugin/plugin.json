@@ -1,9 +1,9 @@
 {
-  "name": "agentm2m",
-  "version": "0.3.0",
+  "name": "autom2m",
+  "version": "0.4.0",
   "description": "Run LLM agent teams whose hand-offs are model-to-model transformations: a deterministic engine owns structure and trace links, Claude only fills footprint-bounded values that validators accept, and changes propagate as exact obligations. AutoM2M: Claude proposes the team, a deterministic W1-W6 checker admits it.",
   "author": {
-    "name": "agentm2m authors"
+    "name": "autom2m authors"
   },
   "license": "MIT",
   "keywords": [

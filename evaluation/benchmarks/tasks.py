@@ -4,7 +4,7 @@ Only `prompt`, `methods` (signature, docstring, public doctest examples) and
 `imports` are ever shown to a team. `hidden_test` is used exclusively by
 `score()`; no condition, validator or builder can read it.
 
-The task model and the public checks live in `agentm2m.auto.pywork` (the
+The task model and the public checks live in `autom2m.pywork` (the
 library's Python-methods domain); this module adds the benchmark loaders,
 ClassEval's assembly frame and hidden scoring.
 """
@@ -16,7 +16,7 @@ import re
 import textwrap
 from functools import lru_cache
 
-from agentm2m.auto.pywork import (  # noqa: F401  (re-exported for the evaluation code)
+from autom2m.pywork import (  # noqa: F401  (re-exported for the evaluation code)
     MethodSpec,
     Task,
     _parses,
@@ -28,9 +28,9 @@ from agentm2m.auto.pywork import (  # noqa: F401  (re-exported for the evaluatio
     splice_class,
     stub_method,
 )
-from agentm2m.auto.pywork import assemble as _pw_assemble
-from agentm2m.auto.pywork import examples_of as _examples_of
-from agentm2m.auto.pywork import split_signature as _split_signature
+from autom2m.pywork import assemble as _pw_assemble
+from autom2m.pywork import examples_of as _examples_of
+from autom2m.pywork import split_signature as _split_signature
 
 from .sandbox import RESULT_MARK, run_python_json
 

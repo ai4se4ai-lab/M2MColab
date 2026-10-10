@@ -47,7 +47,7 @@ class OllamaBackend(LLMBackend):
         # 800 it truncated the baselines' single long calls (a whole module
         # from one Developer call; qwen3.8: 6 of 8 baseline modules cut off),
         # silently depressing their fidelity scores. 4096 leaves room for
-        # those; agentm2m's per-binding answers are bounded by their prompts,
+        # those; agenthot's per-binding answers are bounded by their prompts,
         # not by this cap, so a runaway still costs it -- honestly.
         # Every `@llm` binding in this codebase expects a short, specific
         # answer (a signature line, a short function body, a brief prose
@@ -70,6 +70,10 @@ class OllamaBackend(LLMBackend):
         # several seeds per configuration; see evaluation/).
         self.seed = seed
         self.num_ctx = num_ctx
+        # Each call gets its own seed derived from the run seed, so a run is
+        # reproducible but an identical prompt sent twice (a replay, a
+        # best-of-n sample) is a fresh sample rather than a copy.
+        self._n_calls = 0
         if auto_pull:
             self._ensure_model_available()
 
@@ -114,7 +118,8 @@ class OllamaBackend(LLMBackend):
     def _options(self, temperature: float, max_tokens: int | None) -> dict:
         opts = {"temperature": temperature, "num_predict": max_tokens or self.max_tokens}
         if self.seed is not None:
-            opts["seed"] = self.seed
+            self._n_calls += 1
+            opts["seed"] = (self.seed * 1_000_003 + self._n_calls) % 2_147_483_647
         if self.num_ctx is not None:
             opts["num_ctx"] = self.num_ctx
         return opts

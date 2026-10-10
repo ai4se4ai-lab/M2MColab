@@ -1,6 +1,6 @@
 \documentclass[10pt,a4paper]{article}
 % ---------------------------------------------------------------------------
-% Teaching edition: the agentm2m Claude Code plugin, its MCP server and the
+% Teaching edition: the agenthot Claude Code plugin, its MCP server and the
 % hosted service, explained for undergraduate software engineering students.
 % Compiles with pdflatex (+ bibtex) or with tectonic (XeTeX).
 % Every "Observed" output can be reproduced with docs/plugin-walkthroughs/.
@@ -58,7 +58,7 @@
 \definecolor{badbar}{RGB}{170,50,50}
 
 \hypersetup{colorlinks=true, linkcolor=accent, citecolor=enginebar,
-  urlcolor=accent, pdftitle={Plugging the Team In: the AgentM2M Plugin, its MCP Server and the Hosted Service, Explained},
+  urlcolor=accent, pdftitle={Plugging the Team In: the AgentHOT Plugin, its MCP Server and the Hosted Service, Explained},
   pdfauthor={}}
 
 % --- headings ---
@@ -99,7 +99,7 @@
 \newcommand{\pmark}{\ding{109}}
 
 % --- shorthands ---
-\newcommand{\tool}{\textsc{AgentM2M}}
+\newcommand{\tool}{\textsc{AgentHOT}}
 \newcommand{\auto}{\textsc{AutoM2M}}
 \newcommand{\cc}{Claude Code}
 \newcommand{\W}[1]{\textsf{W#1}}
@@ -109,7 +109,7 @@
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\file}[1]{\texttt{#1}}
 \newcommand{\mcptool}[1]{\texttt{#1}}
-\newcommand{\skill}[1]{\texttt{/agentm2m:#1}}
+\newcommand{\skill}[1]{\texttt{/autom2m:#1}}
 
 % --- listing styles ---
 \lstdefinelanguage{ATL}{
@@ -193,7 +193,7 @@
 Explained for Software Engineering Students\par}
 \vspace{10pt}
 {\small\itshape Companion to ``When the Team Writes Itself'' (the \auto{} teaching edition)~\cite{autom2mteaching}\\
-and to ``\tool{}: M2M Transformations for Agentic Collaborations in Software Engineering''~\cite{agentm2m2026}\par}
+and to ``\tool{}: M2M Transformations for Agentic Collaborations in Software Engineering''~\cite{agenthot2026}\par}
 \vspace{8pt}
 {\color{accent!40}\rule{0.35\textwidth}{0.6pt}}
 \end{center}
@@ -388,7 +388,7 @@ only the subagent's final report.
 \item \textbf{It sees a lot.} By default it can read the whole project and
 remembers the whole conversation. Usually a strength; for \tool{} a danger,
 because an agent that fills one value must see \emph{only} that value's
-inputs (\Cref{sec:recap-agentm2m}). \Cref{sec:parts} shows how the plugin
+inputs (\Cref{sec:recap-agenthot}). \Cref{sec:parts} shows how the plugin
 resolves this tension.
 \end{itemize}
 
@@ -459,7 +459,7 @@ careful server stores only the \emph{digest} of each key: when a request
 arrives, it hashes the presented key and looks the digest up. If the
 database leaks, the keys cannot be recovered. Second, the engine uses
 digests to notice that the inputs of a value have changed
-(\Cref{sec:recap-agentm2m}).
+(\Cref{sec:recap-agenthot}).
 
 \subsection{Plugins and inversion of control}
 
@@ -471,10 +471,10 @@ you''). A plugin can do nothing the extension points do not allow. \cc{}
 offers four extension points (tools through MCP servers, skills, subagents,
 hooks) and one distribution channel (marketplaces).
 
-\subsection{\tool{} in one example}\label{sec:recap-agentm2m}
+\subsection{\tool{} in one example}\label{sec:recap-agenthot}
 
 This subsection and the next condense the companion
-documents~\cite{agentm2m2026,autom2mteaching}. \Cref{fig:recap} shows the
+documents~\cite{agenthot2026,autom2mteaching}. \Cref{fig:recap} shows the
 whole idea on one value.
 
 \begin{figure}[!htb]
@@ -689,7 +689,7 @@ is added while the team runs.}
 
 \subsection{Reading \file{team.yaml}}
 
-The file \file{.agentm2m/team.yaml} describes the views (their classes,
+The file \file{.agenthot/team.yaml} describes the views (their classes,
 owner and seed model) and lists the hand-offs. \Cref{lst:teamyaml} shows the
 part for the Analyst's view.
 
@@ -715,9 +715,9 @@ views:
   Arch: {owner: Architect, classes: {Operation: {attributes: [name, signature, criteria], ...}}, ...}
   ...
 handoffs:
-  - {name: Req2Arch,  rule: rules/Req2Arch.agentm2m}
-  - {name: Arch2Code, rule: rules/Arch2Code.agentm2m}
-  - {name: Req2Test,  rule: rules/Req2Test.agentm2m}
+  - {name: Req2Arch,  rule: rules/Req2Arch.agenthot}
+  - {name: Arch2Code, rule: rules/Arch2Code.agenthot}
+  - {name: Req2Test,  rule: rules/Req2Test.agenthot}
 \end{lstlisting}
 
 Every object has a \emph{key} of the form \code{Type\#id}, such as
@@ -733,7 +733,7 @@ criteria are part of their story, like fields of an object.
 rules is a small subset of OCL, the expression language of model-driven
 engineering; read \code{s.criteria} like a field access in Java.
 
-\begin{lstlisting}[language=ATL, style=model, caption={Code excerpt: \file{templates/devteam/rules/Req2Arch.agentm2m}.}, label={lst:req2arch}]
+\begin{lstlisting}[language=ATL, style=model, caption={Code excerpt: \file{templates/devteam/rules/Req2Arch.agenthot}.}, label={lst:req2arch}]
 module Req2Arch;
 create OUT : Arch from IN : Req;
 uses 'helpers.py';
@@ -913,9 +913,9 @@ Req. & Design answer & Section \\
 R1 & An MCP server exposes 24 tools; skills script the common workflows. & \ref{sec:mcp}, \ref{sec:parts}, \ref{app:tools} \\
 R2 & \emph{Host mode}: the engine never samples; \cc{} answers engine-built prompts, and the engine judges the answers exactly as its own samples. & \ref{sec:host} \\
 R3 & Subagents whose tool allowlist contains only ``get my next prompt'' and ``submit my answer''; values tied to a \code{footprint\_version}. & \ref{sec:host}, \ref{sec:parts} \\
-R4 & A workspace directory \file{.agentm2m/} with atomic writes, a file lock and reload-on-change. & \ref{sec:arch} \\
+R4 & A workspace directory \file{.agenthot/} with atomic writes, a file lock and reload-on-change. & \ref{sec:arch} \\
 R5 & A hook re-validates after every edit of a team file and feeds errors back to \cc{}. & \ref{sec:parts} \\
-R6 & \code{agentm2m serve}: the same tools over HTTP, API keys, per-key projects. & \ref{sec:hosted} \\
+R6 & \code{autom2m serve}: the same tools over HTTP, API keys, per-key projects. & \ref{sec:hosted} \\
 R7 & Write rights, path checks, one sandbox function, and a service that refuses to execute code without an isolating sandbox. & \ref{sec:security} \\
 \bottomrule
 \end{tabularx}
@@ -952,7 +952,7 @@ MCP names three roles (\Cref{fig:mcproles}). The \textbf{host} is the
 application the user works in; here, \cc{}. Inside the host, one
 \textbf{client} manages the connection to one server. The \textbf{server}
 is the program that offers capabilities; here, the program
-\code{agentm2m-mcp} (\file{src/agentm2m/mcp_server.py}). The LLM in the host
+\code{autom2m-mcp} (\file{src/autom2m/mcp_server.py}). The LLM in the host
 sees the tools of all connected servers.
 
 \begin{figure}[!htb]
@@ -969,7 +969,7 @@ sees the tools of all connected servers.
     \node[draw=llmbar, dashed, rounded corners=3pt, fit=(llm)(c1)(c2), inner sep=7pt,
           label={[font=\sffamily\scriptsize\bfseries, text=llmbar]above:Host: \cc{}}] {};
   \end{scope}
-  \node[cli, minimum width=32mm] (s1) at (10.0,0.8) {\code{agentm2m-mcp}\\(24 tools)};
+  \node[cli, minimum width=32mm] (s1) at (10.0,0.8) {\code{autom2m-mcp}\\(24 tools)};
   \node[ext, minimum width=32mm] (s2) at (10.0,-0.8) {another server\\(e.g.\ a database)};
   \draw[<->] (c1) -- node[lbl, above=2pt] {JSON-RPC over stdio} (s1);
   \draw[<->] (c2) -- node[lbl, below=2pt] {JSON-RPC over HTTP} (s2);
@@ -1003,14 +1003,14 @@ server and writing JSON lines into its stdin (script
 what it can do. The server answers with the version both will use (here it
 accepts the client's), its capabilities and its instructions.
 
-\begin{lstlisting}[style=wire, caption={Observed: the \code{initialize} handshake with \code{agentm2m-mcp} over stdio (instructions abridged).}, label={lst:init}]
+\begin{lstlisting}[style=wire, caption={Observed: the \code{initialize} handshake with \code{autom2m-mcp} over stdio (instructions abridged).}, label={lst:init}]
 -> {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",
     "capabilities":{},"clientInfo":{"name":"demo","version":"1"}}}
 <- {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18",
     "capabilities":{"prompts":{"listChanged":false},"resources":{"listChanged":false,"subscribe":false},
                     "tools":{"listChanged":false}},
-    "serverInfo":{"name":"agentm2m","version":""},
-    "instructions":"agentm2m runs a team of agents whose hand-offs are model-to-model
+    "serverInfo":{"name":"agenthot","version":""},
+    "instructions":"agenthot runs a team of agents whose hand-offs are model-to-model
       transformations. ... Typical loop: team_status -> run -> next_bindings ->
       submit_binding (repeat) -> acceptance. ... Answer a binding ONLY from the prompt
       next_bindings returns: it already contains the whole allowed footprint. ..."}}
@@ -1018,7 +1018,7 @@ accepts the client's), its capabilities and its instructions.
 \end{lstlisting}
 
 (The empty \code{serverInfo.version} is harmless: the server does not tell
-the SDK its version. \code{agentm2m-mcp --version} prints it.)
+the SDK its version. \code{autom2m-mcp --version} prints it.)
 
 \what{2. Initialized.} The client confirms with a \emph{notification}. Only
 now may normal requests flow.
@@ -1049,7 +1049,7 @@ function's type hints, and the description from its docstring
 \code{@mcp.tool()} line is a Python \emph{decorator}: a function that wraps
 the function below it, here to register it as a tool.
 
-\begin{lstlisting}[language=Python, style=model, caption={Code excerpt: how a tool is declared (\file{src/agentm2m/mcp_server.py}).}, label={lst:tooldef}]
+\begin{lstlisting}[language=Python, style=model, caption={Code excerpt: how a tool is declared (\file{src/autom2m/mcp_server.py}).}, label={lst:tooldef}]
 @mcp.tool()
 @_forwardable
 def submit_binding(target_key: str, binding: str, value: str, footprint_version: str,
@@ -1141,38 +1141,38 @@ session.) Authentication is ordinary HTTP, here an API key in the
 (\Cref{sec:hosted}).
 \end{itemize}
 
-\subsection{Tool names inside \cc{}, and things called ``agentm2m''}
+\subsection{Tool names inside \cc{}, and things called ``agenthot''}
 
 \cc{} gives every MCP tool a globally unique name, so that tools of different
 servers cannot clash: \code{mcp\_\_<server>\_\_<tool>}. A server that comes
 with a plugin also carries the plugin's name. Many things in this project
-are called \code{agentm2m}, which makes the resulting names look odd;
+are called \code{agenthot}, which makes the resulting names look odd;
 \Cref{tab:names} sorts them out.
 
 \begin{table}[!htb]
 \centering\small
-\caption{Things called \code{agentm2m}.}
+\caption{Things called \code{agenthot}.}
 \label{tab:names}
 \begin{tabularx}{\textwidth}{@{}l Y@{}}
 \toprule
 Name & What it is \\
 \midrule
-\code{agentm2m} (Python package) & The engine, version 0.3.0. \\
-\code{agentm2m} (command) & Its command-line interface: \code{agentm2m workspace \ldots}, \code{agentm2m auto \ldots}, \code{agentm2m serve}. \\
-\code{agentm2m-mcp} (command) & The program that runs the MCP server over stdio. \\
-\code{agentm2m} (MCP server name) & The name under which the plugin's \file{.mcp.json} registers that server. \\
-\code{agentm2m} (plugin) & The \cc{} plugin in \file{plugin/agentm2m/}; its skills are \code{/agentm2m:<skill>}. \\
-\code{agentm2m-dev} (marketplace) & The development marketplace in \file{plugin/.claude-plugin/}. \\
+\code{agenthot} (Python package) & The engine, version 0.3.0. \\
+\code{agenthot} (command) & Its command-line interface: \code{agenthot workspace \ldots}, \code{autom2m auto \ldots}, \code{autom2m serve}. \\
+\code{autom2m-mcp} (command) & The program that runs the MCP server over stdio. \\
+\code{agenthot} (MCP server name) & The name under which the plugin's \file{.mcp.json} registers that server. \\
+\code{agenthot} (plugin) & The \cc{} plugin in \file{plugin/autom2m/}; its skills are \code{/autom2m:<skill>}. \\
+\code{autom2m-dev} (marketplace) & The development marketplace in \file{plugin/.claude-plugin/}. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 So \mcptool{submit\_binding} appears to \cc{} as
-\code{mcp\_\_plugin\_agentm2m\_agentm2m\_\_submit\_binding}: the prefix
-\code{mcp}, then \code{plugin\_} + plugin name \code{agentm2m} + \code{\_} +
-server name \code{agentm2m}, then the tool name, joined by double
+\code{mcp\_\_plugin\_agenthot\_agenthot\_\_submit\_binding}: the prefix
+\code{mcp}, then \code{plugin\_} + plugin name \code{agenthot} + \code{\_} +
+server name \code{agenthot}, then the tool name, joined by double
 underscores. If you connect the hosted service directly, without the plugin
-(\Cref{sec:hosted}), the same tool is \code{mcp\_\_agentm2m\_\_submit\_binding}.
+(\Cref{sec:hosted}), the same tool is \code{mcp\_\_agenthot\_\_submit\_binding}.
 These names matter because subagent allowlists (\Cref{sec:parts}) must spell
 them exactly.
 
@@ -1214,12 +1214,12 @@ remote one.
 A \cc{} plugin is a directory with a fixed layout~\cite{claudecodedocs}.
 \Cref{lst:tree} shows the \tool{} plugin.
 
-\begin{lstlisting}[style=raw, caption={Code excerpt: the layout of \file{plugin/agentm2m/}, version 0.3.0.}, label={lst:tree}]
-plugin/agentm2m/
+\begin{lstlisting}[style=raw, caption={Code excerpt: the layout of \file{plugin/autom2m/}, version 0.3.0.}, label={lst:tree}]
+plugin/autom2m/
   .claude-plugin/plugin.json      manifest: name, version, description, license, keywords
   .mcp.json                       which MCP server(s) to start, and how
   skills/<name>/SKILL.md          10 skills: init, run, change, evolve, status, author-handoff,
-                                  auto-build, check, diagnose, agentm2m-concepts
+                                  auto-build, check, diagnose, autom2m-concepts
   agents/<name>.md                4 subagents: binding-worker, handoff-architect,
                                   team-builder, auto-binding-worker
   hooks/hooks.json                2 hooks: SessionStart, PostToolUse (Edit|Write|MultiEdit)
@@ -1233,23 +1233,23 @@ plugin/.claude-plugin/marketplace.json   a development marketplace listing this 
 \subsection{The manifest}
 
 \file{plugin.json} names the plugin and its version. The name
-(\code{agentm2m}) becomes the namespace of everything the plugin adds: its
+(\code{agenthot}) becomes the namespace of everything the plugin adds: its
 skills are invoked as \skill{run}, its tools are prefixed
-\code{mcp\_\_plugin\_agentm2m\_\ldots}. The version, 0.3.0, matches the
+\code{mcp\_\_plugin\_agenthot\_\ldots}. The version, 0.3.0, matches the
 engine's; \Cref{sec:engineering} explains why.
 
 \subsection{The MCP server configuration}
 
 \file{.mcp.json} tells \cc{} how to start the server (\Cref{lst:mcpjson}).
 
-\begin{lstlisting}[style=raw, caption={Code excerpt: \file{plugin/agentm2m/.mcp.json}.}, label={lst:mcpjson}]
-{"agentm2m": {
+\begin{lstlisting}[style=raw, caption={Code excerpt: \file{plugin/autom2m/.mcp.json}.}, label={lst:mcpjson}]
+{"agenthot": {
    "command": "uvx",
-   "args": ["--from", "${AGENTM2M_ENGINE:-agentm2m==0.3.0}", "--with", "mcp>=1.2", "agentm2m-mcp"],
-   "env": {"AGENTM2M_LLM":     "${AGENTM2M_LLM:-host}",
-           "AGENTM2M_URL":     "${AGENTM2M_URL:-}",
-           "AGENTM2M_API_KEY": "${AGENTM2M_API_KEY:-}",
-           "AGENTM2M_PROJECT": "${AGENTM2M_PROJECT:-}"}}}
+   "args": ["--from", "${AUTOM2M_ENGINE:-autom2m==0.4.0}", "--with", "mcp>=1.2", "autom2m-mcp"],
+   "env": {"AGENTHOT_LLM":     "${AGENTHOT_LLM:-host}",
+           "AGENTHOT_URL":     "${AGENTHOT_URL:-}",
+           "AGENTHOT_API_KEY": "${AGENTHOT_API_KEY:-}",
+           "AGENTHOT_PROJECT": "${AGENTHOT_PROJECT:-}"}}}
 \end{lstlisting}
 
 Read it in three parts.
@@ -1260,14 +1260,14 @@ uv~\cite{uvdocs}. \code{uvx --from P C} installs package \code{P} into a
 cached, isolated environment (once) and runs its command \code{C}. The
 plugin therefore contains no engine code: the engine is an ordinary Python
 package, and \code{--with mcp>=1.2} adds the MCP SDK to its environment.
-\item \code{\$\{AGENTM2M\_ENGINE:-agentm2m==0.3.0\}} is shell-style
-substitution: ``the value of the environment variable \code{AGENTM2M\_ENGINE},
-or \code{agentm2m==0.3.0} if it is unset''. The default will fetch version
+\item \code{\$\{AGENTHOT\_ENGINE:-autom2m==0.4.0\}} is shell-style
+substitution: ``the value of the environment variable \code{AGENTHOT\_ENGINE},
+or \code{autom2m==0.4.0} if it is unset''. The default will fetch version
 0.3.0 from the Python Package Index once it is published; until then (see
-\Cref{sec:engineering}) you must set \code{AGENTM2M\_ENGINE} to the path of
+\Cref{sec:engineering}) you must set \code{AGENTHOT\_ENGINE} to the path of
 a checkout of the repository.
 \item \code{env} passes four settings to the server: who fills values
-(\code{AGENTM2M\_LLM}, default \code{host}, \Cref{sec:host}) and, if set,
+(\code{AGENTHOT\_LLM}, default \code{host}, \Cref{sec:host}) and, if set,
 the URL, API key and project of a hosted service (\Cref{sec:hosted}).
 \end{itemize}
 
@@ -1284,7 +1284,7 @@ check, what to report (\Cref{lst:skill}).
 \begin{lstlisting}[style=raw, caption={Code excerpt: the start of \file{skills/change/SKILL.md}.}, label={lst:skill}]
 ---
 name: change
-description: Apply a change to an agentm2m team's source view (e.g. a tightened acceptance
+description: Apply a change to an agenthot team's source view (e.g. a tightened acceptance
   criterion or a new user story), preview exactly which downstream artifacts it obliges to be
   redone, then propagate it. Use when requirements or any upstream artifact of the team changes.
 argument-hint: "<describe the change>"
@@ -1297,9 +1297,9 @@ argument-hint: "<describe the change>"
 \end{lstlisting}
 
 \code{argument-hint} is what \cc{} shows when you start typing the command.
-One skill, \code{agentm2m-concepts}, sets \code{user-invocable: false}: it is
+One skill, \code{autom2m-concepts}, sets \code{user-invocable: false}: it is
 not a command but background knowledge (``\tool{} in one page'') that \cc{}
-loads by itself in projects with a \file{.agentm2m/} directory.
+loads by itself in projects with a \file{.agenthot/} directory.
 
 \subsection{Subagents}
 
@@ -1336,7 +1336,7 @@ Plugins are distributed through \emph{marketplaces}: a file
 \file{.claude-plugin/marketplace.json} that lists plugins and where their
 directories are. A user adds a marketplace once and installs plugins from it
 as \code{plugin@marketplace}. The repository ships a development
-marketplace, \code{agentm2m-dev}; the script
+marketplace, \code{autom2m-dev}; the script
 \file{plugin/scripts/dev-install.sh} registers it and installs the plugin
 from your checkout. \Cref{app:try} gives the complete steps to try it.
 
@@ -1348,12 +1348,12 @@ from your checkout. \Cref{app:try} gives the complete steps to try it.
 \toprule
 Extension point & What it is & In the \tool{} plugin \\
 \midrule
-MCP server & Tools the LLM can call & \code{agentm2m-mcp}: 24 tools (12 for hand-written teams, 12 for \auto{}) \\
+MCP server & Tools the LLM can call & \code{autom2m-mcp}: 24 tools (12 for hand-written teams, 12 for \auto{}) \\
 Skills & Procedures in plain language & 10 skills, 9 of them slash commands \\
 Subagents & Helpers with their own tool allowlists & 4 subagents; two of them can only fetch and submit values \\
 Hooks & Commands run at fixed events & announce a team at session start; re-validate after edits \\
 \midrule
-(Distribution) & Marketplace & \code{agentm2m-dev} (local); a public one at release \\
+(Distribution) & Marketplace & \code{autom2m-dev} (local); a public one at release \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1371,7 +1371,7 @@ preview the impact of a change.
 \item A plugin is a directory: a manifest, an MCP server configuration,
 skills, subagents and hooks; the engine itself is a separate Python package.
 \item \code{uvx} installs the pinned engine and runs its MCP server;
-\code{AGENTM2M\_ENGINE} points it at a local checkout instead.
+\code{AGENTHOT\_ENGINE} points it at a local checkout instead.
 \item Skills are procedures for the LLM; subagents have tool allowlists;
 hooks run at fixed events and report back through exit code 2.
 \end{itemize}
@@ -1395,7 +1395,7 @@ as in networking or web applications.
   lbl/.style={font=\sffamily\scriptsize, align=center, fill=white, inner sep=1.5pt}]
   \node[lay=raw] (u) at (0,0) {\textbf{You} type \skill{run} or ``tighten S2.1''.};
   \node[lay=llm] (cc) at (0,-1.3) {\textbf{\cc{}}: reads skills, dispatches subagents, runs hooks, calls MCP tools.};
-  \node[lay=wire] (w) at (0,-2.6) {\textbf{MCP over stdio}: JSON-RPC lines to the child process \code{agentm2m-mcp}.};
+  \node[lay=wire] (w) at (0,-2.6) {\textbf{MCP over stdio}: JSON-RPC lines to the child process \code{autom2m-mcp}.};
   \node[lay=model] (srv) at (0,-3.9) {\textbf{MCP server} \file{mcp_server.py}: 24 thin tool functions.};
   \node[lay=model] (svc) at (0,-5.2) {\textbf{Service layer}: \code{Workspace}, \code{AutoWorkspace}; every operation returns a JSON-able dictionary.};
   \node[lay=engine] (eng) at (0,-6.5) {\textbf{Engine}: rules, matcher, executor, trace, runtime, checker, compiler, sandbox.};
@@ -1403,11 +1403,11 @@ as in networking or web applications.
   \node[draw=enginebar, fill=enginebg, rounded corners=2pt, minimum height=9mm, text width=4.0cm, align=left, inner sep=5pt] (f2) at (2.3,-7.85) {\textbf{Engine only}: \file{state/}, \file{auto/*.json}};
   \foreach \a/\b in {u/cc, cc/w, w/srv, srv/svc, svc/eng} \draw[<->] (\a) -- (\b);
   \draw[<->] (eng) -- (f1); \draw[<->] (eng) -- (f2);
-  \node[side=model] (cli) at (6.3,-4.4) {\textbf{CLI} \code{agentm2m workspace/auto \ldots}};
+  \node[side=model] (cli) at (6.3,-4.4) {\textbf{CLI} \code{agenthot workspace/auto \ldots}};
   \node[side=model] (rest) at (6.3,-5.5) {\textbf{REST API} (hosted service)};
   \node[side=raw] (hook) at (6.3,-2.6) {\textbf{validation hook} (runs the CLI)};
   \draw[->] (cli) -- (svc.east |- cli); \draw[->] (rest) -- (svc.east |- rest); \draw[->] (hook) -- (cli);
-  \node[side=ext, draw=extbar, fill=white] (fw) at (-5.9,-1.3) {\textbf{hosted service}\\(if \code{AGENTM2M\_URL} is set)};
+  \node[side=ext, draw=extbar, fill=white] (fw) at (-5.9,-1.3) {\textbf{hosted service}\\(if \code{AGENTHOT\_URL} is set)};
   \draw[->, dashed] (srv.west) -| node[lbl, pos=0.75, left] {forward} (fw.south);
 \end{tikzpicture}
 \caption{The layers of the plugin. Only \cc{} involves an LLM; everything
@@ -1421,8 +1421,8 @@ the REST API of the hosted service reach the same service layer.}
 Every tool function in \file{mcp_server.py} is one or two lines: find the
 workspace, call one method, return its dictionary (\Cref{lst:tooldef}). All
 logic lives in the \emph{service layer}: \code{Workspace}
-(\file{src/agentm2m/workspace.py}) for hand-written teams and
-\code{AutoWorkspace} (\file{src/agentm2m/auto/workspace.py}) for \auto{}.
+(\file{src/agenthot/workspace.py}) for hand-written teams and
+\code{AutoWorkspace} (\file{src/autom2m/workspace.py}) for \auto{}.
 Three benefits follow, as in any layered design. \emph{Testability}: the
 service layer is tested with plain Python calls, without an MCP server; most
 of the plugin's tests do exactly that. \emph{Reuse}: the command-line
@@ -1436,7 +1436,7 @@ each endpoint calls the same method as the corresponding tool.
 A tool call carries no project path. The server finds the project directory
 by a fixed rule: on the hosted service, from the authenticated user and the
 requested project (\Cref{sec:hosted}); locally, from
-\code{AGENTM2M\_PROJECT\_DIR}, else \code{CLAUDE\_PROJECT\_DIR} (the project
+\code{AGENTHOT\_PROJECT\_DIR}, else \code{CLAUDE\_PROJECT\_DIR} (the project
 \cc{} was started in), else the current directory, which for a server
 started by \cc{} is the project. One \code{Workspace} object is kept per
 directory.
@@ -1445,7 +1445,7 @@ directory.
 
 \begin{table}[!htb]
 \centering\small
-\caption{The workspace directory \file{.agentm2m/} of a project.}
+\caption{The workspace directory \file{.agenthot/} of a project.}
 \label{tab:files}
 \rowcolors{2}{black!3}{white}
 \begin{tabularx}{\textwidth}{@{}l Y l@{}}
@@ -1453,7 +1453,7 @@ directory.
 \rowcolor{white}File & Contents & Written by \\
 \midrule
 \file{team.yaml} & views and hand-offs (\Cref{lst:teamyaml}) & you \\
-\file{rules/*.agentm2m} & rule modules (\Cref{lst:req2arch}) & you \\
+\file{rules/*.agenthot} & rule modules (\Cref{lst:req2arch}) & you \\
 \file{rules/helpers.py} & validators and helpers; \emph{executed} by the engine & you \\
 \file{state/state.json} & view models, trace links, stamps, team evolutions & engine \\
 \file{state/.lock} & the file lock & engine \\
@@ -1558,7 +1558,7 @@ reported acceptance, which is then re-offered.
 In the original library the engine called an LLM through a \emph{backend}: a
 small class with one method, \code{generate(prompt) -> str}. The plugin
 keeps those backends and adds one (\Cref{tab:backends}). The environment
-variable \code{AGENTM2M\_LLM} chooses.
+variable \code{AGENTHOT\_LLM} chooses.
 
 \begin{table}[!htb]
 \centering\small
@@ -1566,7 +1566,7 @@ variable \code{AGENTM2M\_LLM} chooses.
 \label{tab:backends}
 \begin{tabularx}{\textwidth}{@{}l Y@{}}
 \toprule
-\code{AGENTM2M\_LLM} & Who fills the values \\
+\code{AGENTHOT\_LLM} & Who fills the values \\
 \midrule
 \code{host} (default) & \cc{}, through \mcptool{next\_bindings} and \mcptool{submit\_binding}. No extra API key. \\
 \code{anthropic}, \code{openai}, \code{ollama} & The engine calls that provider itself (an \emph{engine LLM}; needs an API key, or a local Ollama). Good for unattended runs. \\
@@ -1832,7 +1832,7 @@ host mode leaves open (R3) and catch mistakes early (R5).
 \skill{auto-build} <file> & The \auto{} loop: task, propose (via \code{team-builder}), admit (at most 3 rejected rounds), run with \code{auto-binding-worker}s, $\varphi$, deliverable. \\
 \skill{check} [file] & \W{1}--\W{6} on a typed team; group diagnostics by condition; propose the smallest JSON fix for each. \\
 \skill{diagnose} & $\varphi$ failed: \mcptool{auto\_status}, \mcptool{auto\_attribute}, propose a minimal delta, submit it (checked), run again. \\
-\code{agentm2m-concepts} & Not a command: background knowledge loaded automatically in projects with \file{.agentm2m/}. \\
+\code{autom2m-concepts} & Not a command: background knowledge loaded automatically in projects with \file{.agenthot/}. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1875,7 +1875,7 @@ names abbreviated; in the files they are the full names of
   \node[box] (main) at (0,0) {\textbf{\small Main agent's context}\\[2pt]
    the whole conversation\\files it has read\\all tools: \code{Read}, \code{Grep}, \code{Bash}, \code{Edit}, \ldots\\all 24 \tool{} tools};
   \node[box] (work) at (8.2,0) {\textbf{\small \code{binding-worker}'s context}\\[2pt]
-   the dispatch sentence:\\``You are the Architect. Fill all pending\\agentm2m bindings for agent Architect.''\\its instructions (\file{agents/binding-worker.md})\\the prompts \mcptool{next\_bindings} returns\\tools: \mcptool{next\_bindings}, \mcptool{submit\_binding}};
+   the dispatch sentence:\\``You are the Architect. Fill all pending\\agenthot bindings for agent Architect.''\\its instructions (\file{agents/binding-worker.md})\\the prompts \mcptool{next\_bindings} returns\\tools: \mcptool{next\_bindings}, \mcptool{submit\_binding}};
   \draw[very thick, badbar] (4.1,1.35) -- (4.1,-1.35) node[below, align=center, text=badbar] {allowlist\\(least privilege)};
   \draw[->, thick] (main.east) -- node[above, fill=white, inner sep=1pt] {dispatch} (work.west);
 \end{tikzpicture}
@@ -1920,15 +1920,15 @@ of a stamp, what would break.
 \subsection{The hooks}
 
 \what{Session start.} \file{session-start.sh} checks whether the project's
-\file{.agentm2m/} directory contains \file{team.yaml}, \file{auto/team.json}
+\file{.agenthot/} directory contains \file{team.yaml}, \file{auto/team.json}
 or \file{auto/task.json}, and if so prints a short note that \cc{}
 adds to its context. It deliberately does \emph{not} start the engine, so
 session start stays instant and works offline (\Cref{lst:hookstart}).
 
 \begin{lstlisting}[style=engine, caption={Observed: output of the \code{SessionStart} hook in a fresh \devteam{} project.}, label={lst:hookstart}]
-agentm2m workspace detected at .agentm2m/ (team: devteam). Hand-offs between its agents are M2M
-transformations run by the agentm2m MCP server: use /agentm2m:status to inspect, /agentm2m:run
-to execute, /agentm2m:change for requirement changes. Never edit .agentm2m/state/ by hand.
+agenthot workspace detected at .agenthot/ (team: devteam). Hand-offs between its agents are M2M
+transformations run by the agenthot MCP server: use /autom2m:status to inspect, /autom2m:run
+to execute, /autom2m:change for requirement changes. Never edit .agenthot/state/ by hand.
 \end{lstlisting}
 
 \what{After every edit.} \cc{} passes the hook, on stdin, a JSON description
@@ -1936,19 +1936,19 @@ of the tool call that just happened (\Cref{lst:hookin}).
 
 \begin{lstlisting}[style=wire, caption={Illustrative: the input of a \code{PostToolUse} hook (abridged; the fields used here are real).}, label={lst:hookin}]
 {"hook_event_name": "PostToolUse", "tool_name": "Edit",
- "tool_input": {"file_path": "/home/you/play/.agentm2m/rules/Req2Arch.agentm2m", ...}, ...}
+ "tool_input": {"file_path": "/home/you/play/.agenthot/rules/Req2Arch.agenthot", ...}, ...}
 \end{lstlisting}
 
 The script extracts \code{tool\_input.file\_path} with a three-line inline
 Python program and then decides by the path:
 
 \begin{itemize}[itemsep=1pt]
-\item a file under \file{.agentm2m/state/}, or another file under
-\file{.agentm2m/auto/}: do nothing (engine-owned);
-\item \file{.agentm2m/auto/team.json} or any \file{*.typed-team.json}: run
-the \auto{} checker (\code{agentm2m auto check});
+\item a file under \file{.agenthot/state/}, or another file under
+\file{.autom2m/}: do nothing (engine-owned);
+\item \file{.autom2m/team.json} or any \file{*.typed-team.json}: run
+the \auto{} checker (\code{autom2m auto check});
 \item a rule module, \file{team.yaml}, \file{helpers.py} or a view spec in
-\file{.agentm2m/}: run \code{agentm2m workspace validate --brief};
+\file{.agenthot/}: run \code{agenthot workspace validate --brief};
 \item anything else: do nothing.
 \end{itemize}
 
@@ -1959,7 +1959,7 @@ typed team whose Tester lost its tools.
 
 \begin{lstlisting}[style=engine, caption={Observed: what the validation hook reports (we ran the commands the hook runs; file path shortened).}, label={lst:hookerr}]
 # a rule module with the typo  to op : Arch!Operatoin (
-agentm2m: workspace INVALID
+agenthot: workspace INVALID
   - Req2Arch: unknown class or missing root slot 'Operatoin' (declare it in team.yaml)
 
 # a *.typed-team.json in which the Tester has no tools
@@ -2015,7 +2015,7 @@ escalations. Below we show what happens \emph{inside} these steps.
 
 \subsection{Step 1 (\skill{init}): create, validate, look}
 
-\mcptool{team\_init} copies the template into \file{.agentm2m/};
+\mcptool{team\_init} copies the template into \file{.agenthot/};
 \mcptool{team\_validate} parses every rule module and counts matches
 (\Cref{lst:w1validate}).
 
@@ -2726,7 +2726,7 @@ and clear escalations.
 % ===========================================================================
 
 The plugin runs the engine on the developer's machine. Version 0.3.0 adds a
-second way: one server, started with \code{agentm2m serve}, offers the same
+second way: one server, started with \code{autom2m serve}, offers the same
 tools to many users over the web (requirement R6).
 
 \subsection{One process, three faces}
@@ -2762,7 +2762,7 @@ the REST endpoint \code{/api/auto/check}.)}
 \label{fig:hosted}
 \end{figure}
 
-\Cref{fig:hosted} shows the structure (\file{src/agentm2m/server/app.py}).
+\Cref{fig:hosted} shows the structure (\file{src/autom2m/server/app.py}).
 \code{/} serves the project's web site, including a \emph{Services} tab with
 five pages: Status, API keys, a checker Playground (paste a typed team, see
 its \W{1}--\W{6} diagnostics), API docs and Pricing. \code{/api/...} is a REST
@@ -2776,7 +2776,7 @@ command, or a container:
 
 \begin{lstlisting}[language=bash, style=raw, caption={Code excerpt: starting the hosted service (from \file{README.md}).}, label={lst:serve}]
 pip install -e ".[serve]" && (cd web && npm ci && npm run build)
-agentm2m serve --port 8765        # http://localhost:8765, MCP at /mcp, API docs at /api/docs
+autom2m serve --port 8765        # http://localhost:8765, MCP at /mcp, API docs at /api/docs
 # or
 docker compose up --build
 \end{lstlisting}
@@ -2792,7 +2792,7 @@ the service in-process with a throw-away data directory (script
  "llm": {"mode": "host", "solve_backend": null},
  "execution": {"sandbox": "process", "isolated": false, "enabled": false,
    "reason": "code execution is disabled: this server has no isolating sandbox (set
-              AGENTM2M_SANDBOX=bwrap, or AGENTM2M_SANDBOX=command with AGENTM2M_SANDBOX_CMD)"},
+              AGENTHOT_SANDBOX=bwrap, or AGENTHOT_SANDBOX=command with AGENTHOT_SANDBOX_CMD)"},
  "keys": {...}, "metrics": {...}, ...}
 \end{lstlisting}
 
@@ -2813,10 +2813,10 @@ deliberately does nothing yet.
 
 Each key is a \emph{tenant}: a separate customer whose data must never mix
 with another's. A tenant can have several \emph{projects}, chosen with the
-header \code{X-AgentM2M-Project} (default \code{default}). Each project is an
+header \code{X-AgentHOT-Project} (default \code{default}). Each project is an
 ordinary project directory on the server,
-\file{\$AGENTM2M\_DATA\_DIR/tenants/<key id>/<project>/}, holding a
-\file{.agentm2m/} workspace exactly like a local one. Project names must match
+\file{\$AGENTHOT\_DATA\_DIR/tenants/<key id>/<project>/}, holding a
+\file{.agenthot/} workspace exactly like a local one. Project names must match
 \code{[A-Za-z0-9\_.-]\{1,64\}} and may not be \code{.} or \code{..}, so a name
 cannot climb out of the tenant's directory.
 
@@ -2835,9 +2835,9 @@ GET  /api/auto/propose                              -> 200 {"mode": "propose", "
 POST /api/auto/team {"team": {...}}                 -> 200 {"admitted": true, "mode": "admitted", ...}
 POST /api/auto/run                                  -> 200 {"phi": false, "pending": 4, "blocked_on_upstream": 2}
 POST /api/auto/bindings {<a test suite>}            -> 403 {"detail": "code execution is disabled: this server
-                                                        has no isolating sandbox (set AGENTM2M_SANDBOX=bwrap, ...)"}
+                                                        has no isolating sandbox (set AGENTHOT_SANDBOX=bwrap, ...)"}
 POST /api/auto/solve                                -> 501 {"detail": "no engine LLM configured on this server
-                                                        (AGENTM2M_SOLVE_LLM); use host mode"}
+                                                        (AGENTHOT_SOLVE_LLM); use host mode"}
 POST /mcp (no key)                                  -> 401 {"error": "unauthorized", "detail": "send an API key ..."}
 \end{lstlisting}
 
@@ -2893,12 +2893,12 @@ tool reads it through \code{ctx.headers}.
 
 \begin{lstlisting}[language=Python, style=model, caption={Code excerpt: \code{Front.\_\_call\_\_} (\file{server/app.py}, abridged).}, label={lst:front}]
 # never trust a client-supplied tenant header
-headers = [(k, v) for k, v in scope.get("headers", []) if k.lower() != b"x-agentm2m-tenant"]
+headers = [(k, v) for k, v in scope.get("headers", []) if k.lower() != b"x-agenthot-tenant"]
 ...
 rec = await asyncio.to_thread(self.keys.resolve, key_from_headers(hmap))
 if rec is None:          # -> 401 {"error": "unauthorized", ...}, WWW-Authenticate: Bearer
     ...
-headers.append((b"x-agentm2m-tenant", rec.id.encode()))
+headers.append((b"x-agenthot-tenant", rec.id.encode()))
 await self.mcp_app(scope, receive, send)
 \end{lstlisting}
 
@@ -2918,17 +2918,17 @@ Describe the attack that would succeed without the first line of
 \what{Directly, without the plugin.} Register the endpoint as an MCP server:
 
 \begin{lstlisting}[language=bash, style=raw, caption={Code excerpt: connecting \cc{} directly (from the plugin's \file{README.md}).}, label={lst:mcpadd}]
-claude mcp add --transport http agentm2m https://<service-url>/mcp --header "Authorization: Bearer <api key>"
+claude mcp add --transport http agenthot https://<service-url>/mcp --header "Authorization: Bearer <api key>"
 \end{lstlisting}
 
 Nothing is installed locally, and the tools appear as
-\code{mcp\_\_agentm2m\_\_*}. You get the tools, but not the skills, subagents
+\code{mcp\_\_agenthot\_\_*}. You get the tools, but not the skills, subagents
 and hooks, whose tool names refer to the plugin's server.
 
 \what{Through the plugin.} Start \cc{} with
-\code{AGENTM2M\_URL=https://<service-url>} and \code{AGENTM2M\_API\_KEY=<key>}
-(and optionally \code{AGENTM2M\_PROJECT}). The plugin still starts its local
-\code{agentm2m-mcp} through \code{uvx}, but that server now \emph{forwards
+\code{AGENTHOT\_URL=https://<service-url>} and \code{AGENTHOT\_API\_KEY=<key>}
+(and optionally \code{AGENTHOT\_PROJECT}). The plugin still starts its local
+\code{autom2m-mcp} through \code{uvx}, but that server now \emph{forwards
 every tool call} to the service under the same tool name
 (\Cref{fig:forward}). The tool-calling skills and subagents work unchanged,
 and the team's state lives on the service. Everything that edits or checks
@@ -2947,7 +2947,7 @@ sees. On the service, a hand-written team therefore starts from a template
   e/.style={draw=enginebar, fill=enginebg, rounded corners=2pt, align=center, minimum height=10mm, inner sep=4pt},
   lbl/.style={font=\sffamily\scriptsize, align=center, fill=white, inner sep=1.5pt}]
   \node[c] (cc) at (0,0) {\cc{}\\+ plugin};
-  \node[s] (proxy) at (4.4,0) {local \code{agentm2m-mcp}\\(forwards)};
+  \node[s] (proxy) at (4.4,0) {local \code{autom2m-mcp}\\(forwards)};
   \node[s] (front) at (9.2,0) {service \code{/mcp}\\key $\to$ tenant};
   \node[e] (ws) at (13.2,0) {tool runs on\\tenant's project};
   \draw[->] ([yshift=1.5mm]cc.east) -- node[lbl, above=2pt] {stdio: \mcptool{run}} ([yshift=1.5mm]proxy.west);
@@ -2968,7 +2968,7 @@ decorator on every tool implements it (\Cref{lst:forward}).
 \begin{lstlisting}[language=Python, style=model, caption={Code excerpt: \code{\_forwardable} (\file{mcp_server.py}, abridged).}, label={lst:forward}]
 def _forwardable(fn):
     """Run the tool here, or, when the plugin is pointed at a hosted service
-    (AGENTM2M_URL + AGENTM2M_API_KEY), forward the same call there. Calls
+    (AGENTHOT_URL + AGENTHOT_API_KEY), forward the same call there. Calls
     arriving over HTTP (i.e. on the hosted service itself) always run here."""
     def wrapper(*args, **kwargs):
         over_http = ...                          # does the request carry HTTP headers?
@@ -2982,7 +2982,7 @@ def _forwardable(fn):
 
 The same module runs on the server, which is why calls that arrive over
 HTTP always run locally (the guard in the docstring). The forwarding client
-(\file{src/agentm2m/remote.py}) is a minimal MCP client over Streamable
+(\file{src/autom2m/remote.py}) is a minimal MCP client over Streamable
 HTTP: it initialises once, remembers the session id, re-initialises if the
 server answers \code{404} (it has forgotten the session, for example after a
 restart), and turns a \code{401} into the actionable message ``create a new
@@ -2990,7 +2990,7 @@ one on its web page (Services $\to$ API keys)''.
 
 \begin{think}
 What would happen without the guard ``calls arriving over HTTP always run
-here'' if the server's own environment contained \code{AGENTM2M\_URL}
+here'' if the server's own environment contained \code{AGENTHOT\_URL}
 pointing at itself?
 \end{think}
 
@@ -3000,15 +3000,15 @@ is the application that owns the LLM (\cc{}). \emph{Host mode} means that
 host writes the values. The \emph{hosted service} is the web server. On the
 hosted service, host mode still means that \emph{your} \cc{}, the client,
 writes the values: by default the service never calls an LLM. An operator can
-set \code{AGENTM2M\_SOLVE\_LLM} (for example \code{anthropic}, with an API
+set \code{AGENTHOT\_SOLVE\_LLM} (for example \code{anthropic}, with an API
 key) to enable \mcptool{auto\_solve}, the unattended loop with at most 3
 admission rounds and 2 repairs. \mcptool{auto\_solve} also works locally when
-\code{AGENTM2M\_LLM} names an engine LLM.
+\code{AGENTHOT\_LLM} names an engine LLM.
 \end{remark}
 
 \begin{takeaway}
 \begin{itemize}
-\item \code{agentm2m serve}: web app, REST API and MCP endpoint in one
+\item \code{autom2m serve}: web app, REST API and MCP endpoint in one
 process, over the same service layer.
 \item API keys are shown once and stored as digests; each key is a tenant
 with its own project directories.
@@ -3032,9 +3032,9 @@ collects what can go wrong and what defends against it (requirement R7).
 engine then imports that Python file to get its helpers and validators.
 Importing a file \emph{runs} it. Opening a workspace is therefore like running
 \code{make} in a repository: only do it for projects you trust. The engine
-refuses paths that leave \file{.agentm2m/} (a \code{uses} clause or rule path
+refuses paths that leave \file{.agenthot/} (a \code{uses} clause or rule path
 such as \code{../../x.py}), and \mcptool{team\_evolve}'s \code{rule\_text}
-can only create \file{.agentm2m} rule files, never Python files: otherwise an
+can only create \file{.agenthot} rule files, never Python files: otherwise an
 LLM could write a helper file and a rule that imports it. On the hosted
 service this matters most: a tenant can create workspaces only from the
 built-in templates and extend them with rule files, so a tenant cannot place
@@ -3045,12 +3045,12 @@ wrote: the \auto{} library validators (\code{examples\_run},
 \code{passes\_tests}, \code{test\_valid}, \code{runs}) and template
 validators such as \code{failsOnStub} (\devteam{}) and \code{passesDryRun}
 (\code{incident}). All of them go through one function, \code{run\_python}
-in \file{src/agentm2m/auto/sandbox.py}, which supports four modes
+in \file{src/agenthot/sandbox.py}, which supports four modes
 (\Cref{tab:sandbox}).
 
 \begin{table}[!htb]
 \centering\small
-\caption{Sandbox modes (\code{AGENTM2M\_SANDBOX}).}
+\caption{Sandbox modes (\code{AGENTHOT\_SANDBOX}).}
 \label{tab:sandbox}
 \begin{tabularx}{\textwidth}{@{}l Y l@{}}
 \toprule
@@ -3058,7 +3058,7 @@ Mode & What it does & Isolating? \\
 \midrule
 \code{process} (default) & A child process in a fresh temporary directory, with limits on CPU time, memory (2\,GB), file size (64\,MB) and wall-clock time, an isolated interpreter (\code{python -I}) and a minimal environment. It can still read what the user can read and use the network. & no \\
 \code{bwrap} & bubblewrap: no network, its own process, IPC and user namespaces, a fresh \file{/proc}, only system directories and the Python installation mounted read-only, plus the run's temporary directory. The data directory and other tenants are invisible. (If the Python environment lives under your home directory, that part of home is visible, read-only.) & yes \\
-\code{command} & Prefix every run with \code{AGENTM2M\_SANDBOX\_CMD} (for example an nsjail or firejail call). & assumed (the wrapper's job) \\
+\code{command} & Prefix every run with \code{AGENTHOT\_SANDBOX\_CMD} (for example an nsjail or firejail call). & assumed (the wrapper's job) \\
 \code{off} & Never execute. A submission whose validator would execute code is refused (a tool error over MCP, \code{403} over REST) without spending an attempt. An unknown mode also means \code{off}. & -- \\
 \bottomrule
 \end{tabularx}
@@ -3081,13 +3081,13 @@ disabled: the health endpoint and the Status tab say why (\Cref{lst:health}),
 and submissions that would execute code are refused (\Cref{lst:rest}).
 Checking, task and team submission and status keep working.
 \item Only an operator who trusts every key holder can override this with
-\code{AGENTM2M\_ALLOW\_UNSANDBOXED\_EXEC=1}.
+\code{AGENTHOT\_ALLOW\_UNSANDBOXED\_EXEC=1}.
 \end{enumerate}
 
 This is \emph{failing closed}, Saltzer and Schroeder's \emph{fail-safe
 defaults}~\cite{saltzer1975protection}: when a safety mechanism is
 unavailable, the dangerous feature switches off, not the safety. The
-container image installs bubblewrap, sets \code{AGENTM2M\_SANDBOX=bwrap}, and
+container image installs bubblewrap, sets \code{AGENTHOT\_SANDBOX=bwrap}, and
 runs the server as an unprivileged user.
 
 \plain{if the server cannot lock the code in a room, it does not run the
@@ -3112,14 +3112,14 @@ correct value after $k$ ``failures'' that were never judged.
 \rowcolor{white}Threat & Defence & \\
 \midrule
 A workspace's \file{helpers.py} is malicious. & Only open trusted workspaces. & \pmark \\
-Paths in rules or \code{uses} escape \file{.agentm2m/}. & Paths are checked. & \cmark \\
-An LLM writes Python through \mcptool{team\_evolve}. & \code{rule\_text} only creates \file{.agentm2m} files. & \cmark \\
+Paths in rules or \code{uses} escape \file{.agenthot/}. & Paths are checked. & \cmark \\
+An LLM writes Python through \mcptool{team\_evolve}. & \code{rule\_text} only creates \file{.agenthot} files. & \cmark \\
 A rule expression reaches Python internals through double-underscore names such as \code{\_\_class\_\_}. & Expressions cannot reach private or double-underscore attributes. & \cmark \\
 LLM-written code harms the machine. & One sandbox function; resource limits; \code{bwrap} on the server. & \cmark \\
 One tenant reads another's projects. & Fail-closed isolation; per-tenant directories; project-name check. & \cmark \\
 A client claims another tenant's identity. & The tenant header is stripped and set only by the router. & \cmark \\
 The key database leaks. & Only SHA-256 digests are stored; keys are shown once. & \cmark \\
-A web page in the user's browser makes requests to a local service under a forged host name (DNS rebinding~\cite{jackson2007dnsrebinding}). & Opt-in host checking with \code{AGENTM2M\_ALLOWED\_HOSTS}; otherwise the endpoint relies on API keys. & \pmark \\
+A web page in the user's browser makes requests to a local service under a forged host name (DNS rebinding~\cite{jackson2007dnsrebinding}). & Opt-in host checking with \code{AGENTHOT\_ALLOWED\_HOSTS}; otherwise the endpoint relies on API keys. & \pmark \\
 Source data leaks to an LLM provider. & Host mode: nothing leaves \cc{}'s session. Engine LLMs receive only binding prompts (instruction plus footprint). & \cmark \\
 \bottomrule
 \end{tabularx}
@@ -3150,7 +3150,7 @@ stored only as digests.
 \subsection{One version, six places}
 
 The version number \code{0.3.0} appears in six files: the engine's
-\file{pyproject.toml} and \file{src/agentm2m/\_\_init\_\_.py}
+\file{pyproject.toml} and \file{src/agenthot/\_\_init\_\_.py}
 (\code{\_\_version\_\_}), the plugin manifest, the development marketplace
 entry, the \code{uvx} pin in \file{.mcp.json}, and the pin in the validation
 hook (and in a seventh, the public marketplace, once it exists). They must
@@ -3170,7 +3170,7 @@ workspace, and both test suites.
 \item \file{build.sh} builds the engine's \emph{wheel} (an installable
 archive) and \emph{source distribution}, checks them with \code{twine} (the
 Python upload tool), verifies that the wheel contains what the plugin needs at
-run time (the grammar file, the templates, the \code{agentm2m-mcp} entry
+run time (the grammar file, the templates, the \code{autom2m-mcp} entry
 point), installs it in a fresh \code{uvx} environment as a smoke test, and
 zips the plugin.
 \item \file{dev-install.sh} validates the plugin, checks that the local
@@ -3179,7 +3179,7 @@ installs the plugin from the checkout.
 \item \file{release.sh} defaults to a \emph{dry run}: it builds everything
 and uploads nothing. Publishing (first to TestPyPI, a test copy of the Python
 Package Index, then to PyPI, then a git tag and a public marketplace entry)
-must be switched on explicitly with \code{AGENTM2M\_ALLOW\_PUBLIC=1}.\footnote{As
+must be switched on explicitly with \code{AGENTHOT\_ALLOW\_PUBLIC=1}.\footnote{As
 of version 0.3.0 the reason is that the paper describing the tool is under
 double-anonymous review, where reviewers must not learn who the authors are;
 a public package under the authors' names would reveal them.} Listing in
@@ -3191,11 +3191,11 @@ entry.
 \code{exclude-newer = "7 days"} makes uv refuse dependency versions
 published in the last week when developers lock or sync \emph{this
 repository}: a cooldown against freshly compromised packages, a supply-chain
-defence. It does not affect what \code{uvx --from agentm2m==\ldots} resolves on
+defence. It does not affect what \code{uvx --from agenthot==\ldots} resolves on
 a user's machine (we checked: uv does not apply a package's own resolver
 settings to \code{uvx}); users who want the same cooldown set it in their own
 uv configuration. \code{cache-keys} makes \code{uvx} rebuild a local checkout
-when its source files change, so \code{AGENTM2M\_ENGINE=<checkout>} always
+when its source files change, so \code{AGENTHOT\_ENGINE=<checkout>} always
 runs your latest code.
 
 \subsection{Tests}
@@ -3267,7 +3267,7 @@ R2 & met & host mode uses the engine's own acceptance path (\Cref{sec:host}); \f
 R3 & partly & workers can call only two tools (\Cref{fig:context}) & the dispatch message and values the main agent fills itself rest on instructions \\
 R4 & partly & state survives reloads and processes; \file{test_change_and_persistence.py} & overlapping operations of two processes can lose a reported acceptance (\Cref{sec:arch}); \auto{} files have no lock \\
 R5 & partly & the hook re-checks edited team files (\Cref{lst:hookerr}) & edits through \code{Bash} are not seen; the hook is silent without \code{uvx} or \code{python3} \\
-R6 & partly & \code{agentm2m serve}; direct \code{claude mcp add} needs nothing installed & the plugin route still runs a local proxy; REST covers \auto{} only; local-file skills and hooks do not reach the service \\
+R6 & partly & \code{autom2m serve}; direct \code{claude mcp add} needs nothing installed & the plugin route still runs a local proxy; REST covers \auto{} only; local-file skills and hooks do not reach the service \\
 R7 & partly & fail-closed server, one sandbox function, path and header checks (\Cref{tab:threats}) & locally, \code{process} mode does not isolate; \file{helpers.py} is trusted \\
 \bottomrule
 \end{tabularx}
@@ -3290,7 +3290,7 @@ asserts nothing; $\varphi$ can hold for wrong code.
 \item \textbf{The service is a research preview.} No rate limits, tiers not
 enforced, in-memory metrics, no verified e-mail addresses, no login.
 \item \textbf{Not yet published.} Until the engine is on PyPI,
-\code{AGENTM2M\_ENGINE} must point at a checkout.
+\code{AGENTHOT\_ENGINE} must point at a checkout.
 \item \textbf{Scale is unmeasured.} State is one JSON file per workspace and
 every run re-evaluates all matches; we have not measured large teams in the
 plugin.
@@ -3344,7 +3344,7 @@ on the same project at the same time. List every mechanism of
 interleaving that ends with a \code{stale} status and one that loses a
 reported acceptance.
 \item $\star\star$ (H) \textbf{(Templates)} Initialise the \code{incident}
-template with \code{AGENTM2M\_LLM=mock} and run it. Explain every
+template with \code{AGENTHOT\_LLM=mock} and run it. Explain every
 escalation from the template's comments and validators.
 \item $\star\star$ (H) \textbf{(Validators)} Add a validator to
 \file{helpers.py} that rejects an oracle without an \code{assert}
@@ -3354,7 +3354,7 @@ observe the \code{retry\_prompt} for a bad oracle.
 \devteam{} so that a code body is accepted only if it passes the oracles of
 its story's criteria. What must the footprint or the validator's inputs
 contain, and which \auto{} condition does the modified team now satisfy?
-\item $\star\star$ (H) \textbf{(Service)} Start \code{agentm2m serve}
+\item $\star\star$ (H) \textbf{(Service)} Start \code{autom2m serve}
 locally, create a key with \code{curl}, and drive the Wallet task through the
 REST API up to the first \code{403}. Then set the sandbox so that execution
 is enabled, explain why your choice is or is not safe for a shared server,
@@ -3382,14 +3382,14 @@ may write to the workspace.
 
 \begin{table}[!htb]
 \centering\small
-\caption{\tool{} tools (hand-written teams, \file{.agentm2m/}).}
+\caption{\tool{} tools (hand-written teams, \file{.agenthot/}).}
 \label{tab:tools-a}
 \rowcolors{2}{black!3}{white}
 \begin{tabularx}{\textwidth}{@{}L{3.1cm} L{3.4cm} Y c@{}}
 \toprule
 \rowcolor{white}Tool & Arguments & What it does & Changes state \\
 \midrule
-\mcptool{team\_init} & [template], [force] & Copies a template (\code{devteam}, \code{research}, \code{incident}) into \file{.agentm2m/}; \code{force} replaces an existing workspace. & yes \\
+\mcptool{team\_init} & [template], [force] & Copies a template (\code{devteam}, \code{research}, \code{incident}) into \file{.agenthot/}; \code{force} replaces an existing workspace. & yes \\
 \mcptool{team\_status} & -- & Agents and views, hand-offs, trace links, binding states, open items, $\varphi$. & no \\
 \mcptool{team\_validate} & -- & Parses the spec and every rule module; checks classes, root slots, helper paths; counts matches. & no \\
 \mcptool{model\_show} & view, [key], [depth] & Shows a view or one element; marks engine-owned elements. & no \\
@@ -3399,7 +3399,7 @@ may write to the workspace.
 \mcptool{next\_bindings} & [agent], [limit] & The next values to fill, each with its prompt and \code{footprint\_version}. Host mode only; runs the structural phase first. & yes \\
 \mcptool{submit\_binding} & target\_key, binding, value, footprint\_version & Judges one value with its validator (\Cref{tab:status-submit}). & yes \\
 \mcptool{trace\_query} & key, [transitive] & Upstream sources of an element and everything derived from it. & no \\
-\mcptool{team\_evolve} & agent, view, handoff, rule, view\_spec or view\_spec\_file, [rule\_text] & Adds an agent, its view and a hand-off while the team runs. The view is given inline or as a YAML file in \file{.agentm2m/}; \code{rule\_text} creates the rule file. & yes \\
+\mcptool{team\_evolve} & agent, view, handoff, rule, view\_spec or view\_spec\_file, [rule\_text] & Adds an agent, its view and a hand-off while the team runs. The view is given inline or as a YAML file in \file{.agenthot/}; \code{rule\_text} creates the rule file. & yes \\
 \mcptool{acceptance} & -- & $\varphi$ and the list of what is still open. & no \\
 \bottomrule
 \end{tabularx}
@@ -3407,7 +3407,7 @@ may write to the workspace.
 
 \begin{table}[!htb]
 \centering\small
-\caption{\auto{} tools (builder-proposed teams for a Python task, \file{.agentm2m/auto/}).}
+\caption{\auto{} tools (builder-proposed teams for a Python task, \file{.autom2m/}).}
 \label{tab:tools-b}
 \rowcolors{2}{black!3}{white}
 \begin{tabularx}{\textwidth}{@{}L{3.1cm} L{3.4cm} Y c@{}}
@@ -3425,7 +3425,7 @@ may write to the workspace.
 \mcptool{auto\_attribute} & [limit] & Locates every failed clause; with an engine LLM also classifies it (\Cref{tab:faults}). & yes \\
 \mcptool{auto\_deliverable} & -- & The assembled Python code and which methods are accepted. & no \\
 \mcptool{auto\_solve} & [source] & The whole loop unattended (at most 3 admission rounds, 2 repairs); needs an engine LLM. & yes \\
-\mcptool{auto\_reset} & -- & Deletes \file{.agentm2m/auto/}. & yes \\
+\mcptool{auto\_reset} & -- & Deletes \file{.autom2m/}. & yes \\
 \bottomrule
 \end{tabularx}
 \par\smallskip{\footnotesize $^{*}$ In mode \code{delta} without stored fault reports, it first runs attribution.}
@@ -3439,24 +3439,24 @@ may write to the workspace.
 Python 3.11 or newer, and a checkout of the repository.
 
 \begin{lstlisting}[language=bash, style=raw, caption={Code excerpt: installing the plugin from a checkout (adapted from \file{plugin/scripts/dev-install.sh}).}, label={lst:install}]
-git clone <repository> agentm2m-repo && cd agentm2m-repo
+git clone <repository> agenthot-repo && cd agenthot-repo
 python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
-plugin/scripts/dev-install.sh            # validates and installs agentm2m@agentm2m-dev
-export AGENTM2M_ENGINE=$PWD              # the engine is not on PyPI yet
+plugin/scripts/dev-install.sh            # validates and installs autom2m@autom2m-dev
+export AUTOM2M_ENGINE=$PWD              # the engine is not on PyPI yet
 mkdir /tmp/play && cd /tmp/play && git init
 claude                                   # a scratch project, NOT the engine repository
 \end{lstlisting}
 
-In \cc{}, \code{/plugin} should list \code{agentm2m}, and \code{/mcp} should
-show the \code{agentm2m} server as connected. Then type \skill{init devteam}
+In \cc{}, \code{/plugin} should list \code{agenthot}, and \code{/mcp} should
+show the \code{agenthot} server as connected. Then type \skill{init devteam}
 and \skill{run}, and follow \Cref{sec:walk1}. If the server does not start,
-check that \code{uvx --version} works and that \code{AGENTM2M\_ENGINE} is set
+check that \code{uvx --version} works and that \code{AGENTHOT\_ENGINE} is set
 in the shell that started \cc{}.
 
 \paragraph{Without \cc{}} Everything except the LLM is available from the
 command line and from Python. The scripts in
 \file{docs/plugin-walkthroughs/} reproduce every observed output of this
-document; \code{AGENTM2M\_LLM=mock} lets the engine fill values with canned
+document; \code{AGENTHOT\_LLM=mock} lets the engine fill values with canned
 text.
 
 \begin{lstlisting}[language=bash, style=raw, caption={Code excerpt: the engine without \cc{}.}, label={lst:nocc}]
@@ -3464,9 +3464,9 @@ python docs/plugin-walkthroughs/walkthrough1_devteam.py      # Section 10
 python docs/plugin-walkthroughs/walkthrough2_autom2m.py      # Section 11
 python docs/plugin-walkthroughs/mcp_stdio_demo.py /tmp/p     # Section 5 (empty dir /tmp/p)
 python docs/plugin-walkthroughs/rest_demo.py                 # Section 12
-agentm2m workspace --dir /tmp/q --llm mock init incident && agentm2m workspace --dir /tmp/q --llm mock run
-agentm2m auto check teams/devteam_proposal.json
-agentm2m auto --dir /tmp/w task docs/plugin-walkthroughs/wallet.py && agentm2m auto --dir /tmp/w propose --prompt-only
+agenthot workspace --dir /tmp/q --llm mock init incident && agenthot workspace --dir /tmp/q --llm mock run
+autom2m auto check teams/devteam_proposal.json
+autom2m auto --dir /tmp/w task docs/plugin-walkthroughs/wallet.py && autom2m auto --dir /tmp/w propose --prompt-only
 \end{lstlisting}
 
 \begin{table}[!htb]
@@ -3478,17 +3478,17 @@ agentm2m auto --dir /tmp/w task docs/plugin-walkthroughs/wallet.py && agentm2m a
 \toprule
 \rowcolor{white}Variable & Meaning \\
 \midrule
-\code{AGENTM2M\_LLM} & Who fills values: \code{host} (default), \code{anthropic}, \code{openai}, \code{ollama}, \code{mock}. \\
-\code{AGENTM2M\_MODEL} & Model for engine LLMs. \\
-\code{AGENTM2M\_MAX\_RESAMPLES} & $k$ for hand-written teams in every mode (default 3); \auto{} uses a fixed $k=3$. \\
-\code{AGENTM2M\_ENGINE} & Engine for \code{uvx} (default \code{agentm2m==0.3.0}); a path for a checkout. \\
-\code{AGENTM2M\_PROJECT\_DIR} & Project the local server opens (default: \code{CLAUDE\_PROJECT\_DIR}, then the current directory). \\
-\code{AGENTM2M\_URL}, \code{AGENTM2M\_API\_KEY}, \code{AGENTM2M\_PROJECT} & Forward every tool call to a hosted service. \\
-\code{AGENTM2M\_SANDBOX}, \code{AGENTM2M\_SANDBOX\_CMD} & \code{process}, \code{bwrap}, \code{command} (with its wrapper), \code{off}. \\
-\code{AGENTM2M\_DATA\_DIR} & Server: keys database and tenant projects (default \file{\textasciitilde/.agentm2m-service}). \\
-\code{AGENTM2M\_SOLVE\_LLM} & Server: engine LLM for \mcptool{auto\_solve}. \\
-\code{AGENTM2M\_ALLOW\_UNSANDBOXED\_EXEC} & Server: \code{1} allows execution without isolation (trusted users only). \\
-\code{AGENTM2M\_ALLOWED\_HOSTS} & Server: opt-in DNS-rebinding protection for \code{/mcp}. \\
+\code{AGENTHOT\_LLM} & Who fills values: \code{host} (default), \code{anthropic}, \code{openai}, \code{ollama}, \code{mock}. \\
+\code{AGENTHOT\_MODEL} & Model for engine LLMs. \\
+\code{AGENTHOT\_MAX\_RESAMPLES} & $k$ for hand-written teams in every mode (default 3); \auto{} uses a fixed $k=3$. \\
+\code{AGENTHOT\_ENGINE} & Engine for \code{uvx} (default \code{autom2m==0.4.0}); a path for a checkout. \\
+\code{AGENTHOT\_PROJECT\_DIR} & Project the local server opens (default: \code{CLAUDE\_PROJECT\_DIR}, then the current directory). \\
+\code{AGENTHOT\_URL}, \code{AGENTHOT\_API\_KEY}, \code{AGENTHOT\_PROJECT} & Forward every tool call to a hosted service. \\
+\code{AGENTHOT\_SANDBOX}, \code{AGENTHOT\_SANDBOX\_CMD} & \code{process}, \code{bwrap}, \code{command} (with its wrapper), \code{off}. \\
+\code{AGENTHOT\_DATA\_DIR} & Server: keys database and tenant projects (default \file{\textasciitilde/.autom2m-service}). \\
+\code{AGENTHOT\_SOLVE\_LLM} & Server: engine LLM for \mcptool{auto\_solve}. \\
+\code{AGENTHOT\_ALLOW\_UNSANDBOXED\_EXEC} & Server: \code{1} allows execution without isolation (trusted users only). \\
+\code{AGENTHOT\_ALLOWED\_HOSTS} & Server: opt-in DNS-rebinding protection for \code{/mcp}. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -3586,7 +3586,7 @@ clauses of $\varphi$ (\W{5}).
 \item[Footprint] The exact data an LLM may see when writing one value.
 \item[\code{footprint\_version}] The digest of a footprint, sent with each prompt and required with each submission.
 \item[Guard] The condition in parentheses after a rule's source pattern.
-\item[Host mode] \cc{}, not the engine, writes the values (\code{AGENTM2M\_LLM=host}).
+\item[Host mode] \cc{}, not the engine, writes the values (\code{AGENTHOT\_LLM=host}).
 \item[HOT] Higher-order transformation: a change of the team (new agent, view, hand-off) while it runs.
 \item[Lift binding] \code{self <- @llm(...)}: one JSON answer fills several fields.
 \item[Metamodel / model / view] A form (class diagram); a filled-in form; the model an agent owns.
@@ -3708,7 +3708,7 @@ all escalations.
 
 \what{Q12 (spoofed tenant header).} A user with \emph{any} valid key, for
 example a free one of their own, could send
-\code{x-agentm2m-tenant: <victim's key id>} and read, change or delete the
+\code{x-agenthot-tenant: <victim's key id>} and read, change or delete the
 victim's projects. The attacker needs a valid key and the victim's key id.
 Key ids are random, but they are identifiers, not secrets: they appear in
 key records, logs and directory names. Security must not depend on keeping
@@ -3745,7 +3745,7 @@ test in \file{test_plugin_package.py} (and \code{bump_version.py --check} in
 \item The mock's canned text is not a runnable script, so \code{passesDryRun} rejects every \code{dryRun} value (the rule's comment says so).
 \item Parse the oracle with Python's \code{ast} module and look for an \code{Assert} node; return \code{Rejected("...")} otherwise.
 \item The validator must see the oracles: add a reference from the operation to its criteria's test cases, or a helper that collects them, and run them against the body. \W{4}.
-\item \code{AGENTM2M\_SANDBOX=bwrap} if bubblewrap works on your machine; otherwise \code{AGENTM2M\_ALLOW\_UNSANDBOXED\_EXEC=1}, safe only if you are the only key holder.
+\item \code{AGENTHOT\_SANDBOX=bwrap} if bubblewrap works on your machine; otherwise \code{AGENTHOT\_ALLOW\_UNSANDBOXED\_EXEC=1}, safe only if you are the only key holder.
 \item \code{..} and \code{.}: \code{tenants/<id>/..} is the tenants directory. \code{..x} is an ordinary name inside the tenant's directory.
 \item For example, add a Reviewer view with examples of edge cases that \code{Method2Impl} reads: a new view and hand-off are added, so the delta is \code{hot}.
 \item Compare with \Cref{sec:arch} (one service layer) and \Cref{sec:security} (helpers run code).

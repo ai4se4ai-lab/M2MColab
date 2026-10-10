@@ -1,7 +1,7 @@
-# DevTeam -- the running example of the agentm2m paper (Sec. II-B).
+# DevTeam -- the running example of the agenthot paper (Sec. II-B).
 # Analyst -> Architect -> Developer, plus a direct Analyst -> Tester hand-off.
 # Each view is owned by exactly one agent (write rights omega); hand-offs are
-# the rule modules under rules/. Edit freely: `/agentm2m:status` re-validates.
+# the rule modules under rules/. Edit freely: `/autom2m:status` re-validates.
 name: devteam
 
 views:
@@ -65,6 +65,6 @@ views:
     root: {class: TestModel, slots: {cases: TestCase}}
 
 handoffs:
-  - {name: Req2Arch,  rule: rules/Req2Arch.agentm2m}    # T1
-  - {name: Arch2Code, rule: rules/Arch2Code.agentm2m}   # T2
-  - {name: Req2Test,  rule: rules/Req2Test.agentm2m}    # T4
+  - {name: Req2Arch,  rule: rules/Req2Arch.agenthot}    # T1
+  - {name: Arch2Code, rule: rules/Arch2Code.agenthot}   # T2
+  - {name: Req2Test,  rule: rules/Req2Test.agenthot}    # T4

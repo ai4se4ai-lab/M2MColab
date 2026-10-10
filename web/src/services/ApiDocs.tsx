@@ -31,7 +31,7 @@ export default function ApiDocs() {
       <div className="row-between">
         <p className="lead" style={{ marginTop: 0 }}>
           Every MCP tool has a REST twin. Authenticate with <code>Authorization: Bearer &lt;key&gt;</code> (or <code>X-API-Key</code>); pick a project with{' '}
-          <code>X-AgentM2M-Project</code> or <code>?project=</code>.
+          <code>X-AgentHOT-Project</code> or <code>?project=</code>.
         </p>
       </div>
       <div className="btn-row" style={{ marginTop: 12 }}>

@@ -6,9 +6,9 @@ Usage: python walkthrough2_autom2m.py
 import copy, json, os, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-os.environ["AGENTM2M_LLM"] = "host"
-from agentm2m.auto.workspace import AutoWorkspace, check_team_json
-from agentm2m.auto.examples import EXAMPLE_TYPED
+os.environ["AGENTHOT_LLM"] = "host"
+from autom2m.workspace import AutoWorkspace, check_team_json
+from autom2m.examples import EXAMPLE_TYPED
 
 TASK = open(os.path.join(HERE, "wallet.py")).read()
 
@@ -29,7 +29,7 @@ print("PROMPT LENGTH chars", len(bp["prompt"]))
 team = copy.deepcopy(EXAMPLE_TYPED)
 team["name"] = "wallet_team"
 team.pop("views")
-from agentm2m.auto.compile import GOAL_VIEW
+from autom2m.lift import GOAL_VIEW
 team["views"] = {"Goal": GOAL_VIEW, **{k: v for k, v in EXAMPLE_TYPED["views"].items() if k != "Goal"}}
 
 # a broken first proposal: Tester has no exec (W6), Developer also writes Test (W2), footprint typo (W1), says-clause (W5)
@@ -37,7 +37,7 @@ bad = copy.deepcopy(team)
 bad["agents"][1]["tools"] = []
 bad["writes"]["Developer"] = ["Code", "Test"]
 bad["handoffs"][2]["rules"][0]["llm"][0]["footprint"].append("d.method.returnType")
-bad["done"] = ["cover(G)", "valid", "fresh", "noObl", "Tester.says('ALL TESTS PASS')"]
+bad["done"] = ["cover(G)", "valid", "fresh", "noEsc", "Tester.says('ALL TESTS PASS')"]
 show("auto_submit_team (bad)", aw.submit_team(bad))
 bp = aw.builder_prompt("auto")
 show("auto_propose after rejection: mode", bp["mode"])

@@ -2,15 +2,15 @@
 
 Validators return a `Rejected(reason)` instead of a bare False so the reason
 is fed back to whoever produces the next attempt. Validators that execute
-generated code run it through agentm2m.auto.sandbox (resource limits, a
-timeout, and real isolation when AGENTM2M_SANDBOX=bwrap|command).
+generated code run it through agenthot.sandbox (resource limits, a
+timeout, and real isolation when AGENTHOT_SANDBOX=bwrap|command).
 """
 from __future__ import annotations
 
 import re
 
-from agentm2m.auto.sandbox import run_python
-from agentm2m.engine.validators import (
+from agenthot.sandbox import run_python
+from agenthot.engine.validators import (
     Rejected,
     python_compiles,
     signature_params,
@@ -76,7 +76,7 @@ def failsOnStub(oracle_src: str, timeout: float = 10.0):
         "    sys.exit(0)\n"
         "sys.exit(4)\n"
     )
-    res = run_python(harness, timeout=timeout)  # sandboxed: see agentm2m.auto.sandbox
+    res = run_python(harness, timeout=timeout)  # sandboxed: see agenthot.sandbox
     if res.timeout:
         return Rejected(f"oracle did not finish within {timeout:.0f}s")
     rc = res.returncode

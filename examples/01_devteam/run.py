@@ -18,10 +18,10 @@ sys.path.insert(0, str(HERE))
 from metamodels import build_arch_mm, build_code_mm, build_req_mm, build_test_mm  # noqa: E402
 from seed_models import build_seed_req_model  # noqa: E402
 
-from agentm2m.config import LLMConfig  # noqa: E402
-from agentm2m.llm.factory import make_backend  # noqa: E402
-from agentm2m.team.model import Team  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.config import LLMConfig  # noqa: E402
+from agenthot.llm.factory import make_backend  # noqa: E402
+from agenthot.team.model import Team  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 
 def build_team() -> Team:
@@ -46,9 +46,9 @@ def build_team() -> Team:
     team.add_view(test_mm, test_root)
 
     rules = HERE / "rules"
-    team.add_handoff("Req2Arch", rules / "Req2Arch.agentm2m", target_mm="Arch")
-    team.add_handoff("Arch2Code", rules / "Arch2Code.agentm2m", target_mm="Code")
-    team.add_handoff("Req2Test", rules / "Req2Test.agentm2m", target_mm="Test")
+    team.add_handoff("Req2Arch", rules / "Req2Arch.agenthot", target_mm="Arch")
+    team.add_handoff("Arch2Code", rules / "Arch2Code.agenthot", target_mm="Code")
+    team.add_handoff("Req2Test", rules / "Req2Test.agenthot", target_mm="Test")
     return team
 
 

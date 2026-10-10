@@ -1,6 +1,6 @@
 ---
 name: run
-description: Run the agentm2m team to completion - execute all hand-offs, have the owning agents fill every pending @llm binding from its footprint only, and report whether the acceptance predicate phi holds. Use when the user asks to run, continue, or finish the team.
+description: Run the AgentHOT team to completion - execute all hand-offs, have the owning agents fill every pending @llm binding from its footprint only, and report whether the acceptance predicate phi holds. Use when the user asks to run, continue, or finish the team.
 argument-hint: "[agent to restrict to]"
 ---
 
@@ -16,7 +16,7 @@ validator passes.
 2. While bindings are pending:
    - Call `next_bindings` (optionally with `agent`) to see which agents own pending work.
    - Dispatch one `binding-worker` subagent per owning agent (in parallel when there are several),
-     telling each: "You are the <Agent>. Fill all pending agentm2m bindings for agent <Agent>."
+     telling each: "You are the <Agent>. Fill all pending AgentHOT bindings for agent <Agent>."
      If `$ARGUMENTS` names an agent, only dispatch that one.
    - For a handful of bindings you may instead fill them yourself, under the same rule: answer from
      the binding's `prompt` alone, never from other files or conversation context. Then call

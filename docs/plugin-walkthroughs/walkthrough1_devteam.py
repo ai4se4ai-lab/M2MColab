@@ -4,8 +4,8 @@ Runs the same Workspace methods the MCP tools call, typing the values an LLM wou
 (some deliberately wrong). Usage: python walkthrough1_devteam.py
 """
 import json, os, sys, tempfile
-os.environ["AGENTM2M_LLM"] = "host"
-from agentm2m.workspace import Workspace
+os.environ["AGENTHOT_LLM"] = "host"
+from agenthot.workspace import Workspace
 
 d = tempfile.mkdtemp(prefix="cap_am2m_")
 ws = Workspace(d)
@@ -74,8 +74,8 @@ show("next_bindings after change", nb, 6000)
 # evolve
 import yaml
 from importlib import resources
-spec = yaml.safe_load(open(os.path.join(d, ".agentm2m/rules/extra/SecurityReviewer.view.yaml")))
-show("team_evolve", ws.evolve("SecurityReviewer", "Sec", spec, "Arch2Sec", "rules/extra/Arch2Sec.agentm2m"))
+spec = yaml.safe_load(open(os.path.join(d, ".agenthot/rules/extra/SecurityReviewer.view.yaml")))
+show("team_evolve", ws.evolve("SecurityReviewer", "Sec", spec, "Arch2Sec", "rules/extra/Arch2Sec.agenthot"))
 show("run after evolve", ws.run())
 print("\nDIR", d)
 

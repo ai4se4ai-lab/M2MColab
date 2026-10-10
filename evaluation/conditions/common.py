@@ -7,7 +7,7 @@ import json
 import re
 from dataclasses import dataclass, field
 
-from agentm2m.auto.pywork import _FENCE
+from autom2m.pywork import _FENCE  # noqa: F401
 from evaluation.benchmarks import tasks as T
 
 MAX_TRANSCRIPT_CHARS = 14000
@@ -20,6 +20,7 @@ class RunRecord:
     transcript: list[dict] = field(default_factory=list)  # [{"agent", "content", "kind"}]
     team: dict | None = None
     extra: dict = field(default_factory=dict)
+    declared_done: bool = False  # the condition's own completion signal
 
 
 def task_text(task: T.Task) -> str:

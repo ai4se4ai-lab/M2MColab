@@ -1,4 +1,4 @@
-"""Declarative team specification (`.agentm2m/team.yaml`).
+"""Declarative team specification (`.agenthot/team.yaml`).
 
 Lets a team be declared as data instead of Python (compare
 examples/01_devteam/metamodels.py + run.py): view metamodels, their owning
@@ -32,7 +32,7 @@ indistinguishable from a hand-wired one at run time.
             references: {story: Req.UserStory}             # cross-view reference
         root: {class: ArchModel, slots: {operations: Operation}}
     handoffs:
-      - {name: Req2Arch, rule: rules/Req2Arch.agentm2m}   # target view read from the module
+      - {name: Req2Arch, rule: rules/Req2Arch.agenthot}   # target view read from the module
 
 Seed/edit values for a non-containment reference are element keys
 ("Type#id_or_name", as in trace links), optionally view-qualified
@@ -177,7 +177,7 @@ def build_view_metamodel(
     if root_cls_name in classes:
         raise SpecError(f"view {vname}: root class {root_cls_name} must not also be listed under classes")
 
-    b = MetamodelBuilder(vname, vspec.get("nsURI") or f"http://agentm2m/{team_name}/{vname.lower()}")
+    b = MetamodelBuilder(vname, vspec.get("nsURI") or f"http://agenthot/{team_name}/{vname.lower()}")
 
     # Pass 1: classes (respecting `extends` within the view).
     pending = dict(classes)

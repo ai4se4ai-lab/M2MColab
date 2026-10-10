@@ -1,4 +1,4 @@
-// Same-origin calls to the agentm2m service (vite proxies /api and /mcp in dev).
+// Same-origin calls to the agenthot service (vite proxies /api and /mcp in dev).
 
 export type Health = {
   status: string

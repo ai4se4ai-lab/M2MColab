@@ -17,7 +17,7 @@ Three self-contained paths, one task, one LLM backend:
                               Discussion, "Why not one shared schema?"),
                               hand-rolled here since `jsonschema` is not an
                               existing dependency of this project.
-  3. run_agentm2m(llm)     -- the real engine (metamodels.py + rules/ +
+  3. run_agenthot(llm)     -- the real engine (metamodels.py + rules/ +
                               Team/TeamRuntime): a structural binding copies
                               the constraint verbatim (never sent to the
                               LLM), and a trace-resolved reference links the
@@ -41,11 +41,11 @@ sys.path.insert(0, str(HERE))
 from metamodels import build_arch_mm, build_story_mm  # noqa: E402
 from seed_models import build_seed_story_model  # noqa: E402
 
-from agentm2m.config import LLMConfig  # noqa: E402
-from agentm2m.llm.base import LLMBackend  # noqa: E402
-from agentm2m.llm.factory import make_backend  # noqa: E402
-from agentm2m.team.model import Team  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.config import LLMConfig  # noqa: E402
+from agenthot.llm.base import LLMBackend  # noqa: E402
+from agenthot.llm.factory import make_backend  # noqa: E402
+from agenthot.team.model import Team  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 # The one underlying task, shared by all three paths.
 STORY = {
@@ -157,11 +157,11 @@ def run_shared_schema(llm: LLMBackend) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 3. agentm2m hand-off: structural guarantees (trace link, resolved
+# 3. agenthot hand-off: structural guarantees (trace link, resolved
 #    reference, bounded footprint).
 # ---------------------------------------------------------------------------
 
-def run_agentm2m(llm: LLMBackend) -> dict[str, Any]:
+def run_agenthot(llm: LLMBackend) -> dict[str, Any]:
     story_mm = build_story_mm()
     arch_mm = build_arch_mm()
     story_root = build_seed_story_model(story_mm)
@@ -172,7 +172,7 @@ def run_agentm2m(llm: LLMBackend) -> dict[str, Any]:
     team.add_view(story_mm, story_root)
     team.add_agent("Architect", "Arch")
     team.add_view(arch_mm, arch_root)
-    team.add_handoff("Story2Arch", HERE / "rules" / "Story2Arch.agentm2m", target_mm="Arch")
+    team.add_handoff("Story2Arch", HERE / "rules" / "Story2Arch.agenthot", target_mm="Arch")
 
     runtime = TeamRuntime(team, llm)
     report = runtime.run_to_fixpoint()
@@ -182,7 +182,7 @@ def run_agentm2m(llm: LLMBackend) -> dict[str, Any]:
     component = arch_root.components[0]
 
     # The exact prompt the engine sent -- footprint-bounded to s.description
-    # only (see agentm2m.engine.binding._footprint_to_text): the constraint
+    # only (see agenthot.engine.binding._footprint_to_text): the constraint
     # is never part of it, because it was never in the footprint expression.
     footprint_prompt = (
         f"Derive an API operation signature for this user story\n\n"
@@ -247,18 +247,18 @@ def main() -> int:
     print(f"  required-field survived: {ss['required_field_survived']}")
     print(f"  validator enforced before acceptance: {ss['validator_enforced']}")
 
-    print("\n=== 3. agentm2m hand-off ===")
-    am = run_agentm2m(llm)
+    print("\n=== 3. agenthot hand-off ===")
+    am = run_agenthot(llm)
     print(f"  Operation.signature: {am['raw_output']!r}")
     print(f"  required-field survived (structural copy, never sent to the LLM): {am['required_field_survived']}")
     print(f"  reference correctly resolved via trace: {am['reference_resolved']}")
     print(f"  validator enforced before acceptance: {am['validator_enforced']}")
 
     print("\n=== Comparison ===")
-    print_table({"free-text": ft, "shared-schema": ss, "agentm2m": am})
+    print_table({"free-text": ft, "shared-schema": ss, "agenthot": am})
 
     print(
-        "\nP1 (lossy hand-offs) in action: only the agentm2m path guarantees the required "
+        "\nP1 (lossy hand-offs) in action: only the agenthot path guarantees the required "
         "constraint survives AND that the component reference is a real, resolved link -- "
         "see README.md for why Propositions 1-3 don't hold for the other two paths."
     )

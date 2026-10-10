@@ -1,20 +1,20 @@
-"""MCP server exposing an agentm2m workspace to Claude Code.
+"""MCP server exposing an agenthot workspace to Claude Code.
 
-    agentm2m-mcp                    # stdio; serves <cwd>/.agentm2m
-    AGENTM2M_PROJECT_DIR=/repo agentm2m-mcp
-    AGENTM2M_LLM=host|mock|ollama|anthropic|openai   (default: host)
-    AGENTM2M_SOLVE_LLM=ollama|anthropic|...          (engine LLM for auto_solve)
+    autom2m-mcp                    # stdio; serves <cwd>/.agenthot
+    AGENTHOT_PROJECT_DIR=/repo autom2m-mcp
+    AGENTHOT_LLM=host|mock|ollama|anthropic|openai   (default: host)
+    AGENTHOT_SOLVE_LLM=ollama|anthropic|...          (engine LLM for auto_solve)
 
-The same server is mounted at /mcp by the hosted service (`agentm2m serve`,
+The same server is mounted at /mcp by the hosted service (`autom2m serve`,
 streamable HTTP). There the auth middleware resolves the API key and passes
-the tenant id in the `x-agentm2m-tenant` header; each tenant gets its own
-project directories (`X-AgentM2M-Project` picks one, default "default").
+the tenant id in the `x-agenthot-tenant` header; each tenant gets its own
+project directories (`X-AgentHOT-Project` picks one, default "default").
 
 In the default *host* mode the engine never calls an LLM itself: stochastic
 bindings come back from `next_bindings` as footprint-bounded prompts and
 Claude Code answers them through `submit_binding`, where the same @check
 validators decide acceptance. Every tool is a thin wrapper around
-`agentm2m.workspace.Workspace`.
+`agenthot.workspace.Workspace`.
 """
 from __future__ import annotations
 
@@ -29,9 +29,9 @@ import yaml
 
 from . import __version__
 from . import remote as _remote
-from .auto.sandbox import SandboxRefused
-from .auto.workspace import AutoWorkspace, check_team_json
-from .workspace import Workspace, WorkspaceError, list_templates
+from agenthot.sandbox import SandboxRefused
+from autom2m.workspace import AutoWorkspace, check_team_json
+from agenthot.workspace import Workspace, WorkspaceError, list_templates
 
 try:  # MCP Python SDK 2.x
     from mcp.server.mcpserver import Context
@@ -43,7 +43,7 @@ except ImportError:  # pragma: no cover - SDK 1.x
     from mcp.server.fastmcp.exceptions import ToolError  # type: ignore[no-redef]
 
 INSTRUCTIONS = """\
-agentm2m runs a team of agents whose hand-offs are model-to-model transformations.
+agenthot runs a team of agents whose hand-offs are model-to-model transformations.
 Each agent owns one view model; a deterministic engine creates target elements,
 references and trace links; only @llm attribute values need an LLM, and each is
 accepted only if its @check validator passes. Typical loop: team_status ->
@@ -60,13 +60,13 @@ then auto_propose(mode="delta") and auto_submit_team with the revised team.
 auto_check runs W1-W6 on any typed team without changing anything.
 """
 
-TENANT_HEADER = "x-agentm2m-tenant"
-PROJECT_HEADER = "x-agentm2m-project"
+TENANT_HEADER = "x-agenthot-tenant"
+PROJECT_HEADER = "x-agenthot-project"
 _PROJECT_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 
 
 def data_dir() -> Path:
-    return Path(os.getenv("AGENTM2M_DATA_DIR") or Path.home() / ".agentm2m-service")
+    return Path(os.getenv("AGENTHOT_DATA_DIR") or Path.home() / ".autom2m-service")
 
 
 def tenant_project_dir(tenant: str, project: str | None) -> Path:
@@ -92,7 +92,7 @@ def _project_dir(ctx: Context | None = None) -> Path:
         if tenant:  # set by the hosted service's auth middleware only
             return tenant_project_dir(tenant, headers.get(PROJECT_HEADER))
         raise ToolError("unauthenticated request: send an API key (Authorization: Bearer <key>)")
-    return Path(os.getenv("AGENTM2M_PROJECT_DIR") or os.getenv("CLAUDE_PROJECT_DIR") or os.getcwd())
+    return Path(os.getenv("AGENTHOT_PROJECT_DIR") or os.getenv("CLAUDE_PROJECT_DIR") or os.getcwd())
 
 
 _workspaces: dict[str, Workspace] = {}
@@ -120,10 +120,10 @@ def auto_workspace(project_dir: Path) -> AutoWorkspace:
 
 def solve_backend() -> str | None:
     """The engine LLM used by auto_solve, if one is configured."""
-    b = (os.getenv("AGENTM2M_SOLVE_LLM") or "").strip().lower()
+    b = (os.getenv("AGENTHOT_SOLVE_LLM") or "").strip().lower()
     if b and b != "host":
         return b
-    b = (os.getenv("AGENTM2M_LLM") or "host").strip().lower()
+    b = (os.getenv("AGENTHOT_LLM") or "host").strip().lower()
     return None if b == "host" else b
 
 
@@ -138,12 +138,12 @@ def _call(fn, *args, **kwargs) -> dict:
         raise ToolError(f"{type(exc).__name__}: {exc}") from exc
 
 
-mcp = _Server("agentm2m", instructions=INSTRUCTIONS)
+mcp = _Server("agenthot", instructions=INSTRUCTIONS)
 
 
 def _forwardable(fn):
     """Run the tool here, or, when the plugin is pointed at a hosted service
-    (AGENTM2M_URL + AGENTM2M_API_KEY), forward the same call there. Calls
+    (AGENTHOT_URL + AGENTHOT_API_KEY), forward the same call there. Calls
     arriving over HTTP (i.e. on the hosted service itself) always run here."""
     sig = inspect.signature(fn)
 
@@ -179,7 +179,7 @@ def _remote_client():
 @mcp.tool()
 @_forwardable
 def team_init(template: str = "devteam", force: bool = False, ctx: Context | None = None) -> dict:
-    """Create the agentm2m workspace (.agentm2m/) in the project from a template
+    """Create the agenthot workspace (.agenthot/) in the project from a template
     (devteam, research, incident). force=true replaces an existing workspace
     and discards its state."""
     return _call(_ws(ctx).init, template, force=force)
@@ -194,7 +194,7 @@ def team_status(ctx: Context | None = None) -> dict:
     ws = _ws(ctx)
     if not ws.exists():
         return {"workspace": None, "project_dir": str(ws.project_dir), "templates": list_templates(),
-                "hint": "no .agentm2m/ workspace yet; call team_init"}
+                "hint": "no .agenthot/ workspace yet; call team_init"}
     return _call(ws.status)
 
 
@@ -290,7 +290,7 @@ def team_evolve(
     """Higher-order transformation: add a new agent owning a new view, connected
     by a new hand-off rule module, while the team is running. Give the view as
     view_spec (same shape as a view in team.yaml, without owner) or as a YAML
-    file path relative to .agentm2m/. rule is a path relative to .agentm2m/;
+    file path relative to .agenthot/. rule is a path relative to .agenthot/;
     pass rule_text to create that file. Existing matches become obligations
     for the new agent on the next run."""
     ws = _ws(ctx)
@@ -301,7 +301,7 @@ def team_evolve(
         try:
             p.relative_to(ws.dir.resolve())
         except ValueError:
-            raise ToolError("view_spec_file must be inside .agentm2m/") from None
+            raise ToolError("view_spec_file must be inside .agenthot/") from None
         if not p.is_file():
             raise ToolError(f"{view_spec_file} not found under {ws.dir}")
         view_spec = yaml.safe_load(p.read_text()) or {}
@@ -319,7 +319,7 @@ def acceptance(ctx: Context | None = None) -> dict:
 
 # ---------------------------------------------------------------------------
 # AutoM2M: the team is proposed by a builder (you, in host mode) and admitted
-# by the deterministic W1-W6 checker; state lives in .agentm2m/auto/
+# by the deterministic W1-W6 checker; state lives in .autom2m/
 # ---------------------------------------------------------------------------
 
 
@@ -329,18 +329,19 @@ def auto_task_set(source: str, description: str = "", ctx: Context | None = None
     """AutoM2M step 0: set the task as Python source: a class whose methods to
     implement are stubs (docstring + pass / ... / raise NotImplementedError,
     ideally with >>> examples), or one stub function. It is lifted into the
-    fixed Goal view (Task, Method). Replacing the task resets the run state."""
+    fixed Goal view (Task, Method, Example: doctests become Example objects).
+    Replacing the task resets the run state."""
     return _call(_aws(ctx).set_task, source, description)
 
 
 @mcp.tool()
 @_forwardable
 def auto_check(team_json: dict[str, Any] | str | None = None, naive: bool = False, ctx: Context | None = None) -> dict:
-    """Run the AutoM2M admission checker (W1 well typed, W2 one writer, W3
-    complete, W4 anchored coverage, W5 engine decides done / acyclic, W6
-    right tools) on a typed team, without changing anything. Without
-    team_json it checks the workspace's current team. naive=true uses
-    class-level W4 (for comparison only)."""
+    """Run the AutoM2M admission checker (W1 well typed and stratified, W2 one
+    writer, W3 complete, W4 every goal anchored (two-sided, feature-level),
+    W5 the engine decides done / acyclic, W6 right tools) on a typed team,
+    without changing anything. Without team_json it checks the workspace's
+    current team. naive=true uses path-only W4 (for comparison only)."""
     if team_json is not None:
         return _call(check_team_json, team_json, naive=naive)
     return _call(_aws(ctx).check, None, naive=naive)
@@ -361,9 +362,9 @@ def auto_propose(mode: str = "auto", ctx: Context | None = None) -> dict:
 @_forwardable
 def auto_submit_team(team_json: dict[str, Any] | str, ctx: Context | None = None) -> dict:
     """Submit a typed team. The checker admits it (it is compiled onto the
-    AgentM2M runtime) or rejects it with exact W1-W6 diagnostics to fix. If a
+    AgentHOT runtime) or rejects it with exact W1-W6 diagnostics to fix. If a
     team is already running, an admitted team is applied as a checked delta:
-    in-place / hot (accepted values kept) or rebuild."""
+    in place / by extension (accepted values kept) or by rebuild."""
     return _call(_aws(ctx).submit_team, team_json)
 
 
@@ -371,7 +372,7 @@ def auto_submit_team(team_json: dict[str, Any] | str, ctx: Context | None = None
 @_forwardable
 def auto_run(ctx: Context | None = None) -> dict:
     """AutoM2M step D: run every hand-off to a fixpoint and evaluate
-    phi = cover(G) and valid and fresh and noObl. In host mode open LLM values
+    phi = cover(G) and valid and fresh and noEsc. In host mode open LLM values
     come back as pending (fill them with auto_next_bindings /
     auto_submit_binding); with an engine backend they are sampled directly."""
     return _call(_aws(ctx).run)
@@ -430,12 +431,12 @@ def auto_deliverable(ctx: Context | None = None) -> dict:
 def auto_solve(source: str | None = None, ctx: Context | None = None) -> dict:
     """Run the whole AutoM2M loop unattended with the server's engine LLM
     (builder, checker, run, attribution, repair). Only available when the
-    server has an engine LLM configured (AGENTM2M_SOLVE_LLM); in host mode use
+    server has an engine LLM configured (AGENTHOT_SOLVE_LLM); in host mode use
     the step-by-step tools instead."""
     backend = solve_backend()
     if backend is None:
         raise ToolError("auto_solve is not available: no engine LLM is configured on this server "
-                        "(AGENTM2M_SOLVE_LLM); drive the loop step by step with auto_propose / auto_submit_team / "
+                        "(AGENTHOT_SOLVE_LLM); drive the loop step by step with auto_propose / auto_submit_team / "
                         "auto_run / auto_next_bindings")
     aw = _aws(ctx)
     return _call(AutoWorkspace(aw.project_dir, backend=backend).solve, source)
@@ -444,7 +445,7 @@ def auto_solve(source: str | None = None, ctx: Context | None = None) -> dict:
 @mcp.tool()
 @_forwardable
 def auto_reset(ctx: Context | None = None) -> dict:
-    """Delete the AutoM2M state (.agentm2m/auto/): task, team and run."""
+    """Delete the AutoM2M state (.autom2m/): task, team and run."""
     aw = _aws(ctx)
     _auto.pop(str(aw.project_dir), None)
     return _call(aw.reset)
@@ -458,7 +459,7 @@ def main() -> None:
         return
     settings = _remote.remote_settings()
     if settings:
-        print(f"agentm2m-mcp: forwarding every tool call to {settings[0]}/mcp"
+        print(f"autom2m-mcp: forwarding every tool call to {settings[0]}/mcp"
               + (f" (project {settings[2]})" if settings[2] else ""), file=sys.stderr)
     mcp.run()
 

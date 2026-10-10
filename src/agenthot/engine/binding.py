@@ -96,10 +96,20 @@ def apply_structural_bindings(
             raw = eval_expr(b.expr, match.bindings, helpers)
             feature = _find_feature(target_obj, b.name)
             expected_type = getattr(feature, "eType", None) if feature is not None else None
-            setattr(target_obj, b.name, resolve_structural_value(raw, expected_type, trace, target_registry))
+            value = resolve_structural_value(raw, expected_type, trace, target_registry)
+            if feature is not None and feature.many:
+                # a many-valued feature is a collection: replace its contents
+                items = value if isinstance(value, (list, tuple)) or (hasattr(value, "__iter__") and not isinstance(value, (str, bytes)) and not hasattr(value, "eClass")) else [value]
+                coll = getattr(target_obj, b.name)
+                coll.clear()
+                coll.extend(v for v in items if v is not None)
+            else:
+                setattr(target_obj, b.name, value)
 
 
 def _footprint_to_text(value: Any) -> str:
+    if hasattr(value, "prompt_text"):  # a compiled footprint renders itself
+        return value.prompt_text()
     if hasattr(value, "eClass"):
         feats = {f.name: getattr(value, f.name) for f in value.eClass.eAllStructuralFeatures()}
         return f"{value.eClass.name}({feats})"
@@ -171,21 +181,59 @@ def accept_sample(
                     else "it failed the validator: wrong format, or not what was asked"
                 )
         except Exception as exc:  # noqa: BLE001 - a failing @check is a rejection, not a crash
-            from ..auto.sandbox import SandboxRefused
+            from ..sandbox import SandboxRefused
 
             if isinstance(exc, SandboxRefused):
                 raise  # a policy refusal, not a verdict on the value: no attempt is spent
             ok, reason = False, f"@check raised: {exc}"
 
+    if ok and binding.name != LIFT_BINDING_NAME:
+        value, why = _coerce(target_obj, binding.name, raw)
+        if why:
+            ok, reason = False, why
+        else:
+            try:
+                setattr(target_obj, binding.name, value)
+            except Exception as exc:  # noqa: BLE001 - a value the feature cannot hold is a rejection
+                ok, reason = False, f"the value does not fit feature {binding.name}: {exc}"
+
     if ok:
-        if binding.name != LIFT_BINDING_NAME:
-            setattr(target_obj, binding.name, raw)
         trace_link.stamps[binding.name] = fp_digest
         trace_link.footprints[binding.name] = footprint
+        owners = getattr(footprint, "owner_keys", None)
+        if owners is not None:
+            trace_link.reads[binding.name] = list(owners)
         trace_link.failed_stamps.pop(binding.name, None)
         trace_link.attempts.pop(binding.name, None)
         trace_link.rejections.pop(binding.name, None)
     return ok, reason
+
+
+_TRUE = {"true", "yes", "y", "1", "pass", "passed", "ok"}
+_FALSE = {"false", "no", "n", "0", "fail", "failed"}
+
+
+def _coerce(target_obj: Any, name: str, raw: Any) -> tuple[Any, str]:
+    """An LLM answers in text; a typed attribute gets the parsed value, or a
+    rejection reason when the text is not of that type."""
+    feature = _find_feature(target_obj, name)
+    etype = getattr(getattr(feature, "eType", None), "name", "")
+    if feature is not None and getattr(feature, "many", False):
+        return raw, f"feature {name} is many-valued; an LLM value fills single-valued attributes only"
+    text = str(raw if raw is not None else "").strip().strip("`").strip()
+    if etype in ("EBoolean", "EBooleanObject"):
+        word = text.split()[0].strip(".,:;!").lower() if text else ""
+        if word in _TRUE:
+            return True, ""
+        if word in _FALSE:
+            return False, ""
+        return raw, f"feature {name} is a boolean: answer true or false"
+    if etype in ("EInt", "EIntegerObject", "ELong", "ELongObject"):
+        try:
+            return int(text.split()[0].strip(".,;")), ""
+        except (ValueError, IndexError):
+            return raw, f"feature {name} is an integer: answer with a number"
+    return raw, ""
 
 
 def build_prompt(binding: StochasticBinding, match: Match, helpers: Helpers, footprint: Any) -> str:
@@ -234,7 +282,15 @@ def apply_stochastic_binding(
     drawn here: a stale binding raises `PendingSample` carrying its prompt,
     and the value arrives later through `TeamRuntime.submit_binding`.
     """
-    footprint = eval_expr(binding.footprint_expr, match.bindings, helpers)
+    try:
+        footprint = eval_expr(binding.footprint_expr, match.bindings, helpers)
+    except Exception as exc:  # noqa: BLE001 - an ill-typed footprint escalates, it is never sampled
+        reason = f"footprint cannot be evaluated: {exc}"
+        trace_link.stamps.pop(binding.name, None)
+        trace_link.failed_stamps[binding.name] = digest(reason)
+        trace_link.rejections[binding.name] = {"value": "", "reason": reason, "digest": digest(reason)}
+        return (False, Escalation(target_key=trace_link.target_key, binding=binding.name, rule=trace_link.rule,
+                                  reason=reason))
     fp_digest = digest(footprint)
     if trace_link.stamps.get(binding.name) == fp_digest:
         return (False, None)  # footprint unchanged since acceptance -> no re-invocation

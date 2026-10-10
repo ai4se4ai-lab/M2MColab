@@ -1,4 +1,4 @@
-// Grammar for the agentm2m hand-off DSL: ATL-flavored matched rules
+// Grammar for the agenthot hand-off DSL: ATL-flavored matched rules
 // extended with @llm(prompt, footprint) stochastic bindings and @check
 // validators (Definition 1 / Fig. "Running example" in docs/DS-A2A.tex).
 

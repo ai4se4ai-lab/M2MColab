@@ -4,7 +4,7 @@ Structural constructs (module/rule/pattern/binding shape) are turned into
 these dataclasses. Expression subtrees (guards, structural binding RHS,
 @llm prompt/footprint, @check) are intentionally left as raw `lark.Tree` /
 `lark.Token` objects -- they are evaluated later, per-match, by
-`agentm2m.engine.expr.eval_expr`.
+`agenthot.engine.expr.eval_expr`.
 """
 from __future__ import annotations
 

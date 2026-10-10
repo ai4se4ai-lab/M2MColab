@@ -26,9 +26,9 @@ def test_security_reviewer_hot_example():
     finally:
         sys.path.remove(str(example_dir))
 
-    from agentm2m.llm.mock_backend import MockBackend
-    from agentm2m.team.hot import TeamChange, apply_hot
-    from agentm2m.team.runtime import TeamRuntime
+    from agenthot.llm.mock_backend import MockBackend
+    from agenthot.team.hot import TeamChange, apply_hot
+    from agenthot.team.runtime import TeamRuntime
 
     team = run_mod.build_team()
     llm = MockBackend()
@@ -47,7 +47,7 @@ def test_security_reviewer_hot_example():
             view=sec_mm,
             view_root=sec_root,
             handoff_name="Arch2Sec",
-            rule_path=example_dir / "rules" / "Arch2Sec.agentm2m",
+            rule_path=example_dir / "rules" / "Arch2Sec.agenthot",
         ),
     )
     runtime.run_to_fixpoint()

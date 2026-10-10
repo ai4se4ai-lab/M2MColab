@@ -8,7 +8,7 @@ reported as a threat to validity.
 The interpreter is `AM2M_SANDBOX_PY` if set, else the repository's
 `.venv-sbx` when running from a checkout, else the current interpreter.
 
-Isolation (`AGENTM2M_SANDBOX`):
+Isolation (`AGENTHOT_SANDBOX`):
 
   process  (default) a same-user subprocess with resource limits. NOT an
            isolation boundary: the code can read anything the caller can and
@@ -19,7 +19,7 @@ Isolation (`AGENTM2M_SANDBOX`):
            mounted read-only plus the run's temp dir. The caller's home, data
            directory and other tenants' files are not visible. Needs
            unprivileged user namespaces (or a container started with them).
-  command  prefix every run with `AGENTM2M_SANDBOX_CMD` (e.g. an nsjail or
+  command  prefix every run with `AGENTHOT_SANDBOX_CMD` (e.g. an nsjail or
            firejail invocation); the wrapper is responsible for isolation.
   off      never execute: behaviour validators reject with a clear reason.
 
@@ -65,7 +65,7 @@ class SandboxRefused(RuntimeError):
 
 
 def mode() -> str:
-    m = (os.getenv("AGENTM2M_SANDBOX") or "process").strip().lower()
+    m = (os.getenv("AGENTHOT_SANDBOX") or "process").strip().lower()
     return m if m in ("process", "bwrap", "command", "off") else "off"  # unknown -> fail closed
 
 
@@ -82,16 +82,16 @@ def _wrapper(m: str, workdir: str) -> list[str]:
     if m == "bwrap":
         return _bwrap_argv(workdir)
     if m == "command":
-        return shlex.split(os.environ.get("AGENTM2M_SANDBOX_CMD", ""))
+        return shlex.split(os.environ.get("AGENTHOT_SANDBOX_CMD", ""))
     return []
 
 
 def _probe(m: str) -> str:
     """'' if the isolating sandbox can actually start a run, else why not (cached)."""
-    key = (m, os.environ.get("AGENTM2M_SANDBOX_CMD", ""), PY)
+    key = (m, os.environ.get("AGENTHOT_SANDBOX_CMD", ""), PY)
     if key not in _probes:
-        if m == "command" and not os.environ.get("AGENTM2M_SANDBOX_CMD", "").strip():
-            _probes[key] = "AGENTM2M_SANDBOX=command needs AGENTM2M_SANDBOX_CMD"
+        if m == "command" and not os.environ.get("AGENTHOT_SANDBOX_CMD", "").strip():
+            _probes[key] = "AGENTHOT_SANDBOX=command needs AGENTHOT_SANDBOX_CMD"
         else:
             with tempfile.TemporaryDirectory(prefix="am2m_probe_") as d:
                 try:
@@ -108,13 +108,13 @@ def execution_status() -> dict:
     m = mode()
     isolated = m in ISOLATING
     if m == "off":
-        reason = "code execution is disabled on this server (AGENTM2M_SANDBOX=off)"
+        reason = "code execution is disabled on this server (AGENTHOT_SANDBOX=off)"
     elif isolated:
         err = _probe(m)
         reason = f"code execution is disabled: the {m} sandbox cannot start a run ({err})" if err else ""
     elif _require_isolation:
-        reason = ("code execution is disabled: this server has no isolating sandbox (set AGENTM2M_SANDBOX=bwrap, or "
-                  "AGENTM2M_SANDBOX=command with AGENTM2M_SANDBOX_CMD)")
+        reason = ("code execution is disabled: this server has no isolating sandbox (set AGENTHOT_SANDBOX=bwrap, or "
+                  "AGENTHOT_SANDBOX=command with AGENTHOT_SANDBOX_CMD)")
     else:
         reason = ""
     return {"sandbox": m, "isolated": isolated, "enabled": not reason, "reason": reason}

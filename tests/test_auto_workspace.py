@@ -8,17 +8,17 @@ from pathlib import Path
 
 import pytest
 
-from agentm2m.auto.pywork import (
+from autom2m.pywork import (
     TaskSourceError,
     assemble,
     run_examples,
     task_from_source,
 )
-from agentm2m.auto.workspace import AutoWorkspace, AutoWorkspaceError, check_team_json
-from agentm2m.llm.base import LLMBackend
+from autom2m.workspace import AutoWorkspace, AutoWorkspaceError, check_team_json
+from agenthot.llm.base import LLMBackend
 
 TEAMS = Path(__file__).resolve().parents[1] / "teams"
-REF = json.loads((TEAMS / "classeval_reference.json").read_text())
+REF = json.loads((TEAMS / "pair_team.json").read_text())
 
 CLASS_SRC = '''import math
 
@@ -43,7 +43,7 @@ class Calc:
         raise NotImplementedError
 '''
 FUNC_SRC = 'def add(a, b):\n    """Return a + b.\n    >>> add(1, 2)\n    3\n    """\n'
-TESTS = "```python\nimport unittest\nclass T(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(2, 2), 4)\n```"
+TESTS = "```python\nimport unittest\nclass T(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(1, 2), 3)\n        self.assertEqual(add(2, 2), 4)\n```"
 CODE = "```python\ndef add(a, b):\n    return a + b\n```"
 BAD = "```python\ndef add(a, b):\n    return a - b\n```"
 
@@ -137,9 +137,9 @@ def test_host_mode_attribution_locates_escalation(tmp_path: Path):
         last = ws.submit_binding(b["target_key"], b["binding"], BAD, b["footprint_version"])
     assert last["status"] == "escalated"
     run = ws.run()
-    assert run["phi"] is False and run["pending"] == 0 and "noObl" in run["open_clauses"]
+    assert run["phi"] is False and run["pending"] == 0 and "noEsc" in run["open_clauses"]
     att = ws.attribute()
-    loc = next(f for f in att["faults"] if f["clause"] == "noObl")
+    loc = next(f for f in att["faults"] if f["clause"] == "noEsc")
     assert (loc["rule"], loc["binding"], loc["agent"]) == ("Method2Impl", "code", "Developer")
     assert ws.builder_prompt()["mode"] == "delta"
     assert "Method2Impl" in ws.builder_prompt("delta")["prompt"]
@@ -153,7 +153,7 @@ class Scripted(LLMBackend):
     name = "scripted"
 
     def generate(self, prompt, *, temperature=0.2, format=None, **kw):
-        if format == "json":
+        if format is not None:
             return json.dumps(REF)
         return TESTS if "Write unit tests" in prompt else CODE
 

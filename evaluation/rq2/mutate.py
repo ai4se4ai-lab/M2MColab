@@ -1,10 +1,13 @@
-"""Mutation study of the W1–W6 checker (RQ2, static).
+"""RQ2 mutation analysis of the W1-W6 checker (paper Table 7).
 
 Nine operators, one or two per defect class, applied at every applicable
-site of each admitted team. Every mutant is checked with anchored and naive
-W4. Output: one JSON line per mutant and a summary table.
+site of the two hand-written admitted teams (the typed DevTeam and the
+requirements team). Every mutant is checked with three W4 variants
+(path-only, one-sided, two-sided) under two goal configurations: G1 declares
+only checked obligations, G2 also the deliverables.
 
-    python -m evaluation.rq2.mutate teams/devteam_admitted.json teams/chakin_repaired.json
+    python -m evaluation.rq2.mutate                      # both teams, writes results/rq2/mutants.jsonl
+    python -m evaluation.rq2.mutate teams/devteam_admitted.json
 """
 from __future__ import annotations
 
@@ -15,8 +18,15 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from agentm2m.auto.checker import check
-from agentm2m.auto.typed_team import DONE_VOCABULARY, parse_team, rule_env, type_path
+from autom2m.checker import W4_MODES, check
+from autom2m.lift import normalize
+from autom2m.typed_team import DONE_VOCABULARY, parse_team, rule_env, type_path
+from autom2m.vlib import VLIB
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_TEAMS = [ROOT / "teams" / "devteam_admitted.json", ROOT / "teams" / "reqteam_admitted.json"]
+G2_EXTRA = {"devteam": {"class": "Method", "scope": "all", "mode": "delivered"},
+            "reqteam": {"class": "UserStory", "scope": "s.status = 'accepted'", "mode": "delivered"}}
 
 OPERATORS = {
     "delete_rule": ("D1", "W4"),
@@ -114,8 +124,6 @@ def mutants(team: dict):
     needed = set()
     for _h, r in tt.rules():
         for b in r.llm:
-            from agentm2m.auto.vlib import VLIB
-
             for v in b.validators:
                 needed |= set(VLIB[v.id].tools) if v.id in VLIB else set()
     for ai, a in enumerate(team["agents"]):
@@ -130,65 +138,76 @@ def mutants(team: dict):
                 yield "remove_tool", f"{a['name']}-{tool}", m
 
 
-def run(paths: list[str], out: Path | None = None, label: str = "") -> list[dict]:
+def _prep(team: dict) -> dict:
+    return normalize(team) if team.get("goal_view") == "Goal" else team
+
+
+def with_goal(team: dict, config: str) -> dict:
+    """G1: the team as given (checked obligations only); G2: + deliverables."""
+    t = copy.deepcopy(team)
+    if config == "G2":
+        extra = G2_EXTRA.get(str(t.get("name")))
+        if extra and extra not in t.get("goal", []):
+            t["goal"] = list(t.get("goal", [])) + [extra]
+    return t
+
+
+def verdicts(team: dict) -> dict:
+    out = {}
+    for config in ("G1", "G2"):
+        for mode in W4_MODES:
+            r = check(_prep(with_goal(team, config)), w4=mode)
+            out[f"{mode}|{config}"] = {"rejected": not r.admitted, "conds": sorted(r.conds())}
+    return out
+
+
+def run(paths: list, out: Path | None = None) -> list[dict]:
     rows = []
     for p in paths:
         team = json.loads(Path(p).read_text())
-        base_a, base_n = check(team), check(team, anchored=False)
-        rows.append({"team": Path(p).stem, "operator": "none", "site": "-", "defect": "-",
-                     "anchored": sorted(base_a.conds()), "naive": sorted(base_n.conds()),
-                     "anchored_detected": not base_a.admitted, "naive_detected": not base_n.admitted, "targeted_hit": None})
-        for op, site, m in mutants(team):
-            ra, rn = check(m), check(m, anchored=False)
-            rows.append({
-                "team": Path(p).stem, "operator": op, "site": site, "defect": OPERATORS[op][0],
-                "anchored": sorted(ra.conds()), "naive": sorted(rn.conds()),
-                "anchored_detected": not ra.admitted, "naive_detected": not rn.admitted,
-                "targeted_hit": OPERATORS[op][1] in ra.conds(),
-                "anchored_msgs": [str(d) for d in ra.diagnostics],
-            })
+        name = Path(p).stem
+        rows.append({"team": name, "operator": "none", "site": "-", "defect": "-", "checks": verdicts(team)})
+        for op, site, m in mutants(_prep(team)):
+            rows.append({"team": name, "operator": op, "site": site, "defect": OPERATORS[op][0], "checks": verdicts(m)})
     if out:
         out.parent.mkdir(parents=True, exist_ok=True)
-        with out.open("w") as fh:
-            for r in rows:
-                fh.write(json.dumps({**r, "config": label}) + "\n")
+        out.write_text("".join(json.dumps(r) + "\n" for r in rows))
     return rows
 
 
 def summarize(rows: list[dict]) -> dict:
-    agg = defaultdict(lambda: {"n": 0, "anchored": 0, "naive": 0, "targeted": 0})
+    agg: dict = defaultdict(lambda: defaultdict(int))
     for r in rows:
         if r["operator"] == "none":
             continue
         a = agg[r["operator"]]
         a["n"] += 1
-        a["anchored"] += r["anchored_detected"]
-        a["naive"] += r["naive_detected"]
-        a["targeted"] += bool(r["targeted_hit"])
-    return dict(agg)
+        for k, v in r["checks"].items():
+            a[k] += v["rejected"]
+    return {k: dict(v) for k, v in agg.items()}
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("teams", nargs="+")
-    ap.add_argument("--out", type=Path)
-    ap.add_argument("--label", default="")
+    ap.add_argument("teams", nargs="*")
+    ap.add_argument("--out", type=Path, default=ROOT / "results" / "rq2" / "mutants.jsonl")
     a = ap.parse_args(argv)
-    rows = run(a.teams, a.out, a.label)
+    rows = run(a.teams or DEFAULT_TEAMS, a.out)
     s = summarize(rows)
-    tot = {"n": 0, "anchored": 0, "naive": 0, "targeted": 0}
-    print(f"{'operator':18} {'defect':6} {'n':>4} {'anch':>5} {'naive':>5} {'target':>6}")
+    cols = [f"{m}|{g}" for m in W4_MODES for g in ("G1", "G2")]
+    print(f"{'operator':16} {'D':3} {'n':>3} " + " ".join(f"{c:>15}" for c in cols))
+    tot = defaultdict(int)
     for op, (d, _w) in OPERATORS.items():
-        x = s.get(op, {"n": 0, "anchored": 0, "naive": 0, "targeted": 0})
-        print(f"{op:18} {d:6} {x['n']:4} {x['anchored']:5} {x['naive']:5} {x['targeted']:6}")
-        for k in tot:
-            tot[k] += x[k]
-    print(f"{'total':18} {'':6} {tot['n']:4} {tot['anchored']:5} {tot['naive']:5} {tot['targeted']:6}")
-    fa = [r for r in rows if r["operator"] == "none" and r["anchored_detected"]]
-    print("false alarms on unmutated teams:", len(fa))
-    missed = [r for r in rows if r["operator"] != "none" and not r["anchored_detected"]]
-    for r in missed:
-        print("  MISSED (anchored):", r["team"], r["operator"], r["site"])
+        x = s.get(op, {})
+        print(f"{op:16} {d:3} {x.get('n', 0):3} " + " ".join(f"{x.get(c, 0):15}" for c in cols))
+        for c in ["n"] + cols:
+            tot[c] += x.get(c, 0)
+    print(f"{'total':16} {'':3} {tot['n']:3} " + " ".join(f"{tot[c]:15}" for c in cols))
+    fa = [r for r in rows if r["operator"] == "none" and any(v["rejected"] for v in r["checks"].values())]
+    print("unmutated teams rejected:", [(r["team"], {k: v["conds"] for k, v in r["checks"].items() if v["rejected"]}) for r in fa])
+    for r in rows:
+        if r["operator"] != "none" and not r["checks"]["two-sided|G2"]["rejected"]:
+            print("  MISSED (two-sided, G2):", r["team"], r["operator"], r["site"])
     return 0
 
 

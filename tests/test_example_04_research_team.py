@@ -35,8 +35,8 @@ def _load_build_team():
     return build_team
 
 
-from agentm2m.llm.mock_backend import MockBackend  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.llm.mock_backend import MockBackend  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 
 def test_research_team_nm_handoff_fans_out_and_reaches_acceptance():

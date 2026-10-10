@@ -1,15 +1,15 @@
 """The four view metamodels of the paper's DevTeam running example
 (Fig. 1 / Sec III-B): Req (Analyst), Arch (Architect), Code (Developer),
 Test (Tester). Each is an EMF-compatible pyecore EPackage built with
-agentm2m.metamodel.MetamodelBuilder.
+agenthot.metamodel.MetamodelBuilder.
 """
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_req_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Req", "http://agentm2m/examples/devteam/req")
+    b = MetamodelBuilder("Req", "http://agenthot/examples/devteam/req")
     epic = b.eclass("Epic")
     b.attribute(epic, "name")
 
@@ -30,7 +30,7 @@ def build_req_mm() -> MetamodelBuilder:
 
 
 def build_arch_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Arch", "http://agentm2m/examples/devteam/arch")
+    b = MetamodelBuilder("Arch", "http://agenthot/examples/devteam/arch")
     component = b.eclass("Component")
     b.attribute(component, "name")
 
@@ -46,7 +46,7 @@ def build_arch_mm() -> MetamodelBuilder:
 
 
 def build_code_mm(arch_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Code", "http://agentm2m/examples/devteam/code")
+    b = MetamodelBuilder("Code", "http://agenthot/examples/devteam/code")
     edit = b.eclass("CodeEdit")
     b.attribute(edit, "name")
     b.attribute(edit, "body")
@@ -58,7 +58,7 @@ def build_code_mm(arch_mm: MetamodelBuilder) -> MetamodelBuilder:
 
 
 def build_test_mm(req_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Test", "http://agentm2m/examples/devteam/test")
+    b = MetamodelBuilder("Test", "http://agenthot/examples/devteam/test")
     case = b.eclass("TestCase")
     b.attribute(case, "name")
     b.attribute(case, "oracle")

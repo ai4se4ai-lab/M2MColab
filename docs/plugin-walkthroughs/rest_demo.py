@@ -5,11 +5,11 @@ Usage: python rest_demo.py   (needs the [serve] extra and httpx)
 import json, os, copy, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-os.environ["AGENTM2M_LLM"] = "host"
+os.environ["AGENTHOT_LLM"] = "host"
 from fastapi.testclient import TestClient
-from agentm2m.server.app import create_app
-from agentm2m.auto.examples import EXAMPLE_TYPED
-from agentm2m.auto.compile import GOAL_VIEW
+from autom2m.server.app import create_app
+from autom2m.examples import EXAMPLE_TYPED
+from autom2m.lift import GOAL_VIEW
 DATA = tempfile.mkdtemp(prefix="am2m_svc_")
 TASK = open(os.path.join(HERE, "wallet.py")).read()
 app = create_app(data_dir=DATA)
@@ -20,7 +20,7 @@ def show(t, r, n=1500):
 h = c.get("/api/health").json()
 print("HEALTH", json.dumps({k: h[k] for k in ("status","version","mcp","llm","execution")}, indent=1)[:1500])
 r = c.post("/api/keys", json={"label": "student"}); show("create key", r); key = r.json()["key"]
-H = {"Authorization": f"Bearer {key}", "X-AgentM2M-Project": "wallet"}
+H = {"Authorization": f"Bearer {key}", "X-AgentHOT-Project": "wallet"}
 show("task without key", c.post("/api/auto/task", json={"source": TASK}))
 show("task", c.post("/api/auto/task", json={"source": TASK}, headers=H))
 r = c.get("/api/auto/propose", headers=H); print("\n===== propose -> HTTP", r.status_code, "mode", r.json()["mode"], "prompt chars", len(r.json()["prompt"]))

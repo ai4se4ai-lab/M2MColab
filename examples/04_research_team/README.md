@@ -23,7 +23,7 @@ DevTeam), and it demonstrates the one mechanism 01–03 never exercise: an
 > $M_{\mathit{req}}$ and $M_{\mathit{arch}}$) are declared as in ATL, with
 > several `from` models.
 
-`rules/ExpLit2Report.agentm2m` is exactly that: its `create` line declares
+`rules/ExpLit2Report.agenthot` is exactly that: its `create` line declares
 **two** source models,
 
 ```
@@ -64,7 +64,7 @@ final `n_sections > n_plans` check.
 
 | Mechanism | Where |
 |---|---|
-| n:m hand-off declaration | `rules/ExpLit2Report.agentm2m`'s `create OUT : Report from IN1 : Experiments, IN2 : Literature;` |
+| n:m hand-off declaration | `rules/ExpLit2Report.agenthot`'s `create OUT : Report from IN1 : Experiments, IN2 : Literature;` |
 | A guard relating two source models | `(p.topic = c.topic)` |
 | A footprint drawn from both sources | `p.combinedFootprint(c)` -> `[p, c]` (helpers.py) |
 | Structural cross-view references | `ReportSection.plan` / `ReportSection.claim`, both set directly (no LLM involvement) |
@@ -90,9 +90,9 @@ backend), and `phi holds: True`.
   `ExperimentPlan` and `Claim`).
 - `seed_models.py` — two papers, four claims, one topic shared across
   papers (the n:m trigger).
-- `rules/Lit2Plan.agentm2m` — the ordinary 1:1 hand-off feeding
+- `rules/Lit2Plan.agenthot` — the ordinary 1:1 hand-off feeding
   `Experiments`.
-- `rules/ExpLit2Report.agentm2m` — the n:m hand-off; see above.
+- `rules/ExpLit2Report.agenthot` — the n:m hand-off; see above.
 - `rules/helpers.py` — `notTooShort` (a reused length `@check`), `sectionId`
   (disambiguates ids across an n:m match), `combinedFootprint` (the
   two-source footprint).

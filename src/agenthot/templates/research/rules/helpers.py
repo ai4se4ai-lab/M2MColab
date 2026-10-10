@@ -1,7 +1,7 @@
 """OCL-callable helpers for the ResearchTeam rule modules."""
 from __future__ import annotations
 
-from agentm2m.engine.validators import Rejected
+from agenthot.engine.validators import Rejected
 
 
 def notTooShort(text: str):

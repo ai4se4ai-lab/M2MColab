@@ -17,10 +17,10 @@ from pathlib import Path
 import pytest
 from conftest import PLUGIN, REPO
 
-from agentm2m import __version__
-from agentm2m.workspace import Workspace
+from agenthot import __version__
+from agenthot.workspace import Workspace
 
-SERVER_PREFIX = "mcp__plugin_agentm2m_agentm2m__"
+SERVER_PREFIX = "mcp__plugin_autom2m_autom2m__"
 
 
 def _frontmatter(path: Path) -> dict:
@@ -33,7 +33,7 @@ def _frontmatter(path: Path) -> dict:
 
 
 def _server_tools() -> set[str]:
-    src = (REPO / "src/agentm2m/mcp_server.py").read_text()
+    src = (REPO / "src/autom2m/mcp_server.py").read_text()
     return set(re.findall(r"@mcp\.tool\(\)\n(?:@\w+\n)*def (\w+)\(", src))
 
 
@@ -41,30 +41,30 @@ def test_manifests_are_valid_json_and_consistent():
     manifest = json.loads((PLUGIN / ".claude-plugin/plugin.json").read_text())
     market = json.loads((REPO / "plugin/.claude-plugin/marketplace.json").read_text())
     mcp = json.loads((PLUGIN / ".mcp.json").read_text())
-    assert manifest["name"] == "agentm2m"
-    entry = next(p for p in market["plugins"] if p["name"] == "agentm2m")
+    assert manifest["name"] == "autom2m"
+    entry = next(p for p in market["plugins"] if p["name"] == "autom2m")
     assert (REPO / "plugin" / entry["source"]).resolve() == PLUGIN.resolve()
     # one version everywhere: engine, plugin, marketplace entry, uvx pin, hook pin
     assert manifest["version"] == entry["version"] == __version__
-    assert f"agentm2m=={__version__}" in json.dumps(mcp)
-    assert f"agentm2m=={__version__}" in (PLUGIN / "hooks/validate-on-edit.sh").read_text()
+    assert f"autom2m=={__version__}" in json.dumps(mcp)
+    assert f"autom2m=={__version__}" in (PLUGIN / "hooks/validate-on-edit.sh").read_text()
     pyproject = (REPO / "pyproject.toml").read_text()
     assert f'version = "{__version__}"' in pyproject
 
 
 def test_mcp_config_launches_the_engine_entry_point():
-    cfg = json.loads((PLUGIN / ".mcp.json").read_text())["agentm2m"]
+    cfg = json.loads((PLUGIN / ".mcp.json").read_text())["autom2m"]
     assert cfg["command"] == "uvx"
-    assert cfg["args"][-1] == "agentm2m-mcp"
-    assert "agentm2m-mcp = \"agentm2m.mcp_server:main\"" in (REPO / "pyproject.toml").read_text()
-    assert cfg["env"]["AGENTM2M_LLM"].startswith("${AGENTM2M_LLM")
+    assert cfg["args"][-1] == "autom2m-mcp"
+    assert "autom2m-mcp = \"autom2m.mcp_server:main\"" in (REPO / "pyproject.toml").read_text()
+    assert cfg["env"]["AGENTHOT_LLM"].startswith("${AGENTHOT_LLM")
 
 
 def test_skills_have_frontmatter_and_name_real_tools():
     tools = _server_tools()
     assert len(tools) == 24
     skills = sorted((PLUGIN / "skills").glob("*/SKILL.md"))
-    assert {p.parent.name for p in skills} == {"init", "run", "change", "evolve", "status", "author-handoff", "agentm2m-concepts",
+    assert {p.parent.name for p in skills} == {"init", "run", "change", "evolve", "status", "author-handoff", "autom2m-concepts",
                                                 "auto-build", "check", "diagnose"}
     for p in skills:
         fm = _frontmatter(p)
@@ -117,9 +117,9 @@ def test_session_start_hook(project: Path):
 def test_validate_on_edit_hook(project: Path, uvx: str):
     ws = Workspace(project, backend="host")
     ws.init("devteam")
-    env = {"CLAUDE_PROJECT_DIR": str(project), "AGENTM2M_ENGINE": str(REPO),
+    env = {"CLAUDE_PROJECT_DIR": str(project), "AUTOM2M_ENGINE": str(REPO),
            "PATH": f"{Path(uvx).parent}:{os.environ['PATH']}"}
-    rule = ws.dir / "rules/Req2Arch.agentm2m"
+    rule = ws.dir / "rules/Req2Arch.agenthot"
 
     def payload(p: Path) -> str:
         return json.dumps({"tool_name": "Edit", "tool_input": {"file_path": str(p)}})
@@ -140,7 +140,7 @@ def test_validate_on_edit_hook(project: Path, uvx: str):
 
 def test_validate_on_edit_hook_without_uvx_is_silent(project: Path):
     Workspace(project, backend="host").init("devteam")
-    payload = json.dumps({"tool_input": {"file_path": str(project / ".agentm2m/team.yaml")}})
+    payload = json.dumps({"tool_input": {"file_path": str(project / ".agenthot/team.yaml")}})
     r = subprocess.run(["/bin/bash", str(PLUGIN / "hooks/validate-on-edit.sh")], input=payload, capture_output=True, text=True,
                        env={"PATH": "/nonexistent", "CLAUDE_PROJECT_DIR": str(project)})
     assert r.returncode == 0
@@ -155,7 +155,7 @@ def test_claude_plugin_validate_strict():
 
 @pytest.mark.skipif(shutil.which("claude") is None, reason="claude CLI not installed")
 def test_claude_sees_all_components():
-    r = subprocess.run(["claude", "--plugin-dir", str(PLUGIN), "plugin", "details", "agentm2m"],
+    r = subprocess.run(["claude", "--plugin-dir", str(PLUGIN), "plugin", "details", "autom2m"],
                        capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "Skills (10)" in r.stdout and "Agents (4)" in r.stdout

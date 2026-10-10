@@ -1,12 +1,12 @@
 ---
 name: author-handoff
-description: Write or modify agentm2m view metamodels (team.yaml) and hand-off rule modules (.agentm2m files with @llm/@check bindings and helpers.py validators). Use when designing a custom team, adding a view or hand-off, or fixing a rule that fails validation.
+description: Write or modify AgentHOT view metamodels (team.yaml) and hand-off rule modules (.agenthot files with @llm/@check bindings and helpers.py validators). Use when designing a custom team, adding a view or hand-off, or fixing a rule that fails validation.
 argument-hint: "<what the hand-off should do>"
 ---
 
 # Authoring views and hand-offs
 
-## View (in `.agentm2m/team.yaml` under `views:`)
+## View (in `.agenthot/team.yaml` under `views:`)
 
 ```yaml
 Arch:
@@ -25,7 +25,7 @@ Arch:
 Every class that a rule matches or creates needs an `id` or `name` attribute: that is its trace key.
 Every class a rule creates needs a root slot.
 
-## Hand-off module (`.agentm2m/rules/<Name>.agentm2m`, listed under `handoffs:`)
+## Hand-off module (`.agenthot/rules/<Name>.agenthot`, listed under `handoffs:`)
 
 ```
 module Req2Arch;
@@ -52,7 +52,7 @@ Rules of thumb:
 - OCL subset: navigation `a.b`, `and or not`, `= <> < > <= >=`, `'str'`, `#literal`, and
   `->select(x | ...) ->collect ->forAll ->exists ->notEmpty ->isEmpty ->size`. Anything else is a
   helper function in `helpers.py`, called as `x.helper(args)`.
-- Validators in `helpers.py` return `True`, or `Rejected("why")` from `agentm2m.engine.validators`
+- Validators in `helpers.py` return `True`, or `Rejected("why")` from `agenthot.engine.validators`
   so the reason reaches the next attempt. Run generated code only in a subprocess with a timeout.
   `helpers.py` is executed by the engine: only use trusted code.
 

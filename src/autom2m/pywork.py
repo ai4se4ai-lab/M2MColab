@@ -16,7 +16,7 @@ import textwrap
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 
-from .sandbox import RESULT_MARK, run_python_json
+from agenthot.sandbox import RESULT_MARK, run_python_json
 
 
 @dataclass
@@ -300,6 +300,7 @@ _EX_RUNNER = r'''
 import doctest, json, sys, io, contextlib
 SRC = {src!r}
 EXAMPLES = {examples!r}
+CHECK = set({check!r})
 g = {{"__name__": "__main__", "__file__": __file__}}
 res = {{"ok": True, "n": 0, "failed": [], "pending": 0, "error": None}}
 try:
@@ -308,12 +309,13 @@ except BaseException as e:
     res.update(ok=False, error="module failed to load: %s: %s" % (type(e).__name__, e))
 else:
     parser = doctest.DocTestParser(); checker = doctest.OutputChecker()
+    loc = dict(g)  # one namespace, docstring order: later examples may rely on earlier ones
     for name, text in EXAMPLES:
         try:
             exs = parser.get_examples(text)
         except ValueError:
             continue
-        loc = dict(g)
+        checked = name in CHECK
         for ex in exs:
             buf = io.StringIO()
             try:
@@ -327,12 +329,24 @@ else:
                         exec(compile(ex.source, "<ex>", "single"), loc)
                 got = buf.getvalue()
             except NotImplementedError as e:
-                res["pending"] += 1; break
+                if checked and "pending" in str(e):
+                    res["pending"] += 1
+                    break
+                got = "EXC NotImplementedError: %s\n" % e
             except BaseException as e:
                 got = "EXC %s: %s\n" % (type(e).__name__, e)
-            if ex.want.strip():
+            if not checked:
+                continue
+            if got.startswith("EXC NameError") and "NameError" not in ex.want:
+                continue  # informal example: its setup is prose, not code
+            if ex.want.strip() or got.startswith("EXC "):
                 res["n"] += 1
-                if not checker.check_output(ex.want, got, doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE):
+                want = ex.want
+                if got.startswith("EXC ") and (ex.exc_msg is not None or "Traceback" in want):
+                    exc_name = got[4:].split(":")[0].strip()
+                    if exc_name and exc_name in want:
+                        continue
+                if not checker.check_output(want, got, doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE):
                     res["ok"] = False
                     res["failed"].append({{"method": name, "example": ex.source.strip()[:200],
                                           "expected": ex.want.strip()[:200], "got": got.strip()[:200]}})
@@ -341,8 +355,13 @@ print("{mark}" + json.dumps(res))
 
 
 def run_examples(task: Task, code: str, only: list[str] | None = None, timeout: float = 15.0) -> dict:
-    exs = [(m.name, m.docstring) for m in task.methods if only is None or m.name in only]
-    script = _EX_RUNNER.format(src=code, examples=exs, mark=RESULT_MARK)
+    """Run the public doctest examples on one namespace in docstring order
+    (setup from earlier methods' examples carries over, as in doctest); only
+    the examples of the methods in `only` are checked."""
+    check = [m.name for m in task.methods if only is None or m.name in only]
+    last = max((i for i, m in enumerate(task.methods) if m.name in check), default=-1)
+    exs = [(m.name, m.docstring) for m in task.methods[: last + 1]]
+    script = _EX_RUNNER.format(src=code, examples=exs, check=check, mark=RESULT_MARK)
     res, raw = run_python_json(script, timeout=timeout)
     if res is None:
         return {"ok": False, "n": 0, "failed": [], "pending": 0, "error": raw.tail(400) or "crashed"}
@@ -355,9 +374,22 @@ SRC = {src!r}
 TESTS = {tests!r}
 g = {{"__name__": "solution", "__file__": __file__}}
 res = {{"ok": False, "n": 0, "passed": 0, "pending": 0, "errors": [], "error": None}}
+import types
 try:
     exec(compile(SRC, "solution.py", "exec"), g)
-    t = dict(g); exec(compile(TESTS, "tests.py", "exec"), t)
+    for _attempt in range(4):
+        t = dict(g)
+        try:
+            exec(compile(TESTS, "tests.py", "exec"), t)
+            break
+        except ModuleNotFoundError as e:
+            # tests that import the code under test from a guessed module get the solution
+            if not e.name or e.name in sys.modules:
+                raise
+            mod = types.ModuleType(e.name); mod.__dict__.update({{k: v for k, v in g.items() if not k.startswith("__")}})
+            sys.modules[e.name] = mod
+    else:
+        raise ImportError("tests could not be loaded")
 except BaseException as e:
     res["error"] = "load failed: %s: %s" % (type(e).__name__, e)
 else:

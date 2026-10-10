@@ -43,5 +43,5 @@ views:
     root: {class: ReportModel, slots: {sections: ReportSection}}
 
 handoffs:
-  - {name: Lit2Plan,      rule: rules/Lit2Plan.agentm2m}
-  - {name: ExpLit2Report, rule: rules/ExpLit2Report.agentm2m}
+  - {name: Lit2Plan,      rule: rules/Lit2Plan.agenthot}
+  - {name: ExpLit2Report, rule: rules/ExpLit2Report.agenthot}

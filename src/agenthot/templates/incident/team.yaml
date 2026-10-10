@@ -39,6 +39,6 @@ views:
     root: {class: ReportsModel, slots: {reports: PostmortemReport}}
 
 handoffs:
-  - {name: Alert2Incident,  rule: rules/Alert2Incident.agentm2m}
-  - {name: Incident2Action, rule: rules/Incident2Action.agentm2m}
-  - {name: Action2Report,   rule: rules/Action2Report.agentm2m}
+  - {name: Alert2Incident,  rule: rules/Alert2Incident.agenthot}
+  - {name: Incident2Action, rule: rules/Incident2Action.agenthot}
+  - {name: Action2Report,   rule: rules/Action2Report.agenthot}

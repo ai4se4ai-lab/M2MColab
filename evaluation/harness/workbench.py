@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from agentm2m.auto.pywork import PyWorkbench
+from autom2m.pywork import PyWorkbench
 from evaluation.benchmarks import tasks as T
 
 

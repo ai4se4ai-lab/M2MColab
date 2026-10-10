@@ -1,5 +1,5 @@
 -- T5 (Architect -> Security Reviewer), added at runtime by a HOT
--- (paper Sec. III-D). Not in team.yaml: use `/agentm2m:evolve` with the
+-- (paper Sec. III-D). Not in team.yaml: use `/autom2m:evolve` with the
 -- view spec in rules/extra/SecurityReviewer.view.yaml.
 module Arch2Sec;
 create OUT : Sec from IN : Arch;

@@ -6,9 +6,9 @@ import pytest
 import yaml
 from conftest import fill_all
 
-from agentm2m.workspace import Workspace, WorkspaceError
+from agenthot.workspace import Workspace, WorkspaceError
 
-SEC = dict(agent="SecurityReviewer", view="Sec", handoff="Arch2Sec", rule="rules/extra/Arch2Sec.agentm2m")
+SEC = dict(agent="SecurityReviewer", view="Sec", handoff="Arch2Sec", rule="rules/extra/Arch2Sec.agenthot")
 
 
 def _sec_spec(ws: Workspace) -> dict:
@@ -149,18 +149,18 @@ def test_evolution_persists_and_joins_change_propagation(host_ws: Workspace):
 def test_evolve_with_rule_text_and_rollback_on_error(host_ws: Workspace):
     bad = "module Broken; create OUT : Sec from IN : Arch; rule R { from"
     with pytest.raises(WorkspaceError, match="does not parse"):
-        host_ws.evolve(agent="X", view="Sec", view_spec=_sec_spec(host_ws), handoff="Arch2Sec2", rule="rules/Sec2.agentm2m", rule_text=bad)
-    assert not (host_ws.dir / "rules/Sec2.agentm2m").exists()
+        host_ws.evolve(agent="X", view="Sec", view_spec=_sec_spec(host_ws), handoff="Arch2Sec2", rule="rules/Sec2.agenthot", rule_text=bad)
+    assert not (host_ws.dir / "rules/Sec2.agenthot").exists()
     assert "X" not in host_ws.status()["agents"]
 
-    wrong_target = (host_ws.dir / "rules/extra/Arch2Sec.agentm2m").read_text()
+    wrong_target = (host_ws.dir / "rules/extra/Arch2Sec.agenthot").read_text()
     with pytest.raises(WorkspaceError, match="expected the new view 'Audit'"):
-        host_ws.evolve(agent="Auditor", view="Audit", view_spec=_sec_spec(host_ws), handoff="A2", rule="rules/A2.agentm2m", rule_text=wrong_target)
+        host_ws.evolve(agent="Auditor", view="Audit", view_spec=_sec_spec(host_ws), handoff="A2", rule="rules/A2.agenthot", rule_text=wrong_target)
     with pytest.raises(WorkspaceError, match="escapes"):
-        host_ws.evolve(**{**SEC, "rule": "../../evil.agentm2m"}, view_spec=_sec_spec(host_ws))
+        host_ws.evolve(**{**SEC, "rule": "../../evil.agenthot"}, view_spec=_sec_spec(host_ws))
     with pytest.raises(WorkspaceError, match="already exists"):
         host_ws.evolve(**{**SEC, "view": "Arch"}, view_spec=_sec_spec(host_ws))
 
     text = wrong_target.replace("uses '../helpers.py';", "uses 'helpers.py';")
-    r = host_ws.evolve(**{**SEC, "rule": "rules/Arch2Sec.agentm2m"}, view_spec=_sec_spec(host_ws), rule_text=text)
-    assert r["handoff"] == "Arch2Sec" and (host_ws.dir / "rules/Arch2Sec.agentm2m").is_file()
+    r = host_ws.evolve(**{**SEC, "rule": "rules/Arch2Sec.agenthot"}, view_spec=_sec_spec(host_ws), rule_text=text)
+    assert r["handoff"] == "Arch2Sec" and (host_ws.dir / "rules/Arch2Sec.agenthot").is_file()

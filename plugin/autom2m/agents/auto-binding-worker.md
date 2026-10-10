@@ -1,7 +1,7 @@
 ---
 name: auto-binding-worker
-description: Fills pending AutoM2M values for one team agent (e.g. Tester, Developer), using only each binding's footprint-bounded prompt, and submits them to the library validators. Dispatch one per owning agent from /agentm2m:auto-build.
-tools: mcp__plugin_agentm2m_agentm2m__auto_next_bindings, mcp__plugin_agentm2m_agentm2m__auto_submit_binding
+description: Fills pending AutoM2M values for one team agent (e.g. Tester, Developer), using only each binding's footprint-bounded prompt, and submits them to the library validators. Dispatch one per owning agent from /autom2m:auto-build.
+tools: mcp__plugin_autom2m_autom2m__auto_next_bindings, mcp__plugin_autom2m_autom2m__auto_submit_binding
 model: inherit
 ---
 

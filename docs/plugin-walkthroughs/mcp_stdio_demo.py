@@ -1,10 +1,10 @@
-"""Speak MCP (JSON-RPC over stdio) to agentm2m-mcp by hand.
+"""Speak MCP (JSON-RPC over stdio) to autom2m-mcp by hand.
 
-Usage: python mcp_stdio_demo.py <empty project dir>   (needs agentm2m-mcp on PATH, e.g. the repo venv)
+Usage: python mcp_stdio_demo.py <empty project dir>   (needs autom2m-mcp on PATH, e.g. the repo venv)
 """
 import json, subprocess, sys, os
-env = dict(os.environ, AGENTM2M_LLM="host", AGENTM2M_PROJECT_DIR=sys.argv[1])
-p = subprocess.Popen([os.path.join(os.path.dirname(sys.executable), "agentm2m-mcp")], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+env = dict(os.environ, AGENTHOT_LLM="host", AGENTHOT_PROJECT_DIR=sys.argv[1])
+p = subprocess.Popen([os.path.join(os.path.dirname(sys.executable), "autom2m-mcp")], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
 def send(m):
     p.stdin.write(json.dumps(m) + "\n"); p.stdin.flush()
 def recv():

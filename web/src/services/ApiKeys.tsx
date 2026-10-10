@@ -178,10 +178,10 @@ export default function ApiKeys() {
 
       <h3 className="subhead mt">Use it</h3>
       <div className="grid-2">
-        <Snippet title="Claude Code (remote MCP)" text={`claude mcp add --transport http agentm2m ${url}/mcp \\\n  --header "Authorization: Bearer ${shown}"`} />
+        <Snippet title="Claude Code (remote MCP)" text={`claude mcp add --transport http agenthot ${url}/mcp \\\n  --header "Authorization: Bearer ${shown}"`} />
         <Snippet
           title="Any MCP client (JSON config)"
-          text={JSON.stringify({ mcpServers: { agentm2m: { type: 'http', url: `${url}/mcp`, headers: { Authorization: `Bearer ${shown}` } } } }, null, 2)}
+          text={JSON.stringify({ mcpServers: { agenthot: { type: 'http', url: `${url}/mcp`, headers: { Authorization: `Bearer ${shown}` } } } }, null, 2)}
         />
         <Snippet
           title="REST: set the task"

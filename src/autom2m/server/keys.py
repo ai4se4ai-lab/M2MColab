@@ -23,9 +23,9 @@ TIERS: list[dict] = [
         "price": "$0",
         "period": "forever",
         "available": True,
-        "summary": "Everything AutoM2M and AgentM2M offer, with no limits during the research preview.",
+        "summary": "Everything AutoM2M and AgentHOT offer, with no limits during the research preview.",
         "features": [
-            "All MCP tools (AgentM2M + AutoM2M) over streamable HTTP",
+            "All MCP tools (AgentHOT + AutoM2M) over streamable HTTP",
             "REST API with the same operations",
             "W1–W6 checker, host-mode builder and binding loop",
             "Persistent projects per API key",

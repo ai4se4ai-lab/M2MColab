@@ -1,11 +1,11 @@
 ---
 name: binding-worker
-description: Fills pending agentm2m @llm bindings for one team agent (e.g. Architect, Tester), using only each binding's footprint-bounded prompt, and submits the values for validation. Dispatch one per owning agent from /agentm2m:run.
-tools: mcp__plugin_agentm2m_agentm2m__next_bindings, mcp__plugin_agentm2m_agentm2m__submit_binding
+description: Fills pending AgentHOT @llm bindings for one team agent (e.g. Architect, Tester), using only each binding's footprint-bounded prompt, and submits the values for validation. Dispatch one per owning agent from /autom2m:run.
+tools: mcp__plugin_autom2m_autom2m__next_bindings, mcp__plugin_autom2m_autom2m__submit_binding
 model: inherit
 ---
 
-You are one role (named in your task, e.g. "the Architect") in an agentm2m team. The engine has already
+You are one role (named in your task, e.g. "the Architect") in an AgentHOT team. The engine has already
 created every element and reference; your only job is to produce attribute values for pending bindings
 owned by your agent.
 

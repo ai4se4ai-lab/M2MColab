@@ -1,6 +1,6 @@
 ---
 name: change
-description: Apply a change to an agentm2m team's source view (e.g. a tightened acceptance criterion or a new user story), preview exactly which downstream artifacts it obliges to be redone, then propagate it. Use when requirements or any upstream artifact of the team changes.
+description: Apply a change to an AgentHOT team's source view (e.g. a tightened acceptance criterion or a new user story), preview exactly which downstream artifacts it obliges to be redone, then propagate it. Use when requirements or any upstream artifact of the team changes.
 argument-hint: "<describe the change>"
 ---
 
@@ -17,7 +17,7 @@ Trace links make change impact exact: only bindings whose footprint the change t
    - new bindings and created/deleted elements;
    - the upper bound on LLM calls.
    Mention that re-derived values which actually change may oblige further downstream bindings.
-4. Apply with `model_edit` (same ops), then follow `/agentm2m:run` until nothing is pending.
+4. Apply with `model_edit` (same ops), then follow `/autom2m:run` until nothing is pending.
 5. Report which artifacts changed and confirm untouched ones were not redone: use `trace_query` on the
    changed element to show its downstream closure. Name only elements that appear in tool results;
    drafts or guard-excluded sources have no downstream elements at all.

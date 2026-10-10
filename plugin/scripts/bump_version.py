@@ -4,8 +4,8 @@
     bump_version.py 0.3.0     # rewrite every location
     bump_version.py --check   # exit 1 if any location disagrees with pyproject.toml
 
-Locations: pyproject.toml, agentm2m.__version__, plugin.json, the dev and
-(if present) root marketplace entries, and the `agentm2m==X` engine pins in
+Locations: pyproject.toml, agenthot.__version__, plugin.json, the dev and
+(if present) root marketplace entries, and the `autom2m==X` engine pins in
 .mcp.json and the validate hook.
 """
 from __future__ import annotations
@@ -16,14 +16,15 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-PLUGIN = REPO / "plugin" / "agentm2m"
+PLUGIN = REPO / "plugin" / "autom2m"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-.]?(?:a|b|rc|dev)\d+)?$")
 
 TEXT = [  # (path, regex with one group around the version)
     (REPO / "pyproject.toml", r'(?m)^version = "([^"]+)"'),
-    (REPO / "src/agentm2m/__init__.py", r'__version__ = "([^"]+)"'),
-    (PLUGIN / ".mcp.json", r"agentm2m==([0-9A-Za-z.\-]+)"),
-    (PLUGIN / "hooks/validate-on-edit.sh", r"agentm2m==([0-9A-Za-z.\-]+)"),
+    (REPO / "src/agenthot/__init__.py", r'__version__ = "([^"]+)"'),
+    (REPO / "src/autom2m/__init__.py", r'__version__ = "([^"]+)"'),
+    (PLUGIN / ".mcp.json", r"autom2m==([0-9A-Za-z.\-]+)"),
+    (PLUGIN / "hooks/validate-on-edit.sh", r"autom2m==([0-9A-Za-z.\-]+)"),
 ]
 JSON_MANIFESTS = [PLUGIN / ".claude-plugin/plugin.json"]
 MARKETPLACES = [REPO / "plugin/.claude-plugin/marketplace.json", REPO / ".claude-plugin/marketplace.json"]
@@ -43,8 +44,8 @@ def found_versions() -> dict[str, str]:
     for path in MARKETPLACES:
         if path.is_file():
             for p in json.loads(path.read_text())["plugins"]:
-                if p["name"] == "agentm2m" and "version" in p:
-                    out[f"{path.relative_to(REPO)}:agentm2m"] = p["version"]
+                if p["name"] == "autom2m" and "version" in p:
+                    out[f"{path.relative_to(REPO)}:autom2m"] = p["version"]
     return out
 
 
@@ -61,7 +62,7 @@ def set_version(new: str) -> None:
         if path.is_file():
             d = json.loads(path.read_text())
             for p in d["plugins"]:
-                if p["name"] == "agentm2m":
+                if p["name"] == "autom2m":
                     p["version"] = new
             path.write_text(json.dumps(d, indent=2) + "\n")
 
@@ -83,7 +84,7 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 2
     set_version(argv[0])
-    print(f"set version {argv[0]}; add a '## {argv[0]}' section to plugin/agentm2m/CHANGELOG.md")
+    print(f"set version {argv[0]}; add a '## {argv[0]}' section to plugin/autom2m/CHANGELOG.md")
     return main(["--check"])
 
 

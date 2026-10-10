@@ -1,5 +1,5 @@
--- The agentm2m path for examples/06_baseline_comparison's toy task
--- (see run_agentm2m() in run.py and README.md): the same vague user story
+-- The agenthot path for examples/06_baseline_comparison's toy task
+-- (see run_agenthot() in run.py and README.md): the same vague user story
 -- that run_freetext() and run_shared_schema() operate on, handled by a
 -- real hybrid hand-off instead of raw LLM prose or a validated dict.
 module Story2Arch;

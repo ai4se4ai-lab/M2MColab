@@ -63,6 +63,6 @@ def run_pytest_oracle(oracle_body: str, code_body: str, *, timeout: float = 15.0
     Used by examples whose @check needs to actually execute the generated
     test against a stub/implementation rather than just parse it.
     """
-    from ..auto.sandbox import run_python  # the one place untrusted code runs
+    from ..sandbox import run_python  # the one place untrusted code runs
 
     return run_python(code_body + "\n\n" + oracle_body, timeout=timeout).ok

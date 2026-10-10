@@ -1,5 +1,5 @@
 """A persisted AutoM2M session: task, typed team, run state and history under
-`.agentm2m/auto/`, so the loop can be driven step by step from Claude Code
+`.autom2m/`, so the loop can be driven step by step from Claude Code
 (MCP), the CLI or the hosted service, resumed and inspected.
 
     task.json      the lifted task (pywork.Task)
@@ -25,16 +25,17 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..config import LLMConfig
-from ..engine.trace import TraceLink, TraceModel
-from ..llm.base import LLMBackend
-from ..llm.factory import make_backend
-from ..llm.host_backend import HostBackend
-from ..store import dump_models, load_models
-from ..workspace import WORKSPACE_DIRNAME, WorkspaceError
+from agenthot.config import LLMConfig
+from agenthot.engine.trace import TraceLink, TraceModel
+from agenthot.llm.base import LLMBackend
+from agenthot.llm.factory import make_backend
+from agenthot.llm.host_backend import HostBackend
+from agenthot.store import dump_models, load_models
+from agenthot.workspace import WorkspaceError
 from .attribution import attribute_all
 from .checker import CheckResult, check
-from .compile import CompileError, Session, compile_team
+from agenthot.compiler import CompileError, compile_team
+from agenthot.session import Session
 from .loop import AutoM2M
 from .prompts import delta_prompt, propose_prompt, revise_prompt
 from .pywork import PyWorkbench, Task, TaskSourceError, assemble, task_from_source
@@ -42,7 +43,7 @@ from .repair import apply_delta, normalize
 from .typed_team import TeamFormatError, parse_team
 from .vlib import RunContext
 
-AUTO_DIRNAME = "auto"
+AUTO_DIRNAME = ".autom2m"
 STATE_VERSION = 1
 
 
@@ -60,7 +61,7 @@ def check_report(res: CheckResult) -> dict:
     }
 
 
-def check_team_json(team_json: Any, *, naive: bool = False, python_goal: bool = False) -> dict:
+def check_team_json(team_json: Any, *, naive: bool = False, python_goal: bool = False, w4: str = "two-sided") -> dict:
     """W1–W6 on a typed team (dict or JSON text), as written. python_goal=True
     first replaces the goal view with the fixed Python-methods Goal view, as
     admission into a workspace does (the task is lifted into it)."""
@@ -71,7 +72,7 @@ def check_team_json(team_json: Any, *, naive: bool = False, python_goal: bool = 
             return check_report(CheckResult(_format_diag(f"the team is not valid JSON: {exc}")))
     if not isinstance(team_json, dict):
         return check_report(CheckResult(_format_diag("the team must be a JSON object")))
-    return check_report(check(normalize(team_json) if python_goal else team_json, anchored=not naive))
+    return check_report(check(normalize(team_json) if python_goal else team_json, w4="path-only" if naive else w4))
 
 
 def _format_diag(msg: str):
@@ -93,9 +94,9 @@ class AutoWorkspace:
         max_passes: int = 4,
     ) -> None:
         self.project_dir = Path(project_dir).resolve()
-        self.dir = self.project_dir / WORKSPACE_DIRNAME / AUTO_DIRNAME
-        self.backend_name = (backend or os.getenv("AGENTM2M_LLM") or "host").strip().lower()
-        self.model = model or os.getenv("AGENTM2M_MODEL") or None
+        self.dir = self.project_dir / AUTO_DIRNAME
+        self.backend_name = (backend or os.getenv("AGENTHOT_LLM") or "host").strip().lower()
+        self.model = model or os.getenv("AGENTHOT_MODEL") or None
         self._llm = llm
         if llm is not None:
             self.backend_name = getattr(llm, "name", self.backend_name)
@@ -279,7 +280,7 @@ class AutoWorkspace:
 
     def submit_team(self, team_json: Any) -> dict:
         """Check a proposed team; admit it (fresh run state) or, when a team
-        is already running, apply it as a checked delta (in-place / hot /
+        is already running, apply it as a checked delta (in place / by extension /
         rebuild, keeping accepted values where possible)."""
         with self._lock:
             if isinstance(team_json, str):
@@ -453,7 +454,7 @@ class AutoWorkspace:
                           for f in res.failures[: max(1, limit) * 4]]
                 note = "host mode: located only; classification replays need an engine LLM"
             else:
-                reports, calls = attribute_all(s, res.failures, r=1, limit=limit)
+                reports, calls = attribute_all(s, res.failures, limit=limit)
                 faults = [r.to_dict() | {"summary": r.summary()} for r in reports]
                 note = f"{calls} replay call(s)"
             self._save(s)

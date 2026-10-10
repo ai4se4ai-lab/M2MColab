@@ -1,7 +1,7 @@
 ---
 name: team-builder
-description: Designs an AutoM2M typed team (agents, views, hand-off rules, footprints, library validators, goals) as one JSON object for a Python task, and iterates until the W1-W6 checker admits it. Dispatch from /agentm2m:auto-build.
-tools: Read, Grep, Glob, mcp__plugin_agentm2m_agentm2m__auto_status, mcp__plugin_agentm2m_agentm2m__auto_propose, mcp__plugin_agentm2m_agentm2m__auto_check, mcp__plugin_agentm2m_agentm2m__auto_submit_team
+description: Designs an AutoM2M typed team (agents, views, hand-off rules, footprints, library validators, goals) as one JSON object for a Python task, and iterates until the W1-W6 checker admits it. Dispatch from /autom2m:auto-build.
+tools: Read, Grep, Glob, mcp__plugin_autom2m_autom2m__auto_status, mcp__plugin_autom2m_autom2m__auto_propose, mcp__plugin_autom2m_autom2m__auto_check, mcp__plugin_autom2m_autom2m__auto_submit_team
 model: inherit
 ---
 

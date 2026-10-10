@@ -8,7 +8,7 @@ import { SUBTABS, type Sub } from './subtabs'
 
 const TITLES: Record<Sub, [string, string]> = {
   status: ['Service status', 'Is the AutoM2M service up? The web app, the REST API and the MCP endpoint run in one process.'],
-  keys: ['API keys', 'One key gives your MCP client and scripts access to every AutoM2M and AgentM2M operation.'],
+  keys: ['API keys', 'One key gives your MCP client and scripts access to every AutoM2M and AgentHOT operation.'],
   playground: ['Checker playground', 'Run the W1–W6 admission checker on a typed team in your browser.'],
   docs: ['API documentation', 'REST endpoints mirror the MCP tools one to one.'],
   pricing: ['Pricing', 'Free during the research preview. Paid plans will add server-side LLM work.'],

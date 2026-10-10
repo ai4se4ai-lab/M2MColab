@@ -16,7 +16,7 @@ import sys
 
 from conftest import GOOD_SIGNATURE, REPO, fill_all
 
-from agentm2m.workspace import Workspace
+from agenthot.workspace import Workspace
 
 TIGHTEN_S21 = [{"op": "set", "key": "Criterion#S2.1", "values": {"text": "completing a done task returns HTTP 409"}}]
 
@@ -132,7 +132,7 @@ def test_add_and_remove_criteria(host_ws: Workspace):
 
 def _cli(project, *args):
     return subprocess.run(
-        [sys.executable, "-m", "agentm2m.cli", "workspace", "--dir", str(project), *args],
+        [sys.executable, "-m", "agenthot.cli", "workspace", "--dir", str(project), *args],
         capture_output=True, text=True, cwd=REPO, env={"PYTHONPATH": str(REPO / "src"), "PATH": "/usr/bin:/bin"},
     )
 

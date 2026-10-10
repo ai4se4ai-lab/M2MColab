@@ -1,14 +1,14 @@
 ---
-name: agentm2m-concepts
-description: Background on how an agentm2m team works (views, M2M hand-offs, stochastic bindings, footprints, trace links, obligations, escalation, phi, evolution) and how AutoM2M builds and checks one (typed teams, W1-W6, repair). Use when working in a project with a .agentm2m/ directory, or when the user asks how agentm2m decides what to redo, why a value was rejected, or when the team is done.
+name: autom2m-concepts
+description: How an AgentHOT team works (views, M2M hand-offs, stochastic bindings, footprints, traces, escalation, phi) and how AutoM2M builds and checks one (typed teams, W1-W6, attribution, repair). Use in a project with .agenthot/ or .autom2m/, or when the user asks what will be redone, why a value was rejected, or when the team is done.
 user-invocable: false
 ---
 
-# agentm2m in one page
+# AgentHOT and AutoM2M in one page
 
-- **Views.** Each agent owns one view model conforming to its own metamodel (`.agentm2m/team.yaml`).
+- **Views.** Each agent owns one view model conforming to its own metamodel (`.agenthot/team.yaml`).
   Only the owner may edit it (write rights), and elements created by hand-offs are engine-owned.
-- **Hand-offs are M2M transformations** (`.agentm2m/rules/*.agentm2m`, ATL style). The engine
+- **Hand-offs are M2M transformations** (`.agenthot/rules/*.agenthot`, ATL style). The engine
   deterministically matches source elements, creates target elements, resolves references, and records
   a trace link per match. Nothing structural is left to an LLM, so nothing can be silently dropped:
   every matching source element gets its target element by construction.
@@ -33,14 +33,17 @@ user-invocable: false
 - **Typed team.** Instead of a person writing views and rules, a *builder* (Claude, in host mode)
   writes one JSON object: agents and their tools, one view per agent, hand-off rules with structural
   `bind` paths and `llm` values (prompt, footprint paths, validators from a fixed library), goals, the
-  deliverable, and `done = [cover(G), valid, fresh, noObl]`. The task is lifted into a fixed `Goal` view
-  (`Task`, one `Method` per method to implement). State lives in `.agentm2m/auto/`.
+  deliverable, and `done = [cover(G), valid, fresh, noEsc]`. The task is lifted into a fixed `Goal` view
+  (`Task`, one `Method` per method to implement, one `Example` per doctest; docstrings no longer contain
+  the examples). Goals are obligations `(class, scope, mode, anchors)` with mode `checked` or
+  `delivered`. State lives in `.autom2m/`.
 - **Admission (W1-W6), decided without any LLM or execution:** W1 well typed (paths, features,
   validators), W2 one writer per view and one producing rule per class, W3 mandatory features bound,
-  W4 anchored coverage (every goal flows into a value checked by a *behaviour* validator, and every
-  view lies on such a flow), W5 the engine decides done and hand-offs are acyclic, W6 owners have the
-  tools their validators need. A rejected team comes back with exact diagnostics; fix only those.
-- **Running.** The admitted team compiles to ordinary AgentM2M rules; the same footprint discipline,
+  W4 every goal anchored (its anchor features reach one behaviour-checked value through the producer's
+  footprint AND the validator's arguments; every view lies on such a flow), W5 the engine decides done
+  and hand-offs are acyclic, W6 owners have the tools their validators need. A rejected team comes back
+  with exact diagnostics and hints; fix only those.
+- **Running.** The admitted team compiles to ordinary AgentHOT rules; the same footprint discipline,
   stamps, obligations and escalation apply. Behaviour validators *execute* the value (doctest examples,
   the team's tests); a value is accepted only if they pass. Values waiting on an upstream value are
   held back until it is accepted.
@@ -49,6 +52,6 @@ user-invocable: false
 - **Repair.** `auto_attribute` traces each failed clause to one rule, value and agent (and, with an
   engine LLM, classifies it: sampling, footprint, upstream, specification, validator). A repair is a
   revised team submitted through `auto_submit_team`: it is checked again, then applied in place
-  (accepted values kept), as a hot extension, or by rebuilding.
-- **Hosted service.** With `AGENTM2M_URL` and `AGENTM2M_API_KEY` set, the plugin's tools run on a hosted
-  agentm2m service (per-key projects; `AGENTM2M_PROJECT` picks one) instead of the local engine.
+  (accepted values kept), by extension (new views, agents, hand-offs), or by rebuilding.
+- **Hosted service.** With `AGENTHOT_URL` and `AGENTHOT_API_KEY` set, the plugin's tools run on a hosted
+  AutoM2M service (per-key projects; `AGENTHOT_PROJECT` picks one) instead of the local engine.

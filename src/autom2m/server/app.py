@@ -8,7 +8,7 @@ Authentication is an API key (`Authorization: Bearer am2m_...` or
 `X-API-Key`), created self-service with POST /api/keys. The MCP endpoint
 and the stateful /api/auto/* routes need a key; health, pricing, key
 creation and the stateless checker are public. Each key gets its own
-project directories under $AGENTM2M_DATA_DIR/tenants/<key id>/.
+project directories under $AGENTHOT_DATA_DIR/tenants/<key id>/.
 """
 from __future__ import annotations
 
@@ -28,10 +28,10 @@ from pydantic import BaseModel, Field
 
 from .. import __version__
 from .. import mcp_server as M
-from ..auto import sandbox
-from ..auto.sandbox import SandboxRefused
-from ..auto.workspace import AutoWorkspace, AutoWorkspaceError, check_team_json
-from ..workspace import WorkspaceError
+from agenthot import sandbox
+from agenthot.sandbox import SandboxRefused
+from autom2m.workspace import AutoWorkspace, AutoWorkspaceError, check_team_json
+from agenthot.workspace import WorkspaceError
 from .keys import TIERS, KeyRecord, KeyStore, enforce, key_from_headers
 from .metrics import Metrics
 
@@ -40,14 +40,14 @@ SAMPLE_TEAMS = ["devteam_proposal", "devteam_admitted_g2", "chakin_pilot", "clas
 
 
 def _web_dist() -> Path | None:
-    p = Path(os.getenv("AGENTM2M_WEB_DIST") or REPO_ROOT / "web" / "dist")
+    p = Path(os.getenv("AGENTHOT_WEB_DIST") or REPO_ROOT / "web" / "dist")
     return p if (p / "index.html").is_file() else None
 
 
 def _transport_security():
     from mcp.server.transport_security import TransportSecuritySettings
 
-    hosts = [h.strip() for h in (os.getenv("AGENTM2M_ALLOWED_HOSTS") or "").split(",") if h.strip()]
+    hosts = [h.strip() for h in (os.getenv("AGENTHOT_ALLOWED_HOSTS") or "").split(",") if h.strip()]
     if not hosts:  # API keys guard the endpoint; DNS-rebinding checks are opt-in
         return TransportSecuritySettings(enable_dns_rebinding_protection=False)
     return TransportSecuritySettings(enable_dns_rebinding_protection=True, allowed_hosts=hosts,
@@ -117,7 +117,7 @@ class Front:
                                "detail": "send an API key: Authorization: Bearer <key> (create one at /#/services/keys)"}).encode()
             await send({"type": "http.response.start", "status": 401,
                         "headers": [(b"content-type", b"application/json"),
-                                    (b"www-authenticate", b'Bearer realm="agentm2m"')]})
+                                    (b"www-authenticate", b'Bearer realm="agenthot"')]})
             await send({"type": "http.response.body", "body": body})
             return
         enforce(rec.tier, "mcp")
@@ -163,13 +163,13 @@ def _replay(messages: list, receive):
 
 def create_app(*, data_dir: str | Path | None = None, web_dist: str | Path | None = None):
     if data_dir is not None:
-        os.environ["AGENTM2M_DATA_DIR"] = str(data_dir)
+        os.environ["AGENTHOT_DATA_DIR"] = str(data_dir)
     ddir = M.data_dir()
     ddir.mkdir(parents=True, exist_ok=True)
     # Many API keys share this process: their code (validators execute team values)
     # must never run with the service's own privileges. Fail closed unless the
     # sandbox isolates, or the operator explicitly trusts every key holder.
-    sandbox.require_isolation(os.getenv("AGENTM2M_ALLOW_UNSANDBOXED_EXEC", "") != "1")
+    sandbox.require_isolation(os.getenv("AGENTHOT_ALLOW_UNSANDBOXED_EXEC", "") != "1")
     keys = KeyStore(ddir / "service.db")
     metrics = Metrics()
     mcp_app = M.mcp.streamable_http_app(streamable_http_path="/mcp", transport_security=_transport_security())
@@ -182,7 +182,7 @@ def create_app(*, data_dir: str | Path | None = None, web_dist: str | Path | Non
     api = FastAPI(
         title="AutoM2M service",
         version=__version__,
-        summary="AgentM2M + AutoM2M as a service: typed-team checker (W1–W6), host-mode builder loop, "
+        summary="AgentHOT + AutoM2M as a service: typed-team checker (W1–W6), host-mode builder loop, "
                 "team runtime. The same operations are available as MCP tools at /mcp.",
         docs_url="/api/docs",
         redoc_url="/api/redoc",
@@ -203,10 +203,10 @@ def create_app(*, data_dir: str | Path | None = None, web_dist: str | Path | Non
         return rec
 
     def project_ws(rec: KeyRecord = Depends(require_key),
-                   x_agentm2m_project: str | None = Header(None, description="Project name (default: default)"),
+                   x_agenthot_project: str | None = Header(None, description="Project name (default: default)"),
                    project: str | None = Query(None, description="Project name (overrides the header)")) -> AutoWorkspace:
         try:
-            d = M.tenant_project_dir(rec.id, project or x_agentm2m_project)
+            d = M.tenant_project_dir(rec.id, project or x_agenthot_project)
         except Exception as exc:  # noqa: BLE001  (ToolError from the validator)
             raise HTTPException(400, str(exc)) from None
         return M.auto_workspace(d)
@@ -230,7 +230,7 @@ def create_app(*, data_dir: str | Path | None = None, web_dist: str | Path | Non
         tools = [t.name for t in await M.mcp.list_tools()]
         return {
             "status": "ok",
-            "service": "agentm2m",
+            "service": "autom2m",
             "version": __version__,
             "started_at": metrics.started,
             "uptime_s": round(time.time() - metrics.started, 1),
@@ -317,7 +317,7 @@ def create_app(*, data_dir: str | Path | None = None, web_dist: str | Path | Non
     def auto_solve(body: SolveRequest, ws: AutoWorkspace = Depends(project_ws)):
         backend = M.solve_backend()
         if backend is None:
-            raise HTTPException(501, "no engine LLM configured on this server (AGENTM2M_SOLVE_LLM); use host mode")
+            raise HTTPException(501, "no engine LLM configured on this server (AGENTHOT_SOLVE_LLM); use host mode")
         return call(AutoWorkspace(ws.project_dir, backend=backend).solve, body.source)
 
     @api.delete("/api/auto", tags=["autom2m"], summary="Delete the project's AutoM2M state")
@@ -342,7 +342,7 @@ def create_app(*, data_dir: str | Path | None = None, web_dist: str | Path | Non
     else:
         @api.get("/", include_in_schema=False)
         def root():
-            return {"service": "agentm2m", "version": __version__, "docs": "/api/docs", "mcp": "/mcp",
+            return {"service": "autom2m", "version": __version__, "docs": "/api/docs", "mcp": "/mcp",
                     "web": "not built: run `npm run build` in web/"}
 
     return Front(api, mcp_app, keys, metrics)
@@ -353,14 +353,14 @@ def main(argv: list[str] | None = None) -> None:
 
     import uvicorn
 
-    ap = argparse.ArgumentParser(prog="agentm2m serve", description="Run the web app, REST API and MCP endpoint")
-    ap.add_argument("--host", default=os.getenv("AGENTM2M_HOST", "127.0.0.1"))
-    ap.add_argument("--port", type=int, default=int(os.getenv("AGENTM2M_PORT", "8765")))
-    ap.add_argument("--data-dir", default=None, help="keys database and tenant projects (default ~/.agentm2m-service)")
+    ap = argparse.ArgumentParser(prog="autom2m serve", description="Run the web app, REST API and MCP endpoint")
+    ap.add_argument("--host", default=os.getenv("AGENTHOT_HOST", "127.0.0.1"))
+    ap.add_argument("--port", type=int, default=int(os.getenv("AGENTHOT_PORT", "8765")))
+    ap.add_argument("--data-dir", default=None, help="keys database and tenant projects (default ~/.autom2m-service)")
     ap.add_argument("--web-dist", default=None, help="built web app (default web/dist)")
     a = ap.parse_args(argv)
     app = create_app(data_dir=a.data_dir, web_dist=a.web_dist)
-    print(f"agentm2m service {__version__}: http://{a.host}:{a.port}/  (MCP: /mcp, API docs: /api/docs)")
+    print(f"autom2m service {__version__}: http://{a.host}:{a.port}/  (MCP: /mcp, API docs: /api/docs)")
     uvicorn.run(app, host=a.host, port=a.port, log_level="info")
 
 

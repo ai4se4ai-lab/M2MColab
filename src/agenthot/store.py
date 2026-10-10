@@ -1,6 +1,6 @@
 """JSON persistence for a whole team's view models, across processes.
 
-Why not XMI (agentm2m.metamodel.io)? Views reference each other
+Why not XMI (agenthot.metamodel.io)? Views reference each other
 (CodeEdit.operation -> Arch!Operation, TestCase.criterion -> Req!Criterion),
 and Algorithm 1's incremental re-execution needs to know which element each
 hand-off created for which match (the `_amt_target_key` bookkeeping tag,

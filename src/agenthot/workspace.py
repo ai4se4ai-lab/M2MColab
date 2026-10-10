@@ -1,14 +1,14 @@
-"""A persistent agentm2m workspace (`<project>/.agentm2m/`) and the operations
+"""A persistent agenthot workspace (`<project>/.agenthot/`) and the operations
 the Claude Code plugin exposes over MCP.
 
-    .agentm2m/
+    .agenthot/
       team.yaml            design-time team model (views, owners, seeds, hand-offs)
-      rules/*.agentm2m     hybrid hand-off modules (+ helpers.py)
+      rules/*.agenthot     hybrid hand-off modules (+ helpers.py)
       state/state.json     runtime state: view models, trace models, and
                            runtime team evolutions (HOTs) -- models@run.time
 
 Every public method returns plain JSON-able dicts, so the MCP server
-(`agentm2m.mcp_server`) is a thin wrapper and everything here is testable
+(`autom2m.mcp_server`) is a thin wrapper and everything here is testable
 without MCP. Mutating operations persist immediately; before each operation
 the workspace reloads if another process changed the files on disk.
 """
@@ -55,7 +55,7 @@ from .team.spec import (
     set_values,
 )
 
-WORKSPACE_DIRNAME = ".agentm2m"
+WORKSPACE_DIRNAME = ".agenthot"
 STATE_VERSION = 1
 _MAX_TEXT = 2000
 
@@ -65,14 +65,14 @@ class WorkspaceError(RuntimeError):
 
 
 def list_templates() -> list[str]:
-    root = resources.files("agentm2m") / "templates"
+    root = resources.files("agenthot") / "templates"
     return sorted(p.name for p in root.iterdir() if p.is_dir() and (p / "team.yaml").is_file())
 
 
 def _template_dir(name: str) -> Path:
     if name not in list_templates():
         raise WorkspaceError(f"unknown template {name!r}; available: {', '.join(list_templates())}")
-    return Path(str(resources.files("agentm2m") / "templates" / name))
+    return Path(str(resources.files("agenthot") / "templates" / name))
 
 
 def _inside(base: Path, p: Path) -> bool:
@@ -111,11 +111,11 @@ class Workspace:
         self.project_dir = Path(project_dir).resolve()
         self.dir = self.project_dir / WORKSPACE_DIRNAME
         cfg = LLMConfig.from_env()
-        self.backend_name = (backend or os.getenv("AGENTM2M_LLM") or "host").strip().lower()
-        self._llm = llm or make_backend(cfg, override_provider=self.backend_name, override_model=model or os.getenv("AGENTM2M_MODEL") or None)
+        self.backend_name = (backend or os.getenv("AGENTHOT_LLM") or "host").strip().lower()
+        self._llm = llm or make_backend(cfg, override_provider=self.backend_name, override_model=model or os.getenv("AGENTHOT_MODEL") or None)
         if llm is not None:
             self.backend_name = getattr(llm, "name", self.backend_name)
-        self.max_resamples = max_resamples or int(os.getenv("AGENTM2M_MAX_RESAMPLES", str(cfg.max_resamples)))
+        self.max_resamples = max_resamples or int(os.getenv("AGENTHOT_MAX_RESAMPLES", str(cfg.max_resamples)))
         self.temperature = cfg.temperature
         self.max_passes = max_passes
         self._lock = threading.RLock()
@@ -169,7 +169,7 @@ class Workspace:
     def _require(self) -> _Loaded:
         if not self.exists():
             raise WorkspaceError(
-                f"no agentm2m workspace at {self.dir}; create one with team_init "
+                f"no agenthot workspace at {self.dir}; create one with team_init "
                 f"(templates: {', '.join(list_templates())})"
             )
         fp = self._disk_fingerprint()
@@ -704,7 +704,7 @@ class Workspace:
             if not self.is_host:
                 raise WorkspaceError(
                     f"backend is {self.backend_name!r}: bindings are sampled by the engine; use run instead "
-                    "(set AGENTM2M_LLM=host to let Claude Code fill them)"
+                    "(set AGENTHOT_LLM=host to let Claude Code fill them)"
                 )
             loaded = self._require()
             report = loaded.runtime.run_to_fixpoint()
@@ -824,9 +824,9 @@ class Workspace:
             if not _inside(self.dir, rule_path):
                 raise WorkspaceError(f"rule path {rule!r} escapes the workspace directory")
             wrote = False
-            if rule_text is not None and rule_path.suffix != ".agentm2m":
+            if rule_text is not None and rule_path.suffix != ".agenthot":
                 # rule_text must never create Python: a `uses` clause would load it into the engine
-                raise WorkspaceError(f"rule_text can only create a .agentm2m rule module, not {rule_path.name!r}")
+                raise WorkspaceError(f"rule_text can only create a .agenthot rule module, not {rule_path.name!r}")
             if rule_text is not None:
                 if rule_path.exists():
                     raise WorkspaceError(f"{rule} already exists; omit rule_text to use it as is")

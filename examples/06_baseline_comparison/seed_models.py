@@ -1,11 +1,11 @@
-"""Seed Story model for examples/06_baseline_comparison's agentm2m path
-(run_agentm2m() in run.py). The SAME underlying story -- id, epic,
+"""Seed Story model for examples/06_baseline_comparison's agenthot path
+(run_agenthot() in run.py). The SAME underlying story -- id, epic,
 description, constraint -- is also used (as a plain dict, STORY in run.py)
 by run_freetext() and run_shared_schema(), so all three paths work the same
 toy task."""
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_seed_story_model(story_mm: MetamodelBuilder):

@@ -1,6 +1,6 @@
 """Host mode: Claude Code fills @llm bindings through the workspace API.
 
-Covers the whole lifecycle the /agentm2m:run skill drives: structure first,
+Covers the whole lifecycle the /autom2m:run skill drives: structure first,
 footprint-only prompts, blocked-on-upstream bindings, validator feedback,
 escalation after k rejections, and the engine-decided acceptance predicate.
 """
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from conftest import GOOD_BODY, GOOD_ORACLE, GOOD_SIGNATURE, fill_all
 
-from agentm2m.workspace import Workspace
+from agenthot.workspace import Workspace
 
 
 def test_first_run_builds_structure_without_values(host_ws: Workspace):
@@ -122,7 +122,7 @@ def test_submit_edge_cases(host_ws: Workspace):
     assert host_ws.submit_binding(op, "signature", GOOD_SIGNATURE)["status"] == "stale"
     import pytest
 
-    from agentm2m.workspace import WorkspaceError
+    from agenthot.workspace import WorkspaceError
 
     with pytest.raises(WorkspaceError, match="no stochastic binding"):
         host_ws.submit_binding(op, "name", "x")  # structural, not @llm
@@ -133,7 +133,7 @@ def test_submit_edge_cases(host_ws: Workspace):
 def test_next_bindings_refused_for_engine_backends(project):
     import pytest
 
-    from agentm2m.workspace import WorkspaceError
+    from agenthot.workspace import WorkspaceError
 
     ws = Workspace(project, backend="mock")
     ws.init("devteam")

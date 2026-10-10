@@ -14,7 +14,7 @@ This example exercises two mechanisms none of 01–04 use.
 
 ### 1. Lift (text-to-model)
 
-`rules/Incident2Action.agentm2m`'s `Incident2RemediationAction` rule has a
+`rules/Incident2Action.agenthot`'s `Incident2RemediationAction` rule has a
 stochastic binding literally named `self`:
 
 ```
@@ -24,7 +24,7 @@ self <- @llm('Respond with a JSON object with exactly the fields name, command, 
              i.summary)
 ```
 
-Per `agentm2m.engine.lift`'s convention (`LIFT_BINDING_NAME = "self"`), a
+Per `agenthot.engine.lift`'s convention (`LIFT_BINDING_NAME = "self"`), a
 stochastic binding named `self` is not assigned to one attribute like an
 ordinary binding — its sampled text is parsed as JSON by
 `lift_json_into_element` and written onto **every** EAttribute the JSON
@@ -45,7 +45,7 @@ The same rule also has an ordinary stochastic binding, `dryRun`, gated by
 
 `passesDryRun` (`rules/helpers.py`) does not just parse the sampled text —
 it **runs** it, as a real subprocess, via
-`agentm2m.engine.validators.run_pytest_oracle` (write the sampled script to
+`agenthot.engine.validators.run_pytest_oracle` (write the sampled script to
 a temp file, `python3` it, check the exit code). This is the "executable
 oracle" case of Definition 1's `chk_b`: a parser only checks shape; this
 validator checks that the remediation's dry-run script actually executes
@@ -83,9 +83,9 @@ engine or the example.
 
 | Mechanism | Where |
 |---|---|
-| Lift (`self <- @llm(...)`) | `rules/Incident2Action.agentm2m`, `self` binding |
-| JSON->EAttributes conformance gate | `agentm2m.engine.lift.lift_json_into_element` |
-| Executable-oracle `@check` | `rules/helpers.py`'s `passesDryRun`, reusing `agentm2m.engine.validators.run_pytest_oracle` |
+| Lift (`self <- @llm(...)`) | `rules/Incident2Action.agenthot`, `self` binding |
+| JSON->EAttributes conformance gate | `agenthot.engine.lift.lift_json_into_element` |
+| Executable-oracle `@check` | `rules/helpers.py`'s `passesDryRun`, reusing `agenthot.engine.validators.run_pytest_oracle` |
 | A genuine escalation (Proposition 3) | `dryRun` on every `RemediationAction`, always rejected under `--llm mock` |
 | `phi holds: False`, explained, not crashed | `run.py`'s final block |
 
@@ -107,11 +107,11 @@ with an explanation. Exit code is always 0 for this example.
   (`RemediationAction`: `name`/`command`/`risk_level` lifted, `dryRun`
   executable-oracle-gated), `Reports` (`PostmortemReport`).
 - `seed_models.py` — two raw alerts.
-- `rules/Alert2Incident.agentm2m` — Monitor -> Triage, ordinary stochastic
+- `rules/Alert2Incident.agenthot` — Monitor -> Triage, ordinary stochastic
   bindings with `@check`s.
-- `rules/Incident2Action.agentm2m` — Triage -> Remediation: the Lift binding
+- `rules/Incident2Action.agenthot` — Triage -> Remediation: the Lift binding
   (`self`) and the executable-oracle-gated `dryRun` binding.
-- `rules/Action2Report.agentm2m` — Remediation -> Postmortem, completing the
+- `rules/Action2Report.agenthot` — Remediation -> Postmortem, completing the
   four-agent pipeline.
 - `rules/helpers.py` — `parsesRisk`, `notTooShort`, and `passesDryRun` (the
   executable-oracle validator).

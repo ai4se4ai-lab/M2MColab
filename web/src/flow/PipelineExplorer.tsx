@@ -9,14 +9,14 @@ import { scenarios, type Line, type Scenario } from '../data/scenarios'
 const nodeTypes: NodeTypes = { pipe: PipeNode }
 
 const baseNodes: { id: string; x: number; y: number; data: PipeData }[] = [
-  { id: 'task', x: 0, y: 60, data: { step: 'input', name: 'Task', desc: 'lifted into the goal view', kind: 'raw', compact: true } },
-  { id: 'A', x: 175, y: 60, data: { step: 'A', name: 'Builder LLM', desc: 'proposes a typed team', kind: 'llm' } },
-  { id: 'team', x: 405, y: 60, data: { step: 'Θ', name: 'Typed team', desc: 'agents, forms, rules, goal, φ', kind: 'mod' } },
+  { id: 'task', x: 0, y: 60, data: { step: '1', name: 'Task → M0', desc: 'Lifter: goal model', kind: 'raw', compact: true } },
+  { id: 'A', x: 175, y: 60, data: { step: 'A', name: 'Builder', desc: 'proposes, revises a typed team', kind: 'llm' } },
+  { id: 'team', x: 405, y: 60, data: { step: 'Θ', name: 'Typed team', desc: 'views, hand-offs, ω, κ, G, δ, φ', kind: 'mod' } },
   { id: 'B', x: 635, y: 60, data: { step: 'B', name: 'Checker W1-W6', desc: 'admits or rejects, no LLM', kind: 'eng' } },
-  { id: 'D', x: 865, y: 60, data: { step: 'D', name: 'AgentM2M runtime', desc: 'compile rules, run to fixpoint', kind: 'eng' } },
+  { id: 'D', x: 865, y: 60, data: { step: 'D', name: 'AgentHOT', desc: 'compiler + runtime, to fixpoint', kind: 'eng' } },
   { id: 'done', x: 1095, y: 60, data: { step: 'φ', name: 'Done', desc: 'engine decides', kind: 'eng', compact: true } },
-  { id: 'E', x: 865, y: 285, data: { step: 'E', name: 'Attribution', desc: 'trace lookup + replay', kind: 'eng' } },
-  { id: 'F', x: 405, y: 285, data: { step: 'F', name: 'Repair', desc: 'mechanical, or builder delta', kind: 'llm' } },
+  { id: 'E', x: 865, y: 285, data: { step: 'E', name: 'Attribution', desc: 'lookup + bounded replay', kind: 'eng' } },
+  { id: 'F', x: 405, y: 285, data: { step: 'F', name: 'Repair', desc: 'mechanical or builder Δ, re-checked', kind: 'llm' } },
 ]
 
 const baseEdges: { id: string; s: string; t: string; sh: string; th: string; label?: string; lx?: number; ly?: number; dashed?: boolean }[] = [

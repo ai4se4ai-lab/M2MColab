@@ -1,5 +1,5 @@
-"""Moved to `agentm2m.auto.sandbox`; re-exported for the evaluation code."""
-from agentm2m.auto.sandbox import (  # noqa: F401
+"""Moved to `agenthot.sandbox`; re-exported for the evaluation code."""
+from agenthot.sandbox import (  # noqa: F401
     PY,
     RESULT_MARK,
     ExecResult,

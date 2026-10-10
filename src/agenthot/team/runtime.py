@@ -277,7 +277,10 @@ class TeamRuntime:
                     for tp in rule.to_clause.patterns:
                         for b in tp.bindings:
                             if isinstance(b, StochasticBinding):
-                                fp = eval_expr(b.footprint_expr, m.bindings, helpers)
+                                try:
+                                    fp = eval_expr(b.footprint_expr, m.bindings, helpers)
+                                except Exception:  # noqa: BLE001 - an ill-typed footprint is never fresh
+                                    return False
                                 if link.stamps.get(b.name) != digest(fp):
                                     return False
         return True

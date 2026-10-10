@@ -6,7 +6,7 @@ services:
     volumes:
       - autom2m-data:/data          # API keys (SQLite) and per-key projects
     # Validators execute code submitted by API-key holders. The image isolates every run with
-    # bubblewrap (AGENTM2M_SANDBOX=bwrap: no network, no view of /data or other tenants), which needs
+    # bubblewrap (AGENTHOT_SANDBOX=bwrap: no network, no view of /data or other tenants), which needs
     # user namespaces: the two options below, and a host that allows unprivileged user namespaces
     # (on Ubuntu 24.04+: sysctl kernel.apparmor_restrict_unprivileged_userns=0, or an AppArmor profile
     # for bwrap). If the sandbox cannot start, /api/health reports execution disabled and such values
@@ -15,12 +15,12 @@ services:
       - seccomp=unconfined
       - apparmor=unconfined
     environment:
-      AGENTM2M_LLM: host            # MCP clients (Claude) do the LLM work
-      # AGENTM2M_ALLOW_UNSANDBOXED_EXEC: "1"   # ONLY if every key holder is trusted (runs their code unisolated)
-      # AGENTM2M_SOLVE_LLM: anthropic   # enable unattended auto_solve / POST /api/auto/solve
+      AGENTHOT_LLM: host            # MCP clients (Claude) do the LLM work
+      # AGENTHOT_ALLOW_UNSANDBOXED_EXEC: "1"   # ONLY if every key holder is trusted (runs their code unisolated)
+      # AGENTHOT_SOLVE_LLM: anthropic   # enable unattended auto_solve / POST /api/auto/solve
       # ANTHROPIC_API_KEY: ...
       # LLM_MODEL: claude-sonnet-5-5
-      # AGENTM2M_ALLOWED_HOSTS: autom2m.example.org   # opt-in DNS-rebinding protection for /mcp
+      # AGENTHOT_ALLOWED_HOSTS: autom2m.example.org   # opt-in DNS-rebinding protection for /mcp
     restart: unless-stopped
 volumes:
   autom2m-data:

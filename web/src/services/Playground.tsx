@@ -16,7 +16,7 @@ const CONDS: [string, string][] = [
 const NOTES: Record<string, string> = {
   devteam_proposal: 'The seeded proposal: one instance of each defect D1–D5. The checker must report W1, W2, W4, W5, W6.',
   devteam_admitted_g2: 'The corrected DevTeam, goals and deliverables declared (G2). Admitted.',
-  chakin_pilot: 'The hand-written AgentM2M pilot team: code is never behaviourally verified (two W4 violations).',
+  chakin_pilot: 'The hand-written AgentHOT pilot team: code is never behaviourally verified (two W4 violations).',
   classeval_reference: 'The reference team for Python classes: Tester writes tests, Developer writes code. Admitted.',
 }
 

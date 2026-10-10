@@ -1,5 +1,5 @@
 """Helpers for the ResearchTeam rule modules, loaded via each module's
-`uses 'helpers.py';` declaration (see agentm2m.engine.helpers_loader).
+`uses 'helpers.py';` declaration (see agenthot.engine.helpers_loader).
 """
 from __future__ import annotations
 

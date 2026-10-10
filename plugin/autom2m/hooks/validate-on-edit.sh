@@ -10,23 +10,23 @@ except Exception:
     print("")' 2>/dev/null)
 mode=workspace
 case "$file" in
-  */.agentm2m/state/*) exit 0 ;;
-  */.agentm2m/auto/team.json|*.typed-team.json) mode=auto ;;
-  */.agentm2m/auto/*) exit 0 ;;
-  */.agentm2m/*.agentm2m|*/.agentm2m/*team.yaml|*/.agentm2m/*helpers.py|*/.agentm2m/*.view.yaml) ;;
+  */.agenthot/state/*) exit 0 ;;
+  */.autom2m/team.json|*.typed-team.json) mode=auto ;;
+  */.autom2m/*) exit 0 ;;
+  */.agenthot/*.agenthot|*/.agenthot/*team.yaml|*/.agenthot/*helpers.py|*/.agenthot/*.view.yaml) ;;
   *) exit 0 ;;
 esac
-project="${CLAUDE_PROJECT_DIR:-${file%%/.agentm2m/*}}"
+project="${CLAUDE_PROJECT_DIR:-${file%%/.agenthot/*}}"
 command -v uvx >/dev/null 2>&1 || exit 0   # engine not installable here: stay silent
-engine="${AGENTM2M_ENGINE:-agentm2m==0.3.0}"
+engine="${AUTOM2M_ENGINE:-autom2m==0.4.0}"
 if [ "$mode" = auto ]; then
-  if out=$(uvx --from "$engine" agentm2m auto check "$file" 2>&1); then
+  if out=$(uvx --from "$engine" autom2m auto check "$file" 2>&1); then
     exit 0
   fi
   printf 'AutoM2M checker rejected %s:\n%s\nFix the diagnostics (or submit through auto_submit_team).\n' "$file" "$out" >&2
   exit 2
 fi
-if out=$(uvx --from "$engine" agentm2m workspace --dir "$project" validate --brief 2>&1); then
+if out=$(uvx --from "$engine" agenthot workspace --dir "$project" validate --brief 2>&1); then
   exit 0
 fi
 printf '%s\n' "$out" >&2

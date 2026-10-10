@@ -1,4 +1,4 @@
-# 06 — Baseline Comparison (free text vs. shared schema vs. agentm2m)
+# 06 — Baseline Comparison (free text vs. shared schema vs. agenthot)
 
 A small, self-contained, **pedagogical** (not statistically rigorous — that
 is `evaluation/`'s job) side-by-side comparison of three hand-off
@@ -14,7 +14,7 @@ different hand-off mechanisms:
 ```
 run_freetext(llm)      -- a plain Python function, no structure, no validation
 run_shared_schema(llm) -- one JSON-schema-validated shared dict (PatchBoard-style)
-run_agentm2m(llm)      -- the real engine: metamodels.py + rules/ + Team/TeamRuntime
+run_agenthot(llm)      -- the real engine: metamodels.py + rules/ + Team/TeamRuntime
 ```
 
 ## What each path does
@@ -54,16 +54,16 @@ exists, and `constraint` still has to pass **through the LLM's own
 generation** rather than being copied — the schema guarantees a
 non-empty string is *present* under that key, never that its *content*
 matches the original. `docs/DS-A2A.tex`'s Discussion section puts this
-precisely: *"A shared schema validates each write; agentm2m additionally
+precisely: *"A shared schema validates each write; agenthot additionally
 relates pairs of views, which is what change impact and coverage need."*
 This example's table shows exactly that gap: `validator_enforced` is
 `True` for shared-schema (the check ran), but `required_field_survived`
 and `reference_resolved` are still `False`, because nothing here *relates*
 the write to the rest of the model.
 
-### 3. `run_agentm2m`
+### 3. `run_agenthot`
 
-The real engine, `rules/Story2Arch.agentm2m`:
+The real engine, `rules/Story2Arch.agenthot`:
 
 ```
 rule Story2Operation {
@@ -95,26 +95,26 @@ Approach      | Required field survived? | Reference resolved? | Validator enfor
 --------------+--------------------------+---------------------+---------------------+-------------------
 free-text     | False                    | False               | False               | 43
 shared-schema | False                    | False               | True                | 85
-agentm2m      | True                     | True                | True                | 38
+agenthot      | True                     | True                | True                | 38
 ```
 
 - **Required field survived?** Did the mandatory constraint text make it
-  through to the final artifact? Only agentm2m guarantees this (a
+  through to the final artifact? Only agenthot guarantees this (a
   structural copy, never touched by the LLM); free text drops it before
   the prompt is even built, and shared-schema's freeform-generated
   `constraint` field cannot be trusted to match the original even though
   the schema requires the *key* to be present.
 - **Reference resolved?** Does the produced artifact link to a real,
-  existing upstream object (not just a label)? Only agentm2m's trace-based
+  existing upstream object (not just a label)? Only agenthot's trace-based
   reference resolution (`component <- s.epic`) gives this; shared-schema's
   `component_ref` is an unverified string.
 - **Validator enforced before acceptance?** Does *any* mechanism check the
   LLM's output before it is treated as accepted? Free text: no. Shared
-  schema and agentm2m: yes — but "the write is well-formed" (shared schema)
+  schema and agenthot: yes — but "the write is well-formed" (shared schema)
   and "the write is well-formed *and* every structural/relational
-  guarantee also holds" (agentm2m) are different claims.
-- **Tokens sent to LLM** (`llm.count_tokens(prompt)`, `agentm2m.llm.base.
-  LLMBackend.count_tokens`): agentm2m's footprint-bounded prompt (only
+  guarantee also holds" (agenthot) are different claims.
+- **Tokens sent to LLM** (`llm.count_tokens(prompt)`, `agenthot.llm.base.
+  LLMBackend.count_tokens`): agenthot's footprint-bounded prompt (only
   `s.description`) is the smallest of the three, despite producing the
   *most* complete result — free text and shared schema both have to send
   more raw context per call precisely because they have no separate,
@@ -152,7 +152,7 @@ by construction:
   free text's `d = 0` (no validator exists at all), so its residual error
   `epsilon = p` exactly.
 
-Only `run_agentm2m` has all three preconditions in place, which is why it
+Only `run_agenthot` has all three preconditions in place, which is why it
 is the only path whose table row is all `True`.
 
 ## Run it
@@ -164,15 +164,15 @@ python examples/06_baseline_comparison/run.py                  # local Ollama
 
 Expected: the printed comparison table above (exact numbers may vary
 slightly with a real model, but the free-text/shared-schema `False`s and
-agentm2m's `True`s are structural, not model-dependent), and `phi holds: True`.
+agenthot's `True`s are structural, not model-dependent), and `phi holds: True`.
 
 ## Files
 
-- `metamodels.py` / `seed_models.py` / `rules/Story2Arch.agentm2m` /
+- `metamodels.py` / `seed_models.py` / `rules/Story2Arch.agenthot` /
   `rules/helpers.py` — the tiny `Story -> Arch` engine path used only by
-  `run_agentm2m`. `run_freetext` and `run_shared_schema` deliberately do
+  `run_agenthot`. `run_freetext` and `run_shared_schema` deliberately do
   **not** use these — they operate on plain Python dicts, since the whole
-  point is to compare agentm2m's structural guarantees against two
+  point is to compare agenthot's structural guarantees against two
   baselines that have no metamodel at all.
 - `run.py` — the one shared `STORY` task, all three `run_*` functions, the
   comparison-table printer, and the CLI entry point.

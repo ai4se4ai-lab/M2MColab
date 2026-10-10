@@ -1,34 +1,40 @@
-"""Typed team Θ = (A, V, T, ω, κ, τ, G, φ) in the constrained JSON format a
-team builder emits (Sec. "Step A" of the AutoM2M design).
+"""Typed team Theta = (A, V, T, omega, kappa, G, delta, phi) (paper Def. 7) in
+the constrained JSON format a team builder emits. Its JSON Schema plays the
+role of the typed-team metamodel.
 
-The format is deliberately narrow, so that every condition W1–W6 is
+The format is deliberately narrow, so that every condition W1-W6 is
 decidable on it:
-  * structural bindings and footprints are navigation paths (`m.task.name`)
-    or quoted literals;
+  * guards are conjunctions of comparisons between navigation paths and
+    literals; structural bindings and footprints are navigation paths
+    (`m.task.name`) or quoted literals;
   * validators are drawn from a library (vlib.VLIB) that declares their
-    strength (form / behaviour) and the tools they need (τ);
-  * φ is a list of clause names.
+    strength (form / behaviour), the tools they need (tau) and what they read;
+  * goal obligations (C, s, mu, F_C) name a goal class, a scope, a mode
+    (checked | delivered) and anchor features (default: all attributes of C);
+  * phi is a list of clause names: the engine clauses cover(G), valid, fresh,
+    noEsc and optional library clauses (vlib.LIBRARY_CLAUSES).
 
-Example (abridged):
+Example (the admitted DevTeam of the paper, abridged):
 {
   "name": "devteam",
   "goal_view": "Goal",
-  "agents": [{"name": "Developer", "role": "...", "tools": ["exec"]}],
-  "views": {"Code": {"classes": {"MethodImpl": {
+  "agents": [{"name": "Tester", "role": "...", "tools": ["exec"]}, ...],
+  "views": {"Test": {"classes": {"TestCase": {
        "attributes": {"name": "string", "code": "string"},
-       "references": {"method": {"type": "Goal.Method", "required": true}}}}}},
-  "writes": {"Developer": ["Code"]},
-  "handoffs": [{"name": "Goal2Code", "sources": ["Goal"], "target": "Code",
-    "rules": [{"name": "Method2Impl",
+       "references": {"method": {"type": "Goal.Method", "required": true}}}}}, ...},
+  "writes": {"Tester": ["Test"], ...},
+  "handoffs": [{"name": "Method2Test", "sources": ["Goal"], "target": "Test",
+    "rules": [{"name": "Method2Test",
       "from": [{"var": "m", "type": "Goal!Method"}],
-      "to": {"var": "i", "type": "Code!MethodImpl"},
+      "to": {"var": "t", "type": "Test!TestCase"},
       "bind": {"name": "m.name", "method": "m"},
-      "llm": [{"feature": "code", "prompt": "Implement the method",
-               "footprint": ["m.signature", "m.docstring"],
-               "validator": [{"id": "examples_run", "args": {"method": "m"}}]}]}]}],
-  "goal": [{"class": "Method", "scope": "all", "kind": "checked"}],
-  "deliverable": {"view": "Code", "class": "MethodImpl", "feature": "code", "for": "method"},
-  "done": ["cover(G)", "valid", "fresh", "noObl"]
+      "llm": [{"feature": "code", "prompt": "Write unit tests for this method",
+               "footprint": ["m.signature", "m.docstring", "m.examples.call", "m.examples.expected"],
+               "validator": [{"id": "test_valid", "args": {"method": "m"}}]}]}]}, ...],
+  "goal": [{"class": "Example", "scope": "all", "mode": "checked", "anchors": ["call", "expected"]},
+           {"class": "Method", "scope": "all", "mode": "delivered"}],
+  "deliverable": {"view": "Code", "class": "MethodImpl", "feature": "body"},
+  "done": ["cover(G)", "valid", "fresh", "noEsc"]
 }
 """
 from __future__ import annotations
@@ -40,7 +46,8 @@ from pathlib import Path
 from typing import Any
 
 PRIMITIVES = {"string", "int", "boolean"}
-DONE_VOCABULARY = ("cover(G)", "valid", "fresh", "noObl")
+DONE_VOCABULARY = ("cover(G)", "valid", "fresh", "noEsc")
+_CLAUSE_ALIASES = {"noObl": "noEsc", "cover": "cover(G)", "noesc": "noEsc"}
 
 
 class TeamFormatError(ValueError):
@@ -116,9 +123,20 @@ class Handoff:
 
 @dataclass
 class GoalObligation:
+    """(C, s, mu, F_C): goal class, scope predicate, mode, anchor features
+    (None: all attributes of C)."""
+
     cls: str
     scope: str = "all"
-    kind: str = "checked"  # "checked" (G1) or "delivered" (G2)
+    mode: str = "checked"  # "checked" | "delivered"
+    anchors: list[str] | None = None
+
+    @property
+    def kind(self) -> str:  # older name of `mode`
+        return self.mode
+
+    def label(self) -> str:
+        return f"({self.cls}, {self.scope}, {self.mode})"
 
 
 @dataclass
@@ -155,7 +173,14 @@ class TypedTeam:
                 yield h, r
 
     def owner_of(self, view: str) -> list[str]:
-        return [a for a, vs in self.writes.items() if view in vs]
+        idx = self.__dict__.get("_owners")
+        if idx is None:
+            idx = {}
+            for a, vs in self.writes.items():
+                for v in vs:
+                    idx.setdefault(v, []).append(a)
+            self.__dict__["_owners"] = idx
+        return list(idx.get(view, []))
 
     def to_json(self) -> dict:
         return copy.deepcopy(self.raw)
@@ -206,6 +231,10 @@ def parse_team(data: dict | str | Path) -> TypedTeam:
         data = json.loads(data)
     if not isinstance(data, dict):
         raise TeamFormatError("team must be a JSON object")
+    if str(data.get("goal_view", "Goal")) == "Goal" and not isinstance((data.get("views") or {}).get("Goal"), dict):
+        from .lift import normalize  # the goal view MM0 belongs to Lift
+
+        data = normalize(data)
     try:
         goal_view = str(data.get("goal_view", "Goal"))
         agents = {}
@@ -219,6 +248,13 @@ def parse_team(data: dict | str | Path) -> TypedTeam:
                 cspec = cspec or {}
                 decl = ClassDecl(str(vname), str(cname))
                 for an, at in (cspec.get("attributes") or {}).items():
+                    t = (at.get("type") if isinstance(at, dict) else at)
+                    t = str(t or "").strip()
+                    if ("." in t or "!" in t) and t.rstrip("?*").lower() not in PRIMITIVES:
+                        # an "attribute" typed by a class is a reference
+                        rv, rc = _split_type(t.rstrip("?*"), str(vname))
+                        decl.refs[str(an)] = Ref(str(an), rv, rc, not t.endswith("?"), t.endswith("*"))
+                        continue
                     decl.attrs[str(an)] = _parse_attr(str(an), at)
                 for rn, rs in (cspec.get("references") or {}).items():
                     if isinstance(rs, str):
@@ -247,13 +283,22 @@ def parse_team(data: dict | str | Path) -> TypedTeam:
                 rules.append(Rule(str(r["name"]), srcs, r.get("guard") or None, str(to.get("var", "t")), tv, tc,
                                   {str(k): str(v) for k, v in (r.get("bind") or {}).items()}, llm))
             handoffs.append(Handoff(str(h["name"]), [str(s) for s in h.get("sources") or []], str(h.get("target", "")), rules))
-        goal = [GoalObligation(str(g["class"]).split(".")[-1].split("!")[-1], str(g.get("scope", "all")), str(g.get("kind", "checked")))
-                for g in data.get("goal") or []]
+        goal = []
+        for g in data.get("goal") or []:
+            anchors = g.get("anchors", g.get("features"))
+            goal.append(GoalObligation(str(g["class"]).split(".")[-1].split("!")[-1], str(g.get("scope", "all") or "all"),
+                                       str(g.get("mode", g.get("kind", "checked"))),
+                                       [str(a) for a in anchors] if isinstance(anchors, list) else None))
+        deliverable = data.get("deliverable")
+        if isinstance(deliverable, dict) and deliverable.get("class") and "!" in str(deliverable["class"]):
+            dv, dc = _split_type(deliverable["class"], "")
+            deliverable = {**deliverable, "view": deliverable.get("view") or dv, "class": dc}
+        done = [_CLAUSE_ALIASES.get(str(d).strip(), str(d).strip()) for d in data.get("done") or []]
         writes = {str(a): [str(v) for v in (vs if isinstance(vs, list) else [vs])] for a, vs in (data.get("writes") or {}).items()}
         return TypedTeam(
             name=str(data.get("name", "team")), goal_view=goal_view, agents=agents, classes=classes,
             views=views, writes=writes, handoffs=handoffs, goal=goal,
-            deliverable=data.get("deliverable"), done=[str(d) for d in data.get("done") or []], raw=copy.deepcopy(data),
+            deliverable=deliverable, done=done, raw=copy.deepcopy(data),
         )
     except (KeyError, TypeError, AttributeError, ValueError) as exc:
         raise TeamFormatError(f"malformed typed team: {type(exc).__name__}: {exc}") from exc
@@ -274,6 +319,7 @@ class PathType:
 
     ok: bool
     error: str = ""
+    hint: str = ""
     reads: list[tuple[str, str]] = field(default_factory=list)  # (class qname, feature)
     end_kind: str = ""  # "attr" | "object" | "literal"
     end_type: str = ""  # primitive type or class qname
@@ -306,16 +352,16 @@ def type_path(team: TypedTeam, path: str, env: dict[str, tuple[str, str]], *, ob
         f = decl.feature(seg)
         if f is None:
             feats = sorted(list(decl.attrs) + list(decl.refs))
-            return PathType(False, f"{view}!{decl.name} has no feature '{seg}' (its features are {feats})", res.reads)
+            return PathType(False, f"{view}!{decl.name} has no feature '{seg}'", f"its features are {feats}", res.reads)
         res.reads.append((decl.qname, seg))
         if isinstance(f, Attr):
             if seg != parts[-1]:
-                return PathType(False, f"cannot navigate past attribute {decl.name}.{seg}", res.reads)
+                return PathType(False, f"cannot navigate past attribute {decl.name}.{seg}", "", res.reads)
             res.end_kind, res.end_type, res.many = "attr", f.type, many or f.many
             return res
         nxt = team.cls(f.view, f.cls)
         if nxt is None:
-            return PathType(False, f"reference {decl.name}.{seg} points to undeclared {f.view}!{f.cls}", res.reads)
+            return PathType(False, f"reference {decl.name}.{seg} points to undeclared {f.view}!{f.cls}", "", res.reads)
         many = many or f.many
         decl, view = nxt, f.view
         res.views.add(view)
@@ -328,3 +374,40 @@ def type_path(team: TypedTeam, path: str, env: dict[str, tuple[str, str]], *, ob
 
 def rule_env(rule: Rule) -> dict[str, tuple[str, str]]:
     return {v: (view, c) for v, view, c in rule.sources}
+
+
+def check_paths(team: "TypedTeam", rule: Rule, b: LLMBinding) -> list[str]:
+    """The validator reads vr_b of a stochastic binding, as navigation paths
+    (an object argument contributes the feature paths its parameter reads)."""
+    from .vlib import ALL, VLIB
+
+    env = rule_env(rule)
+    out: list[str] = []
+    for v in b.validators:
+        spec = VLIB.get(v.id)
+        if spec is None:
+            continue
+        for pname, param in spec.params.items():
+            if param.mode != "read" or pname not in v.args:
+                continue
+            arg = v.args[pname]
+            if is_literal(arg):
+                continue
+            if param.type == "string":
+                out.append(arg)
+                continue
+            pt = type_path(team, arg, env, object_reads_all=False)
+            if not pt.ok or pt.end_kind != "object":
+                out.append(arg)
+                continue
+            decl = team.classes.get(pt.end_type)
+            reads = param.reads_for(decl.name if decl else "")
+            if reads == ALL and decl is not None:
+                out += [f"{arg}.{a}" for a in decl.attrs]
+                for rn, ref in decl.refs.items():
+                    other = team.cls(ref.view, ref.cls)
+                    if ref.many and other is not None:
+                        out += [f"{arg}.{rn}.{a}" for a in other.attrs]
+            else:
+                out += [f"{arg}.{r}" for r in reads]
+    return out

@@ -24,7 +24,7 @@ class TraceError(RuntimeError):
 def element_key(element: Any) -> str:
     """Stable "Type#business-id" key for a pyecore model element."""
     type_name = element.eClass.name
-    # Classes compiled from a typed team (agentm2m.auto) opt in to keying by
+    # Classes compiled from a typed team (autom2m) opt in to keying by
     # the unique engine target key: builder-defined business ids need not be
     # unique.
     if getattr(element.eClass, "_amt_engine_keyed", False):
@@ -59,6 +59,12 @@ def _to_jsonable(value: Any) -> Any:
     """
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
+    if hasattr(value, "stamp_material"):
+        # a compiled footprint: the stamp covers the values at the footprint
+        # *and* at the validator reads, #(fp_b(m) u vr_b(m)) (paper Def. 4)
+        return _to_jsonable(value.stamp_material)
+    if isinstance(value, dict):
+        return {str(k): _to_jsonable(v) for k, v in value.items()}
     if hasattr(value, "eClass"):
         return {
             "_type": value.eClass.name,
@@ -93,6 +99,9 @@ class TraceLink:
     # prompt exactly like the in-engine resample loop's retry prompt.
     attempts: dict[str, int] = field(default_factory=dict)
     rejections: dict[str, dict] = field(default_factory=dict)
+    # attr -> element keys owning a location the accepted value's footprint
+    # or validator read (the link "connects" them to the target, paper Def. 5)
+    reads: dict[str, list[str]] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -104,6 +113,7 @@ class TraceLink:
             "failed_stamps": self.failed_stamps,
             "attempts": self.attempts,
             "rejections": self.rejections,
+            "reads": self.reads,
             "footprints": {k: _to_jsonable(v) for k, v in self.footprints.items()},
         }
 
@@ -119,6 +129,7 @@ class TraceLink:
             failed_stamps=d.get("failed_stamps", {}),
             attempts=d.get("attempts", {}),
             rejections=d.get("rejections", {}),
+            reads=d.get("reads", {}),
         )
 
 

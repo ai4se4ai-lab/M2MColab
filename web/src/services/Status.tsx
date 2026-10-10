@@ -162,11 +162,11 @@ export default function Status() {
           <h3 className="subhead">Connect Claude Code</h3>
           <Snippet
             title="Remote MCP server"
-            text={`claude mcp add --transport http agentm2m ${mcpUrl} \\\n  --header "Authorization: Bearer <your API key>"`}
+            text={`claude mcp add --transport http agenthot ${mcpUrl} \\\n  --header "Authorization: Bearer <your API key>"`}
           />
           <p className="caption">
             Then ask Claude to use the <code>auto_*</code> tools, e.g. <i>“set this file as the AutoM2M task, build and check a team, fill its values until φ holds”</i>. Add{' '}
-            <code>--header "X-AgentM2M-Project: name"</code> to keep projects apart.
+            <code>--header "X-AgentHOT-Project: name"</code> to keep projects apart.
           </p>
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function Status() {
             </div>
           </div>
           <div>
-            <div className="lbl">AgentM2M ({classic.length})</div>
+            <div className="lbl">AgentHOT ({classic.length})</div>
             <div className="chips">
               {classic.map((t) => (
                 <span key={t} className="pill">

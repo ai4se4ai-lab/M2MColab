@@ -1,18 +1,18 @@
 {
-  "agentm2m": {
+  "autom2m": {
     "command": "uvx",
     "args": [
       "--from",
-      "${AGENTM2M_ENGINE:-agentm2m==0.3.0}",
+      "${AUTOM2M_ENGINE:-autom2m==0.4.0}",
       "--with",
       "mcp>=1.2",
-      "agentm2m-mcp"
+      "autom2m-mcp"
     ],
     "env": {
-      "AGENTM2M_LLM": "${AGENTM2M_LLM:-host}",
-      "AGENTM2M_URL": "${AGENTM2M_URL:-}",
-      "AGENTM2M_API_KEY": "${AGENTM2M_API_KEY:-}",
-      "AGENTM2M_PROJECT": "${AGENTM2M_PROJECT:-}"
+      "AGENTHOT_LLM": "${AGENTHOT_LLM:-host}",
+      "AGENTHOT_URL": "${AGENTHOT_URL:-}",
+      "AGENTHOT_API_KEY": "${AGENTHOT_API_KEY:-}",
+      "AGENTHOT_PROJECT": "${AGENTHOT_PROJECT:-}"
     }
   }
 }

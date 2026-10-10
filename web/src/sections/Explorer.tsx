@@ -1,10 +1,10 @@
 import PipelineExplorer from '../flow/PipelineExplorer'
 
 const remedies = [
-  ['sampling', 'retry the binding with a fresh budget', 'mechanical'],
-  ['upstream', 'delete the upstream stamp, making it an obligation', 'mechanical'],
-  ['footprint', 'add the widening paths that worked to the footprint', 'mechanical delta'],
-  ['specification, coverage, validator', 'the builder proposes a revised team', 'LLM delta'],
+  ['sampling', 'retry: the binding gets a fresh budget', 'mechanical'],
+  ['footprint', 'widen the footprint by the added paths without which no replay passes', 'mechanical delta'],
+  ['upstream', 're-sample the upstream value (and repair its own fault class)', 'mechanical'],
+  ['specification, validator', 'the builder proposes a delta Δ from the fault report', 'LLM delta'],
 ]
 
 export default function Explorer() {
@@ -15,8 +15,9 @@ export default function Explorer() {
         <p className="kicker">04 · Pipeline explorer</p>
         <h2 className="title">Watch AutoM2M build, check, run and repair a team.</h2>
         <p className="lead">
-          Three walkthroughs of the AutoM2M loop: the seeded proposal from the paper, an illustrative runtime failure, and the
-          hand-written AgentM2M pilot team. Click any step, or use ← / → to move through it.
+          Three walkthroughs of Algorithm 1: the paper's first proposal for TaskBoard (rejected, revised, admitted), its
+          end-to-end runtime failure with attribution and repair, and the hand-written requirements team of the mutation
+          study. Click any step, or use ← / → to move through it.
         </p>
         <div className="mt">
           <PipelineExplorer />
@@ -28,26 +29,26 @@ export default function Explorer() {
             <ol className="ladder">
               <li>
                 <b>Validator fault?</b>
-                <p>Run the failing validator twice on the same value. Different verdicts mean the check is unreliable, so no agent is blamed.</p>
+                <p>Rerun the failing validator three times on the same value (no LLM call). Unstable verdicts mean the check is unreliable, so no agent is blamed.</p>
               </li>
               <li>
                 <b>Sampling fault?</b>
-                <p>Replay the binding on its stamped footprint. If a sample passes, the composition was adequate and the LLM was unlucky.</p>
+                <p>Replay the binding on its recorded footprint, up to n_rep = 3 draws, stopping at the first pass. If one passes, the composition was adequate and the LLM was unlucky or weak.</p>
               </li>
               <li>
                 <b>Footprint fault?</b>
-                <p>Widen the footprint by one hop and replay. If that passes, the hand-off did not carry what the consumer needs (D2).</p>
+                <p>Widen the footprint by every path that follows at most j = 1, 2 references and replay. If that passes, the hand-off did not carry what the consumer needs (D2); the repair keeps only the paths without which no replay passes.</p>
               </li>
               <li>
                 <b>Upstream fault?</b>
-                <p>If a footprint value was itself LLM-written, re-sample it and replay; follow the trace model backwards.</p>
+                <p>If a footprint value was itself LLM-written upstream, re-sample it and replay; then attribute that upstream binding, with its accepted value treated as failed.</p>
               </li>
               <li>
                 <b>Specification fault</b>
-                <p>Otherwise the prompt or validator cannot be satisfied from this footprint.</p>
+                <p>Otherwise no value the footprint supports satisfies the prompt and validator.</p>
               </li>
             </ol>
-            <p className="caption" style={{ marginTop: 0 }}>At most 2r LLM calls per binding visited. Whether the classes agree with ground truth is RQ3.</p>
+            <p className="caption" style={{ marginTop: 0 }}>At most (h + 1 + |up(b)|)·n_rep + |up(b)| LLM calls per binding visited (Algorithm 4). Whether the classes agree with injected ground truth is RQ4.</p>
           </div>
           <div>
             <div className="table-wrap">

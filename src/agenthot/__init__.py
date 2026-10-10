@@ -1,8 +1,11 @@
-"""agentm2m: hybrid deterministic/stochastic M2M transformations for LLM-agent teams.
+"""AgentHOT (Agent Hand-Off Transformations): the hand-off level of AutoM2M.
 
-See docs/ARCHITECTURE.md for how the modules here map onto the paper
-(docs/DS-A2A.tex): Definition 1 (hybrid hand-off), Algorithm 1 (hand-off
-execution), and Propositions 1-3.
+A compiler (`agenthot.compiler`, a synthesis higher-order transformation from
+a typed team to metamodels and rule modules) and a runtime (`engine`, `team`,
+`session`) that executes hybrid hand-offs: a deterministic engine fixes the
+structure of every hand-off (matching, object creation, reference resolution,
+trace links) and LLMs fill only the values no expression can compute, each
+from a declared footprint and behind a validator (paper Sec. 3.2, Alg. 2).
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

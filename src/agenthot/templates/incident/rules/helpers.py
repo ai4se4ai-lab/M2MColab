@@ -1,14 +1,14 @@
 """OCL-callable helpers for the IncidentResponseTeam rule modules.
 
 `passesDryRun` is an executable-oracle validator: it runs the proposed
-dry-run script through agentm2m.auto.sandbox (with a timeout) and accepts it
+dry-run script through agenthot.sandbox (with a timeout) and accepts it
 only if it exits 0.
 """
 from __future__ import annotations
 
 import re
 
-from agentm2m.engine.validators import Rejected, run_pytest_oracle
+from agenthot.engine.validators import Rejected, run_pytest_oracle
 
 _FENCE = re.compile(r"^```[a-zA-Z0-9_-]*\n(.*?)\n```\s*$", re.DOTALL)
 

@@ -3,6 +3,8 @@ streamable HTTP through a real uvicorn server."""
 from __future__ import annotations
 
 import json
+
+from autom2m import __version__
 import socket
 import threading
 import time
@@ -16,30 +18,30 @@ pytest.importorskip("mcp")
 import uvicorn
 from starlette.testclient import TestClient
 
-from agentm2m.server.app import create_app
+from autom2m.server.app import create_app
 
 TEAMS = Path(__file__).resolve().parents[1] / "teams"
-REF = json.loads((TEAMS / "classeval_reference.json").read_text())
+REF = json.loads((TEAMS / "pair_team.json").read_text())
 FUNC_SRC = 'def add(a, b):\n    """Return a + b.\n    >>> add(1, 2)\n    3\n    """\n'
-TESTS = "```python\nimport unittest\nclass T(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(2, 2), 4)\n```"
+TESTS = "```python\nimport unittest\nclass T(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(1, 2), 3)\n        self.assertEqual(add(2, 2), 4)\n```"
 CODE = "```python\ndef add(a, b):\n    return a + b\n```"
 
 
 @pytest.fixture(autouse=True)
 def _isolation_policy_reset():
     yield
-    from agentm2m.auto import sandbox
+    from agenthot import sandbox
 
     sandbox.require_isolation(False)
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.delenv("AGENTM2M_SOLVE_LLM", raising=False)
-    monkeypatch.delenv("AGENTM2M_SANDBOX", raising=False)
-    monkeypatch.setenv("AGENTM2M_LLM", "host")
+    monkeypatch.delenv("AGENTHOT_SOLVE_LLM", raising=False)
+    monkeypatch.delenv("AGENTHOT_SANDBOX", raising=False)
+    monkeypatch.setenv("AGENTHOT_LLM", "host")
     # these tests execute validator code: opt in as a trusted single-tenant deployment would
-    monkeypatch.setenv("AGENTM2M_ALLOW_UNSANDBOXED_EXEC", "1")
+    monkeypatch.setenv("AGENTHOT_ALLOW_UNSANDBOXED_EXEC", "1")
     app = create_app(data_dir=tmp_path / "data", web_dist=tmp_path / "nodist")
     with TestClient(app) as c:
         yield c
@@ -48,9 +50,9 @@ def client(tmp_path, monkeypatch):
 @pytest.fixture
 def locked_client(tmp_path, monkeypatch):
     """The default hosted configuration: no isolating sandbox, no opt-in."""
-    monkeypatch.delenv("AGENTM2M_SANDBOX", raising=False)
-    monkeypatch.delenv("AGENTM2M_ALLOW_UNSANDBOXED_EXEC", raising=False)
-    monkeypatch.setenv("AGENTM2M_LLM", "host")
+    monkeypatch.delenv("AGENTHOT_SANDBOX", raising=False)
+    monkeypatch.delenv("AGENTHOT_ALLOW_UNSANDBOXED_EXEC", raising=False)
+    monkeypatch.setenv("AGENTHOT_LLM", "host")
     app = create_app(data_dir=tmp_path / "data", web_dist=tmp_path / "nodist")
     with TestClient(app) as c:
         yield c
@@ -82,7 +84,7 @@ def _key(c, label="test") -> str:
 
 def test_health_pricing_and_docs_are_public(client):
     h = client.get("/api/health").json()
-    assert h["status"] == "ok" and h["version"] == "0.3.0"
+    assert h["status"] == "ok" and h["version"] == __version__
     assert h["mcp"]["endpoint"] == "/mcp" and "auto_check" in h["mcp"]["tools"] and h["mcp"]["tool_count"] == 24
     assert h["llm"] == {"mode": "host", "solve_backend": None}
     tiers = client.get("/api/pricing").json()["tiers"]
@@ -133,7 +135,7 @@ def test_rest_host_flow_and_tenant_isolation(client):
     # another key sees nothing; another project of the same key is empty too
     h2 = {"Authorization": f"Bearer {k2}"}
     assert client.get("/api/auto/status", headers=h2).json()["task"] is None
-    assert client.get("/api/auto/status", headers={**h1, "X-AgentM2M-Project": "other"}).json()["task"] is None
+    assert client.get("/api/auto/status", headers={**h1, "X-AgentHOT-Project": "other"}).json()["task"] is None
     assert client.get("/api/auto/status?project=../x", headers=h1).status_code == 400
     # errors are 409 with the actionable message; solve needs a server LLM
     r = client.get("/api/auto/propose", headers=h2)
@@ -161,10 +163,10 @@ def _free_port() -> int:
 
 @pytest.fixture
 def live_server(tmp_path, monkeypatch):
-    monkeypatch.delenv("AGENTM2M_SOLVE_LLM", raising=False)
-    monkeypatch.delenv("AGENTM2M_SANDBOX", raising=False)
-    monkeypatch.setenv("AGENTM2M_LLM", "host")
-    monkeypatch.setenv("AGENTM2M_ALLOW_UNSANDBOXED_EXEC", "1")
+    monkeypatch.delenv("AGENTHOT_SOLVE_LLM", raising=False)
+    monkeypatch.delenv("AGENTHOT_SANDBOX", raising=False)
+    monkeypatch.setenv("AGENTHOT_LLM", "host")
+    monkeypatch.setenv("AGENTHOT_ALLOW_UNSANDBOXED_EXEC", "1")
     port = _free_port()
     app = create_app(data_dir=tmp_path / "data", web_dist=tmp_path / "nodist")
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
@@ -193,7 +195,7 @@ def test_mcp_over_http_with_key(live_server):
         return json.loads(res.content[0].text)
 
     async def main():
-        headers = {"Authorization": f"Bearer {key}", "X-AgentM2M-Project": "demo"}
+        headers = {"Authorization": f"Bearer {key}", "X-AgentHOT-Project": "demo"}
         async with httpx2.AsyncClient(headers=headers, timeout=60) as hc:
             async with streamable_http_client(f"{live_server}/mcp", http_client=hc) as (r, w, *_):
                 async with ClientSession(r, w) as s:
@@ -209,7 +211,7 @@ def test_mcp_over_http_with_key(live_server):
                                                                     "value": value, "footprint_version": b["footprint_version"]})
                         assert res["status"] == "accepted"
                     assert (await call(s, "auto_status"))["phi"] is True
-                    # the AgentM2M tools are tenant-scoped too
+                    # the AgentHOT tools are tenant-scoped too
                     assert (await call(s, "team_status"))["workspace"] is None
 
     anyio.run(main)
@@ -220,5 +222,5 @@ def test_mcp_over_http_with_key(live_server):
         st = h.get(f"{live_server}/api/auto/status?project=demo", headers={"Authorization": f"Bearer {key}"}).json()
         assert st["phi"] is True
         # a forged tenant header without a key is still refused
-        assert h.post(f"{live_server}/mcp", headers={"x-agentm2m-tenant": "x"},
+        assert h.post(f"{live_server}/mcp", headers={"x-agenthot-tenant": "x"},
                       json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"}).status_code == 401

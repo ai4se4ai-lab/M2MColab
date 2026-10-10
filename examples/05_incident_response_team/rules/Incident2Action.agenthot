@@ -1,6 +1,6 @@
 -- Triage -> Remediation: proposes a RemediationAction for each Incident.
 --
--- `self <- @llm(...)` is a Lift binding (agentm2m.engine.lift.LIFT_BINDING_NAME
+-- `self <- @llm(...)` is a Lift binding (agenthot.engine.lift.LIFT_BINDING_NAME
 -- is exactly the string 'self'): its sampled text is parsed as JSON and
 -- written onto RemediationAction's EAttributes in one call (name, command,
 -- risk_level), rejected -- triggering resample/escalation -- unless every

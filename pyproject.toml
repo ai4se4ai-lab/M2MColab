@@ -3,9 +3,9 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentm2m"
-version = "0.3.0"
-description = "agentm2m: deterministic structure for stochastic LLM-agent teams via hybrid M2M transformations"
+name = "autom2m"
+version = "0.4.0"
+description = "AutoM2M: checking LLM-assembled agent teams with model transformations (runtime: AgentHOT, Agent Hand-Off Transformations)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -26,19 +26,21 @@ eval = [
     "pandas>=2.2",
     "matplotlib>=3.9",
     "datasets>=2.19",
-    "swebench>=2.1",
+    "scipy>=1.13",
+    "statsmodels>=0.14.4",
 ]
 
 [project.scripts]
-agentm2m = "agentm2m.cli:main"
-agentm2m-mcp = "agentm2m.mcp_server:main"
-agentm2m-serve = "agentm2m.server.app:main"
+agenthot = "agenthot.cli:main"
+autom2m = "autom2m.cli:main"
+autom2m-mcp = "autom2m.mcp_server:main"
+autom2m-serve = "autom2m.server.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-agentm2m = ["rules/*.lark", "templates/**/*.yaml", "templates/**/*.agentm2m", "templates/**/*.py"]
+agenthot = ["rules/*.lark", "templates/**/*.yaml", "templates/**/*.agenthot", "templates/**/*.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -48,10 +50,10 @@ pythonpath = ["src"]
 # Supply-chain cooldown: don't resolve package versions published in the last week.
 exclude-newer = "7 days"
 # Rebuild when engine sources change, not only pyproject.toml, so a plugin
-# pointed at a local checkout (AGENTM2M_ENGINE=/path/to/repo) picks up edits.
+# pointed at a local checkout (AUTOM2M_ENGINE=/path/to/repo) picks up edits.
 cache-keys = [
     { file = "pyproject.toml" },
     { file = "src/**/*.py" },
     { file = "src/**/*.lark" },
-    { file = "src/agentm2m/templates/**/*" },
+    { file = "src/agenthot/templates/**/*" },
 ]
