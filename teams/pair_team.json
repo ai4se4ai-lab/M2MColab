@@ -1,0 +1,184 @@
+{
+  "name": "pair_team",
+  "goal_view": "Goal",
+  "agents": [
+    {
+      "name": "Tester",
+      "role": "You write unittest tests for one method from its documentation and examples.",
+      "tools": [
+        "exec"
+      ]
+    },
+    {
+      "name": "Developer",
+      "role": "You implement one method so that its tests pass.",
+      "tools": [
+        "exec"
+      ]
+    }
+  ],
+  "views": {
+    "Test": {
+      "classes": {
+        "MethodTest": {
+          "attributes": {
+            "name": "string",
+            "code": "string"
+          },
+          "references": {
+            "method": {
+              "type": "Goal.Method",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Code": {
+      "classes": {
+        "MethodImpl": {
+          "attributes": {
+            "name": "string",
+            "code": "string"
+          },
+          "references": {
+            "method": {
+              "type": "Goal.Method",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "writes": {
+    "Tester": [
+      "Test"
+    ],
+    "Developer": [
+      "Code"
+    ]
+  },
+  "handoffs": [
+    {
+      "name": "Goal2Test",
+      "sources": [
+        "Goal"
+      ],
+      "target": "Test",
+      "rules": [
+        {
+          "name": "Method2Test",
+          "from": [
+            {
+              "var": "m",
+              "type": "Goal!Method"
+            }
+          ],
+          "guard": null,
+          "to": {
+            "var": "t",
+            "type": "Test!MethodTest"
+          },
+          "bind": {
+            "name": "m.name",
+            "method": "m"
+          },
+          "llm": [
+            {
+              "feature": "code",
+              "prompt": "Write unit tests for this method",
+              "footprint": [
+                "m.signature",
+                "m.docstring",
+                "m.examples.call",
+                "m.examples.expected"
+              ],
+              "validator": [
+                {
+                  "id": "test_valid",
+                  "args": {
+                    "method": "m"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Test2Code",
+      "sources": [
+        "Test"
+      ],
+      "target": "Code",
+      "rules": [
+        {
+          "name": "Method2Impl",
+          "from": [
+            {
+              "var": "t",
+              "type": "Test!MethodTest"
+            }
+          ],
+          "guard": null,
+          "to": {
+            "var": "i",
+            "type": "Code!MethodImpl"
+          },
+          "bind": {
+            "name": "t.name",
+            "method": "t.method"
+          },
+          "llm": [
+            {
+              "feature": "code",
+              "prompt": "Implement this method",
+              "footprint": [
+                "t.method.signature",
+                "t.method.docstring",
+                "t.code"
+              ],
+              "validator": [
+                {
+                  "id": "passes_tests",
+                  "args": {
+                    "tests": "t.code"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "goal": [
+    {
+      "class": "Example",
+      "scope": "all",
+      "mode": "checked",
+      "anchors": [
+        "call",
+        "expected"
+      ]
+    },
+    {
+      "class": "Method",
+      "scope": "all",
+      "mode": "delivered"
+    }
+  ],
+  "deliverable": {
+    "view": "Code",
+    "class": "MethodImpl",
+    "feature": "code"
+  },
+  "done": [
+    "cover(G)",
+    "valid",
+    "fresh",
+    "noEsc"
+  ]
+}

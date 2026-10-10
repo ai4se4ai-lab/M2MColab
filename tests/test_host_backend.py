@@ -12,10 +12,10 @@ sys.path.insert(0, str(EXAMPLE_DIR))
 
 from run import build_team  # noqa: E402
 
-from agentm2m.llm.factory import make_backend  # noqa: E402
-from agentm2m.llm.host_backend import HostBackend  # noqa: E402
-from agentm2m.llm.mock_backend import MockBackend  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.llm.factory import make_backend  # noqa: E402
+from agenthot.llm.host_backend import HostBackend  # noqa: E402
+from agenthot.llm.mock_backend import MockBackend  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 SIG = "refund(paymentId: string) -> Refund"
 BODY = "def f(x):\n    return x\n"

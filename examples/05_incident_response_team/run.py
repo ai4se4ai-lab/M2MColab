@@ -2,14 +2,14 @@
 """Run the IncidentResponseTeam example: Monitor -> Triage -> Remediation ->
 Postmortem. Demonstrates two mechanisms no earlier example exercises:
 
-  1. Lift (text-to-model): Incident2Action.agentm2m's `self <- @llm(...)`
+  1. Lift (text-to-model): Incident2Action.agenthot's `self <- @llm(...)`
      binding populates a whole RemediationAction from one LLM call, whose
      sampled text is parsed as JSON and written onto the element's
-     EAttributes (agentm2m.engine.lift.lift_json_into_element).
+     EAttributes (agenthot.engine.lift.lift_json_into_element).
   2. An executable-oracle validator and a genuine escalation:
      `dryRun`'s @check (`passesDryRun`, rules/helpers.py) actually *runs*
      the sampled dry-run script as a subprocess rather than just parsing
-     it, reusing agentm2m.engine.validators.run_pytest_oracle. Under
+     it, reusing agenthot.engine.validators.run_pytest_oracle. Under
      `--llm mock` it deterministically rejects every attempt, so this run
      ends with real Escalations and `phi holds: False` -- printed and
      explained below (Proposition 3: "escalate, never loop").
@@ -29,10 +29,10 @@ sys.path.insert(0, str(HERE))
 from metamodels import build_actions_mm, build_alerts_mm, build_incidents_mm, build_reports_mm  # noqa: E402
 from seed_models import build_seed_alerts_model  # noqa: E402
 
-from agentm2m.config import LLMConfig  # noqa: E402
-from agentm2m.llm.factory import make_backend  # noqa: E402
-from agentm2m.team.model import Team  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.config import LLMConfig  # noqa: E402
+from agenthot.llm.factory import make_backend  # noqa: E402
+from agenthot.team.model import Team  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 
 def build_team() -> Team:
@@ -57,9 +57,9 @@ def build_team() -> Team:
     team.add_view(reports_mm, reports_root)
 
     rules = HERE / "rules"
-    team.add_handoff("Alert2Incident", rules / "Alert2Incident.agentm2m", target_mm="Incidents")
-    team.add_handoff("Incident2Action", rules / "Incident2Action.agentm2m", target_mm="Actions")
-    team.add_handoff("Action2Report", rules / "Action2Report.agentm2m", target_mm="Reports")
+    team.add_handoff("Alert2Incident", rules / "Alert2Incident.agenthot", target_mm="Incidents")
+    team.add_handoff("Incident2Action", rules / "Incident2Action.agenthot", target_mm="Actions")
+    team.add_handoff("Action2Report", rules / "Action2Report.agenthot", target_mm="Reports")
     return team
 
 
@@ -110,7 +110,7 @@ def main() -> int:
             print(f"  ! {e.rule}.{e.binding} on {e.target_key}: {e.reason}")
         print(
             "\nWhat this means operationally: the engine sampled a dry-run script for each "
-            "RemediationAction and ran it as a real subprocess (agentm2m.engine.validators."
+            "RemediationAction and ran it as a real subprocess (agenthot.engine.validators."
             "run_pytest_oracle); none of them exited cleanly, so the `dryRun` @check rejected "
             "every attempt. Per Algorithm 1 / Proposition 3, the engine does NOT retry forever "
             "or silently accept an unvalidated remediation script -- it raises an Escalation and "

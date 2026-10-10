@@ -1,0 +1,47 @@
+# ResearchTeam: Literature-Reviewer -> Experiment-Designer -> Report-Writer.
+# ExpLit2Report is a multi-source (n:m) hand-off: it reads BOTH the
+# Experiments and the Literature views and pairs every plan with every claim
+# sharing its topic.
+name: research
+
+views:
+  Literature:
+    owner: LiteratureReviewer
+    classes:
+      Claim: {attributes: [id, text, topic]}
+      Paper:
+        attributes: [id, title]
+        references: {claims: {type: Claim, many: true, containment: true}}
+    root: {class: LiteratureModel, slots: {papers: Paper}}
+    seed:
+      papers:
+        - id: P1
+          title: Efficient Retrieval-Augmented Generation
+          claims:
+            - {id: C1, topic: hallucination, text: RAG reduces hallucination rates in QA tasks}
+            - {id: C2, topic: latency, text: Chunk size significantly affects retrieval latency}
+        - id: P2
+          title: Scaling Multi-Agent Coordination
+          claims:
+            - {id: C3, topic: coordination, text: Structured hand-offs reduce coordination failures compared to free text}
+            - {id: C4, topic: latency, text: Batch inference caching improves latency under load}
+
+  Experiments:
+    owner: ExperimentDesigner
+    classes:
+      ExperimentPlan:
+        attributes: [id, topic, method]
+        references: {claim: Literature.Claim}
+    root: {class: ExperimentsModel, slots: {plans: ExperimentPlan}}
+
+  Report:
+    owner: ReportWriter
+    classes:
+      ReportSection:
+        attributes: [id, title, body]
+        references: {plan: Experiments.ExperimentPlan, claim: Literature.Claim}
+    root: {class: ReportModel, slots: {sections: ReportSection}}
+
+handoffs:
+  - {name: Lit2Plan,      rule: rules/Lit2Plan.agenthot}
+  - {name: ExpLit2Report, rule: rules/ExpLit2Report.agenthot}

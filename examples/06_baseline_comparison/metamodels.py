@@ -1,17 +1,17 @@
-"""The (tiny) agentm2m-path metamodels for examples/06_baseline_comparison:
-Story (Analyst) -> Arch (Architect), used only by run_agentm2m() in run.py.
+"""The (tiny) agenthot-path metamodels for examples/06_baseline_comparison:
+Story (Analyst) -> Arch (Architect), used only by run_agenthot() in run.py.
 run_freetext() and run_shared_schema() do NOT use these -- they operate on
 plain Python dicts, on purpose (see README.md): the whole point of this
-example is to compare agentm2m's structural guarantees against two baselines
+example is to compare agenthot's structural guarantees against two baselines
 that have no metamodel at all.
 """
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_story_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Story", "http://agentm2m/examples/baseline_comparison/story")
+    b = MetamodelBuilder("Story", "http://agenthot/examples/baseline_comparison/story")
     epic = b.eclass("Epic")
     b.attribute(epic, "name")
 
@@ -28,7 +28,7 @@ def build_story_mm() -> MetamodelBuilder:
 
 
 def build_arch_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Arch", "http://agentm2m/examples/baseline_comparison/arch")
+    b = MetamodelBuilder("Arch", "http://agenthot/examples/baseline_comparison/arch")
     component = b.eclass("Component")
     b.attribute(component, "name")
 

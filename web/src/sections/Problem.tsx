@@ -1,15 +1,15 @@
 const audit: { q: string; v: string; share: string; indent?: boolean; tbd?: boolean }[] = [
   { q: 'Roles whose prompt names any teammate', v: '0 / 356', share: '0.0%' },
   { q: 'Roles whose prompt states what the role must output', v: '0 / 356', share: '0.0%' },
-  { q: 'Roles with any hand-off-like phrase (loose pattern)', v: 'TBD', share: 'TBD', tbd: true },
+  { q: 'Roles with any hand-off-like phrase (loose pattern)', v: '32 / 356', share: '9.0%' },
   { q: 'Teams whose plan assigns any step to a named role', v: '0 / 126', share: '0.0%' },
   { q: 'Teams with an output format (for the whole team only)', v: '126 / 126', share: '100%' },
-  { q: 'Failed runs ended by an agent declaring TERMINATE', v: 'TBD', share: 'TBD', tbd: true },
-  { q: 'of which the terminating agent was a verifier', v: 'TBD', share: 'TBD', indent: true, tbd: true },
+  { q: 'Failed runs ended by an agent declaring TERMINATE', v: '82 / 126', share: '65.1%' },
+  { q: 'of which the terminating agent was a verifier', v: '43 / 82', share: '52.4%', indent: true },
 ]
 
 const defects = [
-  { id: 'D1', name: 'Coverage gap', plain: 'nobody owns it', what: 'Part of the task is owned by no agent, or a requirement is never checked.', where: 'Plan steps 1-4 belong to nobody.', by: 'W4' },
+  { id: 'D1', name: 'Coverage gap', plain: 'nobody owns it', what: 'Part of the task is owned by no agent, or a goal is never checked against anything that read it.', where: 'Plan steps 1-4 belong to nobody.', by: 'W4' },
   { id: 'D2', name: 'Hand-off mismatch', plain: 'lost in hand-off', what: 'What a producer emits is not what its consumer needs, in content, reference or form.', where: 'No role states its output.', by: 'W1, W3' },
   { id: 'D3', name: 'Ownership conflict', plain: 'too many cooks', what: 'Two agents act on the same artefact, or none knows it is theirs.', where: 'Who parses the street numbers?', by: 'W2' },
   { id: 'D4', name: 'Unverifiable completion', plain: 'done because someone said so', what: '"Done" is a claim in the conversation, not a checked property.', where: 'The verifier declares success; the run ends wrong.', by: 'W5' },
@@ -65,7 +65,6 @@ export default function Problem() {
             <div style={{ padding: '18px 20px 6px' }}>
               <div className="code-head">
                 <span>Audit · 126 auto-built teams</span>
-                <span className="ph-tag">TBD rows: regenerating</span>
               </div>
             </div>
             <div style={{ overflowX: 'auto' }}>
@@ -112,8 +111,8 @@ export default function Problem() {
           ))}
         </div>
         <p className="caption">
-          The mapping from published failure modes (MAST, edge-level errors, Who&amp;When, TraceElephant) to defects is
-          analytical; RQ1 tests it with independent coders.
+          The mapping from published failure modes (MAST, AgentAsk's edge-level errors, Who&amp;When) to defects is
+          analytical; RQ1 estimates how often each defect is the <em>decisive</em> cause of a failure.
         </p>
       </div>
     </section>

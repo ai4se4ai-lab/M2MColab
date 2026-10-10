@@ -10,8 +10,8 @@ sys.path.insert(0, str(EXAMPLE_DIR))
 
 from run import build_team  # noqa: E402
 
-from agentm2m.llm.mock_backend import MockBackend
-from agentm2m.team.runtime import TeamRuntime
+from agenthot.llm.mock_backend import MockBackend
+from agenthot.team.runtime import TeamRuntime
 
 
 def test_change_propagation_is_localized():

@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pytest
 
-from agentm2m.llm.mock_backend import MockBackend
-from agentm2m.metamodel.builder import MetamodelBuilder
-from agentm2m.team.hot import TeamChange, apply_hot
-from agentm2m.team.model import Team
-from agentm2m.team.runtime import TeamRuntime
+from agenthot.llm.mock_backend import MockBackend
+from agenthot.metamodel.builder import MetamodelBuilder
+from agenthot.team.hot import TeamChange, apply_hot
+from agenthot.team.model import Team
+from agenthot.team.runtime import TeamRuntime
 
 REQ2ARCH = """
 module Req2Arch;
@@ -54,7 +54,7 @@ def parses(signature):
 
 
 def _build_req_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Req", "http://agentm2m/req")
+    b = MetamodelBuilder("Req", "http://agenthot/req")
     criterion = b.eclass("Criterion")
     b.attribute(criterion, "text")
     story = b.eclass("UserStory")
@@ -67,7 +67,7 @@ def _build_req_mm() -> MetamodelBuilder:
 
 
 def _build_arch_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Arch", "http://agentm2m/arch")
+    b = MetamodelBuilder("Arch", "http://agenthot/arch")
     operation = b.eclass("Operation")
     b.attribute(operation, "name")
     b.attribute(operation, "signature")
@@ -77,7 +77,7 @@ def _build_arch_mm() -> MetamodelBuilder:
 
 
 def _build_sec_mm(arch_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Sec", "http://agentm2m/sec")
+    b = MetamodelBuilder("Sec", "http://agenthot/sec")
     review = b.eclass("SecurityReview")
     b.attribute(review, "notes")
     b.reference(review, "operation", arch_mm.get("Operation"), many=False, containment=False)
@@ -88,8 +88,8 @@ def _build_sec_mm(arch_mm: MetamodelBuilder) -> MetamodelBuilder:
 
 @pytest.fixture()
 def rules_dir(tmp_path: Path) -> Path:
-    (tmp_path / "Req2Arch.agentm2m").write_text(REQ2ARCH)
-    (tmp_path / "Arch2Sec.agentm2m").write_text(ARCH2SEC)
+    (tmp_path / "Req2Arch.agenthot").write_text(REQ2ARCH)
+    (tmp_path / "Arch2Sec.agenthot").write_text(ARCH2SEC)
     (tmp_path / "helpers.py").write_text(HELPERS)
     return tmp_path
 
@@ -111,7 +111,7 @@ def test_security_reviewer_hot_retroactive_obligations(rules_dir: Path):
     team.add_view(req_mm, req_root)
     team.add_agent("Architect", "Arch")
     team.add_view(arch_mm, arch_root)
-    team.add_handoff("Req2Arch", rules_dir / "Req2Arch.agentm2m", target_mm="Arch")
+    team.add_handoff("Req2Arch", rules_dir / "Req2Arch.agenthot", target_mm="Arch")
 
     llm = MockBackend()
     runtime = TeamRuntime(team, llm)
@@ -132,7 +132,7 @@ def test_security_reviewer_hot_retroactive_obligations(rules_dir: Path):
             view=sec_mm,
             view_root=sec_root,
             handoff_name="Arch2Sec",
-            rule_path=rules_dir / "Arch2Sec.agentm2m",
+            rule_path=rules_dir / "Arch2Sec.agenthot",
         ),
     )
 

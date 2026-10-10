@@ -1,17 +1,17 @@
 {
-  "name": "agentm2m-dev",
+  "name": "autom2m-dev",
   "owner": {
-    "name": "agentm2m authors"
+    "name": "autom2m authors"
   },
   "metadata": {
-    "description": "Development marketplace for the agentm2m Claude Code plugin (local checkout)."
+    "description": "Development marketplace for the autom2m Claude Code plugin (local checkout)."
   },
   "plugins": [
     {
-      "name": "agentm2m",
-      "source": "./agentm2m",
+      "name": "autom2m",
+      "source": "./autom2m",
       "description": "Agent teams whose hand-offs are model-to-model transformations with trace-based change propagation.",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "category": "development"
     }
   ]

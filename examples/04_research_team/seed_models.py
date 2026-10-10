@@ -1,13 +1,13 @@
 """Seed Literature model for examples/04_research_team: two papers, four
 claims across three topics. One topic -- "latency" -- is deliberately
 shared by two claims from two *different* papers, so the n:m hand-off in
-rules/ExpLit2Report.agentm2m has a genuine many-to-many match to make (2
+rules/ExpLit2Report.agenthot has a genuine many-to-many match to make (2
 plans x 2 claims = 4 sections for that topic), not just a disguised 1:1
 pairing.
 """
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_seed_literature_model(lit_mm: MetamodelBuilder):

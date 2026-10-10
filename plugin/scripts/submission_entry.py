@@ -10,7 +10,7 @@ Writes:
                           submission form at https://clau.de/plugin-directory-submission
   marketplace.json        with --write-root-marketplace: <repo>/.claude-plugin/marketplace.json,
                           so users can `/plugin marketplace add <org>/<repo>` and
-                          `/plugin install agentm2m@agentm2m`
+                          `/plugin install autom2m@autom2m`
 """
 from __future__ import annotations
 
@@ -21,8 +21,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-PLUGIN = REPO / "plugin" / "agentm2m"
-PLUGIN_SUBDIR = "plugin/agentm2m"
+PLUGIN = REPO / "plugin" / "autom2m"
+PLUGIN_SUBDIR = "plugin/autom2m"
 
 
 def main() -> int:
@@ -57,9 +57,9 @@ def main() -> int:
     print(f"wrote {out / 'submission-entry.json'}")
 
     root_market = {
-        "name": "agentm2m",
+        "name": "autom2m",
         "owner": manifest["author"],
-        "metadata": {"description": "agentm2m: agent teams with model-to-model hand-offs for Claude Code."},
+        "metadata": {"description": "autom2m: agent teams with model-to-model hand-offs for Claude Code."},
         "plugins": [{
             "name": manifest["name"],
             "source": f"./{PLUGIN_SUBDIR}",

@@ -1,25 +1,32 @@
-"""Baseline conditions, re-implemented in one harness with the same models,
-tool access, worked example and turn budget.
+"""Untyped conditions of Table 6, re-implemented in one harness with the same
+model, tools and worked examples (rendered in each condition's own format).
 
-  single  one agent writes the solution, then up to 2 fix rounds driven by the execution tool
-  free    CaptainAgent-style: a builder writes prose roles and a plan; agents talk in a
-          group chat (round-robin, shared transcript); the run ends on TERMINATE or the turn cap
-  critic  free + an LLM critic reviews the team for composition defects D1-D5; the builder revises once
-  schema  PatchBoard-style: same roles, but agents exchange JSON patches to a shared board
-          validated against one schema (invalid patches are re-sampled)
+  single       one agent with code execution and two self-repair rounds; done = the agent stops
+  single_gate  Single with best-of-n sampling up to AutoM2M's median token budget; a candidate is
+               accepted when the public examples pass; done = examples pass
+  free         CaptainAgent-style: the builder writes prose roles (with tools) and a plan; agents talk in a
+               group chat; only agents given `exec` run code; done = TERMINATE
+  critic       free + an LLM critic reviews the team's JSON-rendered specification for D1-D5; one revision
+  schema       PatchBoard-style: the same roles exchange JSON patches to one shared, schema-validated board;
+               done = an agent sets status 'done' (the board's TERMINATE)
+
+Temperatures: 0.2 for agents, 0.6 for builders (paper Sec. 4.2).
 """
 from __future__ import annotations
 
 import json
 
-from agentm2m.auto.examples import EXAMPLE_TASK, prose_example_text
-from agentm2m.llm.base import LLMError
+from agenthot.llm.base import LLMError
+from autom2m.examples import prose_examples_text
 from evaluation.benchmarks import tasks as T
 
-from .common import RunRecord, answer_format, clip, execute, find_solution, find_tests, json_from, task_text
+from .common import RunRecord, answer_format, clip, execute, find_solution, find_tests, json_from, task_text, with_imports
 
 MAX_TURNS = 8
 FIX_ROUNDS = 2
+AGENT_T = 0.2
+BUILDER_T = 0.6
+TOOLS = ("exec", "search")
 
 
 def _set_role(llm, role: str) -> None:
@@ -27,17 +34,33 @@ def _set_role(llm, role: str) -> None:
         llm.role = role
 
 
+def _out_tokens(llm) -> int:
+    return llm.totals()["out_tokens"] if hasattr(llm, "totals") else 0
+
+
+def examples_pass(task: T.Task, code: str | None) -> tuple[bool, int, int]:
+    """(all public examples pass, passed, total) for an assembled solution."""
+    if not code:
+        return False, 0, 0
+    ex = T.run_examples(task, with_imports(task, code), [m.name for m in task.methods])
+    if ex.get("error"):
+        return False, 0, max(ex.get("n", 0), 1)
+    n, bad = ex.get("n", 0), len(ex.get("failed", []))
+    return bad == 0 and not ex.get("pending"), n - bad, n
+
+
 # --------------------------------------------------------------------------
-# single agent
+# single agent (+ execution gate)
 # --------------------------------------------------------------------------
 
 
-def run_single(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
+def run_single(task: T.Task, llm, *, temperature: float = AGENT_T) -> RunRecord:
     rec = RunRecord()
     _set_role(llm, "agent")
     msgs = [{"role": "system", "content": "You are an expert Python developer."},
             {"role": "user", "content": f"Implement the following.\n\n{task_text(task)}\n\n{answer_format(task)}"}]
     code = None
+    stopped = False
     for rnd in range(FIX_ROUNDS + 1):
         try:
             out = llm.chat(msgs, temperature=temperature)
@@ -48,12 +71,45 @@ def run_single(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
         code = find_solution(task, out) or code
         report = execute(task, code)
         rec.transcript.append({"agent": "Computer_terminal", "content": report, "kind": "tool"})
-        if rnd == FIX_ROUNDS or ("Loading the code failed" not in report and " expected " not in report and code):
+        if code and "Loading the code failed" not in report and " expected " not in report:
+            stopped = True  # the agent has nothing left to fix: it stops
+            break
+        if rnd == FIX_ROUNDS:
             break
         msgs += [{"role": "assistant", "content": out},
                  {"role": "user", "content": f"Execution result:\n{report}\n\nFix the code if the result shows a real error "
                                               f"(documented examples may be informal). {answer_format(task)}"}]
     rec.code = code or ""
+    rec.declared_done = stopped
+    rec.extra["rounds"] = sum(1 for m in rec.transcript if m["kind"] == "message")
+    return rec
+
+
+def run_single_gate(task: T.Task, llm, *, budget_out: int, temperature: float = AGENT_T) -> RunRecord:
+    """Best-of-n Single runs until a candidate passes the public examples or
+    the output-token budget (AutoM2M's median) is spent."""
+    rec = RunRecord()
+    best, best_score, n = None, (-1, -1), 0
+    start = _out_tokens(llm)
+    while True:
+        n += 1
+        cand = run_single(task, llm, temperature=temperature)
+        rec.transcript += cand.transcript
+        if cand.status == "budget":
+            rec.status = "budget"
+        ok, passed, total = examples_pass(task, cand.code)
+        rec.transcript.append({"agent": "Gate", "content": f"candidate {n}: public examples {passed}/{total} "
+                                                           f"{'pass' if ok else 'fail'}", "kind": "tool"})
+        if cand.code and (passed, -n) > best_score:
+            best, best_score = cand.code, (passed, -n)
+        if ok and cand.code:
+            best = cand.code
+            rec.declared_done = True
+            break
+        if _out_tokens(llm) - start >= budget_out or cand.status == "budget":
+            break
+    rec.code = best or ""
+    rec.extra.update(candidates=n, budget_out=budget_out)
     return rec
 
 
@@ -62,34 +118,33 @@ def run_single(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
 # --------------------------------------------------------------------------
 
 BUILDER_PROMPT = """You are a team builder. Design a small team of LLM expert agents (2-4) that will collaborate in a
-group chat to solve the programming task below. A Computer_terminal executes any ```python block an agent writes
-(it runs the task's documented examples and any unittest tests posted in the chat).
+group chat to solve the programming task below. Give each agent the tools it needs from {tools}: an agent with
+"exec" has its ```python blocks executed by a Computer_terminal (which runs the task's documented examples and any
+unittest tests posted in the chat).
 
-Example task:
-{example_task}
-Example team for the example task:
-{example}
+Worked examples:
+{examples}
 
 TASK:
 {task}
 
-Output only a JSON object {{"agents": [{{"name", "role"}}], "plan": [steps]}}."""
+Output only a JSON object {{"agents": [{{"name", "role", "tools"}}], "plan": [steps]}}."""
 
-CRITIC_PROMPT = """You review a team of LLM agents designed to solve a programming task, BEFORE it runs.
+CRITIC_PROMPT = """You review the specification of a team of LLM agents designed to solve a programming task, BEFORE it runs.
 Look for composition defects:
 D1 coverage gap: part of the task is owned by no agent, or a requirement is never checked;
 D2 hand-off mismatch: what an agent produces is not what the next agent needs;
 D3 ownership conflict: two agents work on the same artefact, or nobody knows it is theirs;
 D4 unverifiable completion: "done" is only a claim, nothing checks it;
-D5 capability mismatch: work goes to an agent that cannot do it.
+D5 capability mismatch: work goes to an agent that lacks the tool or skill it needs.
 
 TASK:
 {task}
 
-TEAM:
+TEAM SPECIFICATION (JSON):
 {team}
 
-Output only JSON {{"defects": [{{"class": "D1".."D5", "where": text, "fix": text}}]}} (empty list if none)."""
+Output only JSON {{"defects": [{{"class": "D1".."D5", "where": text, "fix": text}}]}} (an empty list if none)."""
 
 REVISE_PROMPT = """You are a team builder. A reviewer found these problems in your team:
 {critique}
@@ -100,47 +155,53 @@ TASK:
 YOUR TEAM:
 {team}
 
-Output only the corrected JSON object {{"agents": [{{"name", "role"}}], "plan": [steps]}}."""
+Output only the corrected JSON object {{"agents": [{{"name", "role", "tools"}}], "plan": [steps]}}."""
 
 
-def build_free_team(task: T.Task, llm, *, temperature: float) -> dict:
-    _set_role(llm, "builder")
-    out = llm.generate(BUILDER_PROMPT.format(example_task=EXAMPLE_TASK, example=prose_example_text(), task=task_text(task)),
-                       temperature=temperature, format="json")
-    team = json_from(out) or {}
+def _clean_team(team: dict | None) -> dict:
+    team = team or {}
     agents = [a for a in team.get("agents", []) if isinstance(a, dict) and a.get("name")][:4]
     if not agents:
-        agents = [{"name": "Developer", "role": "Expert Python developer."}]
+        agents = [{"name": "Developer", "role": "Expert Python developer.", "tools": ["exec"]}]
+    out = []
+    for a in agents:
+        tools = a.get("tools") if isinstance(a.get("tools"), list) else []
+        out.append({"name": str(a["name"]).replace(" ", "_"), "role": str(a.get("role", "")),
+                    "tools": [str(t) for t in tools if str(t) in TOOLS]})
     plan = [str(p) for p in team.get("plan", [])] if isinstance(team.get("plan"), list) else []
-    return {"agents": [{"name": str(a["name"]).replace(" ", "_"), "role": str(a.get("role", ""))} for a in agents], "plan": plan}
+    return {"agents": out, "plan": plan}
 
 
-def critic_revise(task: T.Task, team: dict, llm, *, temperature: float) -> tuple[dict, dict]:
+def build_free_team(task: T.Task, llm, *, temperature: float = BUILDER_T, n_examples: int = 3) -> dict:
+    _set_role(llm, "builder")
+    out = llm.generate(BUILDER_PROMPT.format(tools=list(TOOLS), examples=prose_examples_text(n_examples),
+                                             task=task_text(task)), temperature=temperature, format="json")
+    return _clean_team(json_from(out))
+
+
+def critic_revise(task: T.Task, team: dict, llm, *, temperature: float = AGENT_T) -> tuple[dict, dict]:
     _set_role(llm, "critic")
     crit = json_from(llm.generate(CRITIC_PROMPT.format(task=task_text(task), team=json.dumps(team, indent=1)),
                                   temperature=temperature, format="json")) or {"defects": []}
-    defects = crit.get("defects") or []
+    defects = crit.get("defects") if isinstance(crit.get("defects"), list) else []
     if not defects:
         return team, crit
     _set_role(llm, "builder")
     rev = json_from(llm.generate(REVISE_PROMPT.format(critique=json.dumps(defects, indent=1), task=task_text(task),
-                                                      team=json.dumps(team, indent=1)), temperature=temperature, format="json"))
+                                                      team=json.dumps(team, indent=1)), temperature=BUILDER_T, format="json"))
     if rev and rev.get("agents"):
-        agents = [a for a in rev["agents"] if isinstance(a, dict) and a.get("name")][:4]
-        if agents:
-            team = {"agents": [{"name": str(a["name"]).replace(" ", "_"), "role": str(a.get("role", ""))} for a in agents],
-                    "plan": [str(p) for p in rev.get("plan", [])] if isinstance(rev.get("plan"), list) else team["plan"]}
+        team = _clean_team(rev)
     return team, crit
 
 
 def brief(task: T.Task, team: dict) -> str:
     plan = "\n".join(f"{i+1}. {p}" for i, p in enumerate(team["plan"]))
-    names = ", ".join(a["name"] for a in team["agents"])
-    return (f"## Task\n{task_text(task)}\n\n## Plan for solving the task\n{plan}\n\n## Team\n{names} (+ Computer_terminal)\n\n"
+    names = ", ".join(f"{a['name']} (tools: {', '.join(a['tools']) or 'none'})" for a in team["agents"])
+    return (f"## Task\n{task_text(task)}\n\n## Plan for solving the task\n{plan}\n\n## Team\n{names}, Computer_terminal\n\n"
             f"## Output format\n{answer_format(task)} Reply TERMINATE when the task is solved.")
 
 
-def group_chat(task: T.Task, team: dict, llm, *, temperature: float) -> RunRecord:
+def group_chat(task: T.Task, team: dict, llm, *, temperature: float = AGENT_T) -> RunRecord:
     rec = RunRecord(team=team)
     rec.transcript.append({"agent": "Manager", "content": brief(task, team), "kind": "brief"})
     code, tests = None, None
@@ -163,24 +224,25 @@ def group_chat(task: T.Task, team: dict, llm, *, temperature: float) -> RunRecor
             code = new_code
         if new_tests and not new_code:
             tests = new_tests
-        if new_code or new_tests:
+        if (new_code or new_tests) and "exec" in a["tools"]:
             rec.transcript.append({"agent": "Computer_terminal", "content": execute(task, code, tests), "kind": "tool"})
         if "TERMINATE" in out:
             rec.extra["terminated_by"] = a["name"]
+            rec.declared_done = True
             break
     rec.extra["turns"] = sum(1 for m in rec.transcript if m["kind"] == "message")
     rec.code = code or ""
     return rec
 
 
-def run_free(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
-    team = build_free_team(task, llm, temperature=temperature)
+def run_free(task: T.Task, llm, *, temperature: float = AGENT_T) -> RunRecord:
+    team = build_free_team(task, llm)
     return group_chat(task, team, llm, temperature=temperature)
 
 
-def run_critic(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
-    team = build_free_team(task, llm, temperature=temperature)
-    team2, crit = critic_revise(task, team, llm, temperature=temperature)
+def run_critic(task: T.Task, llm, *, temperature: float = AGENT_T) -> RunRecord:
+    team = build_free_team(task, llm)
+    team2, crit = critic_revise(task, team, llm)
     rec = group_chat(task, team2, llm, temperature=temperature)
     rec.extra.update(critique=crit, initial_team=team)
     return rec
@@ -206,8 +268,8 @@ def _valid_patch(p: dict | None) -> tuple[bool, str]:
     return True, ""
 
 
-def run_schema(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
-    team = build_free_team(task, llm, temperature=temperature)
+def run_schema(task: T.Task, llm, *, temperature: float = AGENT_T) -> RunRecord:
+    team = build_free_team(task, llm)
     rec = RunRecord(team=team)
     board: dict = {"design": {}, "tests": "", "code": "", "status": "in_progress", "note": "", "terminal": ""}
     plan = "\n".join(f"{i+1}. {p}" for i, p in enumerate(team["plan"]))
@@ -239,13 +301,15 @@ def run_schema(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
         rec.transcript.append({"agent": a["name"], "content": json.dumps(patch) if patch else f"(invalid patch: {why})",
                                "kind": "message"})
         if patch is None:
+            if rec.status == "budget":
+                break
             continue
         for k, v in patch.items():
             if k == "design":
                 board["design"].update({str(x): str(y) for x, y in v.items()})
             else:
                 board[k] = v
-        if "code" in patch or "tests" in patch:
+        if ("code" in patch or "tests" in patch) and "exec" in a["tools"]:
             code = find_solution(task, f"```python\n{T.extract_code(board['code'])}\n```") if board["code"] else None
             board["terminal"] = execute(task, code, T.extract_code(board["tests"]) if board["tests"] else None)
             rec.transcript.append({"agent": "Computer_terminal", "content": board["terminal"], "kind": "tool"})
@@ -253,8 +317,8 @@ def run_schema(task: T.Task, llm, *, temperature: float = 0.6) -> RunRecord:
             break
         if board.get("status") == "done":
             rec.extra["terminated_by"] = a["name"]
+            rec.declared_done = True
             break
-    code = T.extract_code(board["code"]) if board["code"] else ""
-    rec.code = code
+    rec.code = T.extract_code(board["code"]) if board["code"] else ""
     rec.extra["board_keys"] = sorted(k for k, v in board.items() if v)
     return rec

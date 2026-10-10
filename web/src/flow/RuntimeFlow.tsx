@@ -5,7 +5,8 @@ import { PhiNode, ViewNode, type PhiData, type ViewData, type ViewObj } from './
 import { StaticFlow, type FlowEdgeData } from './shared'
 import { useInView, useNarrow, useReducedMotion } from './hooks'
 
-// The admitted DevTeam (teams/devteam_admitted.json) running on the AgentM2M engine.
+// The admitted typed DevTeam of the paper's running example (TaskBoard;
+// teams/devteam_admitted_g2.json) running on AgentHOT.
 type Phase = {
   label: string
   view?: string
@@ -16,59 +17,85 @@ type Phase = {
   text: string
 }
 
-const req = (s21: ViewObj['state'] = 'goal'): ViewObj[] => [
-  { id: 'S1', state: 'goal' },
-  { id: 'S1.1', state: 'goal' },
-  { id: 'S2', state: 'goal' },
-  { id: 'S2.1', state: s21 },
-  { id: 'S3 draft', state: 'off' },
+const goal: ViewObj[] = [
+  { id: 'add_task', state: 'goal' },
+  { id: 'mark_done', state: 'goal' },
+  { id: 'export_csv', state: 'goal' },
+  { id: 'E1.1', state: 'goal' },
+  { id: 'E2.1 E2.2', state: 'goal' },
 ]
 const ok = (...ids: string[]): ViewObj[] => ids.map((id) => ({ id, state: 'ok' }))
+const M = ['add_task', 'mark_done', 'export_csv']
 const idle: PhiData['clauses'] = [
   { k: 'cover(G)', v: 'idle' },
   { k: 'valid', v: 'idle' },
   { k: 'fresh', v: 'idle' },
-  { k: 'noObl', v: 'idle' },
+  { k: 'noEsc', v: 'idle' },
 ]
 const allOk: PhiData['clauses'] = idle.map((c) => ({ ...c, v: 'ok' }))
-const full = { Req: req(), Arch: ok('op S1', 'op S2'), Test: ok('ts S1', 'ts S2'), Code: ok('edit S1', 'edit S2') }
+const failing: PhiData['clauses'] = [
+  { k: 'cover(G)', v: 'fail' },
+  { k: 'valid', v: 'ok' },
+  { k: 'fresh', v: 'fail' },
+  { k: 'noEsc', v: 'fail' },
+]
+const escalated: ViewObj[] = [{ id: 'add_task', state: 'ok' }, { id: 'mark_done', state: 'stale' }, { id: 'export_csv', state: 'ok' }]
+const full = { Goal: goal, Design: ok(...M), Test: ok(...M), Code: ok(...M) }
 
 const phases: Phase[] = [
   {
     label: 'Lift',
-    view: 'Req',
+    view: 'Goal',
     edges: [],
-    objs: { Req: req(), Arch: [], Test: [], Code: [] },
+    objs: { Goal: goal, Design: [], Test: [], Code: [] },
     phi: idle,
-    rule: ["-- Req, the goal view (Analyst's form)", 'UserStory { id, title, status; criteria[1-*] : Criterion }', 'Criterion { id, text; story : UserStory }'],
-    text: 'The task is lifted into the goal view. Two stories are accepted; S3 is still a draft. Each agent fills in its own form, a small metamodel, not free text.',
+    rule: ['-- Goal view MM0, filled by Lift', 'Task { name, description, outline; methods[1-*], examples[0-*] }', 'Method { name, signature, docstring; examples[0-*] : Example }', 'Example { call, expected }   -- doctests moved out of docstrings'],
+    text: 'The class skeleton is lifted deterministically into a goal model: one Task, three Methods and their Examples. A rule that reads a docstring does not see the examples; a footprint must name them.',
   },
   {
-    label: 'Story2Operation',
-    view: 'Arch',
-    edges: ['Req-Arch'],
-    objs: { Req: req(), Arch: ok('op S1', 'op S2'), Test: [], Code: [] },
+    label: 'Method2Design',
+    view: 'Design',
+    edges: ['Goal-Design'],
+    objs: { Goal: goal, Design: ok(...M), Test: [], Code: [] },
     phi: idle,
-    rule: ['rule Story2Operation {                      -- Req -> Arch', "  from s : Req!UserStory (s.status = 'accepted')   -- guard", '  to  op : Arch!Operation ( name <- s.title,', "      signature <- @llm(prompt, fp(s.title, s.criteria)) @check compiles ) }"],
-    text: 'The engine, not an LLM, decides which objects exist: one Operation per accepted story, none for the draft S3. The LLM fills only the signature, seeing only its footprint, and the value is accepted when its validator passes.',
+    rule: ['rule Method2Design {                       -- Goal -> Design (Architect)', '  from m : Goal!Method', '  to   d : Design!MethodDesign ( name <- m.name, method <- m,', "       contract <- @llm('State a contract', Sequence{m.name, m.signature, m.docstring})", '       @check nonempty(contract) ) }'],
+    text: 'The engine, not an LLM, decides which objects exist: one MethodDesign per Method. The Architect\'s LLM writes only the contract, from its declared footprint.',
   },
   {
-    label: 'Story2TestSuite',
+    label: 'Method2Test',
     view: 'Test',
-    edges: ['Req-Test'],
-    objs: { Req: req(), Arch: ok('op S1', 'op S2'), Test: ok('ts S1', 'ts S2'), Code: [] },
+    edges: ['Goal-Test'],
+    objs: { Goal: goal, Design: ok(...M), Test: ok(...M), Code: [] },
     phi: idle,
-    rule: ['rule Story2TestSuite {                      -- Req -> Test', "  from s : Req!UserStory (s.status = 'accepted')", '  to  ts : Test!TestSuite (', '      code <- @llm(prompt, fp(s.title, s.criteria)) @check test_valid(s) ) }'],
-    text: 'A test suite exists for every accepted story by construction: no LLM can forget one. test_valid is behavioural: the tests must call the method and fail on a stub, so they actually test something.',
+    rule: ['rule Method2Test {                         -- Goal -> Test (Tester, exec)', '  from m : Goal!Method', '  to   t : Test!TestCase ( name <- m.name, method <- m,', "       code <- @llm('Write unit tests', Sequence{m.signature, m.docstring,", '                    m.examples.call, m.examples.expected})', '       @check test_valid(code, m) ) }   -- runs, fails on a stub, asserts every example'],
+    text: 'A test case exists for every method by construction, so no LLM can forget to test mark_done. The footprint and the validator both read the examples: that is what W4 calls anchoring.',
   },
   {
-    label: 'Op2Edit',
+    label: 'Design2Impl',
     view: 'Code',
-    edges: ['Arch-Code', 'Test-Code'],
-    objs: { Req: req(), Arch: ok('op S1', 'op S2'), Test: ok('ts S1', 'ts S2'), Code: ok('edit S1', 'edit S2') },
-    phi: idle,
-    rule: ['rule Op2Edit {                       -- Arch, Test -> Code', '  from op : Arch!Operation, ts : Test!TestSuite', '  to  e : Code!CodeEdit (', '      body <- @llm(prompt, fp(op.signature, op.story.criteria))', '      @check passes_tests(op.story, ts.code) ) }'],
-    text: "The Developer's code must pass the Tester's suite, executed with the exec tool the Developer owns. Each accepted value is stored with a stamp: a digest of the footprint it was written from.",
+    edges: ['Design-Code', 'Test-Code'],
+    objs: { Goal: goal, Design: ok(...M), Test: ok(...M), Code: escalated },
+    phi: failing,
+    rule: ['rule Design2Impl {                         -- Design, Test -> Code (Developer, exec)', '  from d : Design!MethodDesign, t : Test!TestCase (t.method = d.method)   -- join', '  to   i : Code!MethodImpl ( name <- d.name, method <- d.method,', "       body <- @llm('Implement the method', Sequence{d.method.signature, d.contract, t.code})", '       @check compiles(body) and passes_tests(body, t.code) ) }'],
+    text: 'mark_done escalates after k = 3 samples fail passes_tests. The escalation is a recorded fault, not a hand-over to a person: noEsc and cover(G) fail, so φ is false.',
+  },
+  {
+    label: 'attribute',
+    view: 'Test',
+    edges: ['Test-Code'],
+    objs: { Goal: goal, Design: ok(...M), Test: [{ id: 'add_task', state: 'ok' }, { id: 'mark_done', state: 'stale' }, { id: 'export_csv', state: 'ok' }], Code: escalated },
+    phi: failing,
+    rule: ['lookup:   (impl mark_done, body), owner Developer', 'replays on the same footprint:            fail', 'widen by 1, 2 references:                 fail', 're-sample upstream t.code:                pass  -> UPSTREAM (Tester)', 'recurse:  widen Method2Test by 2 references (m.task.examples.*): pass -> FOOTPRINT'],
+    text: 'Locating the symptom is a lookup. A bounded replay classifies it: the first test called mark_done(1) on a fresh board, without the add_task that E2.1 relies on. A footprint fault of Method2Test.',
+  },
+  {
+    label: 'repair in place',
+    view: 'Code',
+    edges: ['Goal-Test', 'Test-Code'],
+    objs: { Goal: goal, Design: ok(...M), Test: [{ id: 'add_task', state: 'ok' }, { id: 'mark_done', state: 'stale' }, { id: 'export_csv', state: 'ok' }], Code: escalated },
+    phi: failing,
+    rule: ['Δ: Method2Test.code footprint += m.task.examples.call, m.task.examples.expected', 'Admit(Θ ⊕ Δ) = ∅  -> applied in place', 'stale:  test(mark_done), impl(mark_done)', 'kept:   every other accepted value'],
+    text: 'The mechanical delta is checked by the same checker, then applied in place. Only the test and the implementation of mark_done lose their stamps and are re-sampled.',
   },
   {
     label: 'evaluate φ',
@@ -76,55 +103,27 @@ const phases: Phase[] = [
     edges: ['Code-phi'],
     objs: full,
     phi: allOk,
-    rule: ['φ = cover(G) ∧ valid ∧ fresh ∧ noObl', '-- cover(G): every accepted criterion has a validated descendant', '-- fresh:    every stamp matches its footprint'],
-    text: 'The engine evaluates "done" on the models. An agent that declares success early cannot end the run.',
-  },
-  {
-    label: 'edit S2.1',
-    view: 'Req',
-    edges: ['Req-Arch', 'Req-Test', 'Arch-Code'],
-    objs: {
-      Req: req('stale'),
-      Arch: [{ id: 'op S1', state: 'ok' }, { id: 'op S2', state: 'stale' }],
-      Test: [{ id: 'ts S1', state: 'ok' }, { id: 'ts S2', state: 'stale' }],
-      Code: [{ id: 'edit S1', state: 'ok' }, { id: 'edit S2', state: 'stale' }],
-    },
-    phi: [
-      { k: 'cover(G)', v: 'ok' },
-      { k: 'valid', v: 'ok' },
-      { k: 'fresh', v: 'fail' },
-      { k: 'noObl', v: 'fail' },
-    ],
-    rule: ['stamp(op S2.signature)  != digest(S2.title, S2.criteria)   -> obligation', 'stamp(ts S2.code)       != digest(S2.title, S2.criteria)   -> obligation', 'stamp(edit S2.body)     != digest(op.signature, criteria) -> obligation'],
-    text: 'The Analyst changes criterion S2.1. Comparing stamps, the engine finds exactly the three values whose footprint changed. S1 is left alone: none of its footprints changed.',
-  },
-  {
-    label: 'redo obligations',
-    view: 'phi',
-    edges: ['Req-Arch', 'Req-Test', 'Arch-Code', 'Test-Code', 'Code-phi'],
-    objs: full,
-    phi: allOk,
-    rule: ['re-sampled: op S2.signature, ts S2.code, edit S2.body', 'kept:       op S1, ts S1, edit S1'],
-    text: 'Only the obligations are redone. φ holds again, and nothing else was regenerated.',
+    rule: ['φ = cover(G) ∧ valid ∧ fresh ∧ noEsc', '-- cover(G): every Example and Method has a validated descendant', '-- fresh:    every stamp equals #(footprint ∪ validator reads)'],
+    text: 'The engine decides that the team is done. A Tester that declares success early cannot end the run while the test for E2.2 fails.',
   },
 ]
 
 const views: Record<string, Omit<ViewData, 'objs'> & { x: number; y: number }> = {
-  Req: { name: 'Req', owner: 'ANALYST · GOAL', classes: 'UserStory, Criterion', x: 0, y: 120 },
-  Arch: { name: 'Arch', owner: 'ARCHITECT', classes: 'Operation', x: 330, y: 0 },
-  Test: { name: 'Test', owner: 'TESTER · exec', classes: 'TestSuite', x: 330, y: 250 },
-  Code: { name: 'Code', owner: 'DEVELOPER · exec', classes: 'CodeEdit', x: 660, y: 120 },
+  Goal: { name: 'Goal', owner: 'LIFT · MM0', classes: 'Task, Method, Example', x: 0, y: 120 },
+  Design: { name: 'Design', owner: 'ARCHITECT', classes: 'MethodDesign', x: 330, y: 0 },
+  Test: { name: 'Test', owner: 'TESTER · exec', classes: 'TestCase', x: 330, y: 250 },
+  Code: { name: 'Code', owner: 'DEVELOPER · exec', classes: 'MethodImpl', x: 660, y: 120 },
 }
 const edgeDefs = [
-  { id: 'Req-Arch', s: 'Req', t: 'Arch', sh: 's-r', th: 't-l', label: 'Story2Operation' },
-  { id: 'Req-Test', s: 'Req', t: 'Test', sh: 's-r', th: 't-l', label: 'Story2TestSuite' },
-  { id: 'Arch-Code', s: 'Arch', t: 'Code', sh: 's-r', th: 't-l', label: 'Op2Edit' },
-  { id: 'Test-Code', s: 'Test', t: 'Code', sh: 's-r', th: 't-l', label: 'ts.code' },
+  { id: 'Goal-Design', s: 'Goal', t: 'Design', sh: 's-r', th: 't-l', label: 'Method2Design' },
+  { id: 'Goal-Test', s: 'Goal', t: 'Test', sh: 's-r', th: 't-l', label: 'Method2Test' },
+  { id: 'Design-Code', s: 'Design', t: 'Code', sh: 's-r', th: 't-l', label: 'Design2Impl' },
+  { id: 'Test-Code', s: 'Test', t: 'Code', sh: 's-r', th: 't-l', label: 't.code' },
   { id: 'Code-phi', s: 'Code', t: 'phi', sh: 's-r', th: 't-l', label: 'evaluate' },
 ]
 const nodeTypes: NodeTypes = { view: ViewNode, phi: PhiNode }
 // vertical layout for phones
-const narrowPos: Record<string, [number, number]> = { Req: [120, 0], Arch: [0, 200], Test: [240, 200], Code: [120, 400], phi: [130, 600] }
+const narrowPos: Record<string, [number, number]> = { Goal: [120, 0], Design: [0, 200], Test: [240, 200], Code: [120, 400], phi: [130, 600] }
 
 export default function RuntimeFlow() {
   const [ix, setIx] = useState(0)
@@ -176,7 +175,7 @@ export default function RuntimeFlow() {
     <div className="flow-card" ref={ref}>
       <div className="flow-toolbar">
         <div className="flow-status" aria-live="polite">
-          AgentM2M runtime · <b>{p.label}</b>
+          AgentHOT runtime · <b>{p.label}</b>
         </div>
         <div className="ctrl">
           <button className="icon-btn" onClick={() => { setPlaying(false); setIx((ix - 1 + phases.length) % phases.length) }} aria-label="Previous phase">
@@ -192,7 +191,7 @@ export default function RuntimeFlow() {
         </div>
       </div>
       <div className="flow-shell short" style={{ height: narrow ? 560 : 'clamp(260px, 34vw, 360px)' }}>
-        <StaticFlow key={narrow ? 'n' : 'w'} nodes={nodes} edges={edges} nodeTypes={nodeTypes} padding={0.05} label={`DevTeam running on AgentM2M, phase ${p.label}`} />
+        <StaticFlow key={narrow ? 'n' : 'w'} nodes={nodes} edges={edges} nodeTypes={nodeTypes} padding={0.05} label={`DevTeam running on AgentHOT, phase ${p.label}`} />
       </div>
       <div className="grid-2 wide-left mt-s" style={{ alignItems: 'start' }}>
         <div className="code" style={{ minHeight: 110 }}>
@@ -209,7 +208,7 @@ export default function RuntimeFlow() {
       <div className="legend">
         <span><i style={{ borderColor: 'var(--warn)' }} />goal data</span>
         <span><i style={{ borderColor: 'var(--pos)', background: 'var(--pos-soft)' }} />accepted value, stamped</span>
-        <span><i style={{ borderColor: 'var(--warn)', background: 'var(--warn-soft)' }} />stale stamp: obligation</span>
+        <span><i style={{ borderColor: 'var(--warn)', background: 'var(--warn-soft)' }} />escalated or stale: re-sampled</span>
       </div>
     </div>
   )

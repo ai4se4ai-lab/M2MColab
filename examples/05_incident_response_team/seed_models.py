@@ -2,7 +2,7 @@
 that Monitor hands to Triage."""
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_seed_alerts_model(alerts_mm: MetamodelBuilder):

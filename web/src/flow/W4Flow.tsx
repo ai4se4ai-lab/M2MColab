@@ -4,7 +4,8 @@ import { FeatNode, NoteNode, type FeatData } from './nodes'
 import { StaticFlow, type FlowEdgeData } from './shared'
 import { useInView, useNarrow, useReducedMotion } from './hooks'
 
-// Feature-level data-flow graphs for W4 (anchored coverage), as in the paper's worked example.
+// Feature-level data-flow graphs for W4 (two-sided anchoring), as in the paper's Fig. 4.
+// "p": production edge (expression or footprint); "c": check edge (validator read).
 type G = {
   nodes: { id: string; x: number; y: number; data: FeatData }[]
   edges: { id: string; s: string; t: string; sh: string; th: string; why: string }[]
@@ -16,37 +17,38 @@ type G = {
 const graphs: Record<'a' | 'b', G> = {
   a: {
     nodes: [
-      { id: 'ct', x: 0, y: 0, data: { label: 'Criterion.text', role: 'goal', sub: 'goal data' } },
-      { id: 'sc', x: 0, y: 130, data: { label: 'UserStory.criteria' } },
-      { id: 'or', x: 340, y: 0, data: { label: 'TestCase.oracle', role: 'beh', sub: 'behavioural check' } },
-      { id: 'sig', x: 340, y: 130, data: { label: 'Operation.signature' } },
-      { id: 'body', x: 680, y: 130, data: { label: 'CodeEdit.body', role: 'beh', sub: 'behavioural check' } },
+      { id: 'ex', x: 0, y: 0, data: { label: 'Example.call/expected', role: 'goal', sub: 'anchor features' } },
+      { id: 'doc', x: 0, y: 130, data: { label: 'Method.docstring' } },
+      { id: 'tc', x: 340, y: 0, data: { label: 'TestCase.code', role: 'beh', sub: 'test_valid' } },
+      { id: 'con', x: 340, y: 130, data: { label: 'MethodDesign.contract' } },
+      { id: 'body', x: 680, y: 65, data: { label: 'MethodImpl.body', role: 'beh', sub: 'passes_tests' } },
     ],
     edges: [
-      { id: 'ct-or', s: 'ct', t: 'or', sh: 's-r', th: 't-l', why: 'footprint c.text' },
-      { id: 'ct-sig', s: 'ct', t: 'sig', sh: 's-r', th: 't-l', why: 'footprint s.criteria.text' },
-      { id: 'sc-sig', s: 'sc', t: 'sig', sh: 's-r', th: 't-l', why: '' },
-      { id: 'sig-body', s: 'sig', t: 'body', sh: 's-r', th: 't-l', why: 'footprint op.signature' },
+      { id: 'ex-tc', s: 'ex', t: 'tc', sh: 's-r', th: 't-l', why: 'p, c' },
+      { id: 'doc-tc', s: 'doc', t: 'tc', sh: 's-r', th: 't-l', why: 'p' },
+      { id: 'doc-con', s: 'doc', t: 'con', sh: 's-r', th: 't-l', why: 'p' },
+      { id: 'con-body', s: 'con', t: 'body', sh: 's-r', th: 't-l', why: 'p' },
+      { id: 'tc-body', s: 'tc', t: 'body', sh: 's-r', th: 't-l', why: 'p, c' },
     ],
-    layers: [['ct-or', 'ct-sig'], ['sig-body']],
-    verdict: { ok: true, text: 'W4 passes: the goal reaches two behaviour-checked values' },
+    layers: [['ex-tc'], ['tc-body']],
+    verdict: { ok: true, text: 'W4 passes: Example reaches TestCase.code by a production and a check edge' },
   },
   b: {
     nodes: [
-      { id: 'ct', x: 0, y: 0, data: { label: 'Criterion.text', role: 'goal', sub: 'goal data' } },
-      { id: 'st', x: 0, y: 130, data: { label: 'UserStory.title' } },
-      { id: 'sig', x: 340, y: 130, data: { label: 'Operation.signature' } },
-      { id: 'body', x: 680, y: 130, data: { label: 'CodeEdit.body' } },
-      { id: 'ver', x: 680, y: 0, data: { label: 'TestRun.verdict', role: 'beh', sub: 'behavioural check' } },
+      { id: 'ex', x: 0, y: 0, data: { label: 'Example.call/expected', role: 'goal', sub: 'anchor features' } },
+      { id: 'sig', x: 0, y: 130, data: { label: 'Method.signature' } },
+      { id: 'con', x: 340, y: 130, data: { label: 'MethodDesign.contract' } },
+      { id: 'body', x: 680, y: 130, data: { label: 'MethodImpl.body' } },
+      { id: 'ver', x: 680, y: 0, data: { label: 'TestRun.verdict', role: 'beh', sub: 'smoke_test' } },
     ],
     edges: [
-      { id: 'st-sig', s: 'st', t: 'sig', sh: 's-r', th: 't-l', why: 'footprint s.title' },
-      { id: 'sig-body', s: 'sig', t: 'body', sh: 's-r', th: 't-l', why: 'footprint op.signature' },
-      { id: 'body-ver', s: 'body', t: 'ver', sh: 's-t', th: 't-b', why: 'footprint e.body' },
+      { id: 'sig-con', s: 'sig', t: 'con', sh: 's-r', th: 't-l', why: 'p' },
+      { id: 'con-body', s: 'con', t: 'body', sh: 's-r', th: 't-l', why: 'p' },
+      { id: 'body-ver', s: 'body', t: 'ver', sh: 's-t', th: 't-b', why: 'p, c' },
     ],
     layers: [],
-    verdict: { ok: false, text: 'W4 fails: no behavioural check ever reads a criterion' },
-    note: { x: 290, y: 4, text: 'no arrow leaves\nthe goal' },
+    verdict: { ok: false, text: 'W4 fails: nothing reads an Example, although the team does test something' },
+    note: { x: 290, y: 4, text: 'no edge leaves\nthe goal data' },
   },
 }
 
@@ -55,12 +57,12 @@ const nodeTypes: NodeTypes = { feat: FeatNode, note: NoteNode }
 // vertical layouts for phones: [x, y] per node, [sourceHandle, targetHandle] per edge
 const narrowLayout: Record<'a' | 'b', { pos: Record<string, [number, number]>; h: Record<string, [string, string]>; note?: [number, number] }> = {
   a: {
-    pos: { ct: [0, 0], sc: [200, 0], or: [0, 170], sig: [200, 170], body: [200, 340] },
-    h: { 'ct-or': ['s-b', 't-t'], 'ct-sig': ['s-b', 't-t'], 'sc-sig': ['s-b', 't-t'], 'sig-body': ['s-b', 't-t'] },
+    pos: { ex: [0, 0], doc: [200, 0], tc: [0, 170], con: [200, 170], body: [100, 340] },
+    h: { 'ex-tc': ['s-b', 't-t'], 'doc-tc': ['s-b', 't-t'], 'doc-con': ['s-b', 't-t'], 'con-body': ['s-b', 't-t'], 'tc-body': ['s-b', 't-t'] },
   },
   b: {
-    pos: { ct: [0, 0], st: [200, 0], sig: [200, 170], body: [200, 340], ver: [0, 340] },
-    h: { 'st-sig': ['s-b', 't-t'], 'sig-body': ['s-b', 't-t'], 'body-ver': ['s-l', 't-r'] },
+    pos: { ex: [0, 0], sig: [200, 0], con: [200, 170], body: [200, 340], ver: [0, 340] },
+    h: { 'sig-con': ['s-b', 't-t'], 'con-body': ['s-b', 't-t'], 'body-ver': ['s-l', 't-r'] },
     note: [0, 175],
   },
 }
@@ -130,7 +132,7 @@ export default function W4Flow() {
           {showVerdict ? (
             <span className={`pill ${g.verdict.ok ? 'pos' : 'neg'}`}>{g.verdict.text}</span>
           ) : (
-            <span className="mono small muted">following arrows out of Criterion.text…</span>
+            <span className="mono small muted">following arrows out of Example.call/expected…</span>
           )}
         </div>
       </div>
@@ -143,10 +145,12 @@ export default function W4Flow() {
         <span><i style={{ borderColor: 'var(--accent)' }} />reached from the goal</span>
       </div>
       <p className="caption">
-        <b>Anchored coverage, by hand.</b> Each arrow comes from one footprint or formula. In (a) the goal reaches two green
-        nodes, so W4 passes. In (b) nothing reads <code>Criterion.text</code>, so W4 fails, even though the team does test
-        something. A path-only rule would be fooled by an empty test per criterion; W4 asks whether a real check{' '}
-        <em>reads</em> the goal.
+        <b>Two-sided anchoring, by hand.</b> Each arrow is a production edge (p: an expression or footprint reads the
+        feature) or a check edge (c: a validator reads it). In (a) the anchor features reach <code>TestCase.code</code>{' '}
+        both ways: the producer of the tests saw the examples, and <code>test_valid</code> tests against them. In (b) no
+        edge leaves the goal data, so W4 fails although the team does test something. A path-only rule would accept a team
+        whose tests never see an example; a one-sided rule would accept a producer that never sees the goal as long as its
+        validator reads it. The mutation study shows both blind spots.
       </p>
     </div>
   )

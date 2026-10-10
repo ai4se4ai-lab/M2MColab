@@ -45,10 +45,10 @@ build_team = _load_devteam_build_team()
 
 from metamodels import build_sec_mm  # noqa: E402  (this example's OWN metamodels.py)
 
-from agentm2m.config import LLMConfig  # noqa: E402
-from agentm2m.llm.factory import make_backend  # noqa: E402
-from agentm2m.team.hot import TeamChange, apply_hot  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.config import LLMConfig  # noqa: E402
+from agenthot.llm.factory import make_backend  # noqa: E402
+from agenthot.team.hot import TeamChange, apply_hot  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 
 def main() -> int:
@@ -80,7 +80,7 @@ def main() -> int:
             view=sec_mm,
             view_root=sec_root,
             handoff_name="Arch2Sec",
-            rule_path=HERE / "rules" / "Arch2Sec.agentm2m",
+            rule_path=HERE / "rules" / "Arch2Sec.agenthot",
         ),
     )
     print(f"Team after evolution: {sorted(team.agents)}\n")

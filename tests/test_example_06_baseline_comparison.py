@@ -1,5 +1,5 @@
 """Regression test for examples/06_baseline_comparison: calls run_freetext,
-run_shared_schema, and run_agentm2m directly with the deterministic
+run_shared_schema, and run_agenthot directly with the deterministic
 MockBackend (not `--llm mock` as a subprocess) and checks the exact P1
 deficit the example illustrates -- see README.md.
 
@@ -32,7 +32,7 @@ def _load_run_module():
     return module
 
 
-from agentm2m.llm.mock_backend import MockBackend  # noqa: E402
+from agenthot.llm.mock_backend import MockBackend  # noqa: E402
 
 
 def test_baseline_comparison_demonstrates_p1_deficit():
@@ -53,14 +53,14 @@ def test_baseline_comparison_demonstrates_p1_deficit():
     assert ss["accepted"] is False
     assert ss["required_field_survived"] is False
 
-    am = run_mod.run_agentm2m(llm)
+    am = run_mod.run_agenthot(llm)
     assert am["required_field_survived"] is True
     assert am["reference_resolved"] is True
     assert am["validator_enforced"] is True
     assert am["phi_holds"] is True
     assert am["escalations"] == []
 
-    # agentm2m's footprint-bounded prompt should never be larger than the
+    # agenthot's footprint-bounded prompt should never be larger than the
     # two baselines', which both serialize the whole task into the prompt.
     assert am["tokens"] < ft["tokens"]
     assert am["tokens"] < ss["tokens"]
