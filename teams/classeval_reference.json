@@ -1,0 +1,259 @@
+{
+  "name": "typed_ref",
+  "goal_view": "Goal",
+  "agents": [
+    {
+      "name": "Architect",
+      "role": "You state, for one method, a precise contract: inputs, result, side effects on the object's fields and the errors it raises.",
+      "tools": []
+    },
+    {
+      "name": "Tester",
+      "role": "You turn one method's documentation and examples into executable unittest tests with concrete expected values.",
+      "tools": [
+        "exec"
+      ]
+    },
+    {
+      "name": "Developer",
+      "role": "You implement one method of the class so that it meets its contract and passes its tests.",
+      "tools": [
+        "exec"
+      ]
+    }
+  ],
+  "views": {
+    "Design": {
+      "classes": {
+        "MethodDesign": {
+          "attributes": {
+            "name": "string",
+            "contract": "string"
+          },
+          "references": {
+            "method": {
+              "type": "Goal.Method",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Test": {
+      "classes": {
+        "TestCase": {
+          "attributes": {
+            "name": "string",
+            "code": "string"
+          },
+          "references": {
+            "method": {
+              "type": "Goal.Method",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Code": {
+      "classes": {
+        "MethodImpl": {
+          "attributes": {
+            "name": "string",
+            "body": "string"
+          },
+          "references": {
+            "method": {
+              "type": "Goal.Method",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "writes": {
+    "Architect": [
+      "Design"
+    ],
+    "Tester": [
+      "Test"
+    ],
+    "Developer": [
+      "Code"
+    ]
+  },
+  "handoffs": [
+    {
+      "name": "Method2Design",
+      "sources": [
+        "Goal"
+      ],
+      "target": "Design",
+      "rules": [
+        {
+          "name": "Method2Design",
+          "from": [
+            {
+              "var": "m",
+              "type": "Goal!Method"
+            }
+          ],
+          "guard": null,
+          "to": {
+            "var": "d",
+            "type": "Design!MethodDesign"
+          },
+          "bind": {
+            "name": "m.name",
+            "method": "m"
+          },
+          "llm": [
+            {
+              "feature": "contract",
+              "prompt": "State a contract",
+              "footprint": [
+                "m.name",
+                "m.signature",
+                "m.docstring"
+              ],
+              "validator": [
+                {
+                  "id": "nonempty"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Method2Test",
+      "sources": [
+        "Goal"
+      ],
+      "target": "Test",
+      "rules": [
+        {
+          "name": "Method2Test",
+          "from": [
+            {
+              "var": "m",
+              "type": "Goal!Method"
+            }
+          ],
+          "guard": null,
+          "to": {
+            "var": "t",
+            "type": "Test!TestCase"
+          },
+          "bind": {
+            "name": "m.name",
+            "method": "m"
+          },
+          "llm": [
+            {
+              "feature": "code",
+              "prompt": "Write unit tests for this method",
+              "footprint": [
+                "m.signature",
+                "m.docstring",
+                "m.examples.call",
+                "m.examples.expected"
+              ],
+              "validator": [
+                {
+                  "id": "test_valid",
+                  "args": {
+                    "method": "m"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Design2Impl",
+      "sources": [
+        "Design",
+        "Test"
+      ],
+      "target": "Code",
+      "rules": [
+        {
+          "name": "Design2Impl",
+          "from": [
+            {
+              "var": "d",
+              "type": "Design!MethodDesign"
+            },
+            {
+              "var": "t",
+              "type": "Test!TestCase"
+            }
+          ],
+          "guard": "t.method = d.method",
+          "to": {
+            "var": "i",
+            "type": "Code!MethodImpl"
+          },
+          "bind": {
+            "name": "d.name",
+            "method": "d.method"
+          },
+          "llm": [
+            {
+              "feature": "body",
+              "prompt": "Implement the method",
+              "footprint": [
+                "d.method.signature",
+                "d.contract",
+                "t.code"
+              ],
+              "validator": [
+                {
+                  "id": "compiles"
+                },
+                {
+                  "id": "passes_tests",
+                  "args": {
+                    "tests": "t.code"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "goal": [
+    {
+      "class": "Example",
+      "scope": "all",
+      "mode": "checked",
+      "anchors": [
+        "call",
+        "expected"
+      ]
+    },
+    {
+      "class": "Method",
+      "scope": "all",
+      "mode": "delivered"
+    }
+  ],
+  "deliverable": {
+    "view": "Code",
+    "class": "MethodImpl",
+    "feature": "body"
+  },
+  "done": [
+    "cover(G)",
+    "valid",
+    "fresh",
+    "noEsc"
+  ]
+}

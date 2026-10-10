@@ -1,0 +1,27 @@
+-- 04's n:m (multi-source) hand-off -- docs/DS-A2A.tex, Sec III-A:
+-- "Multi-source hand-offs (n:m, e.g., the Developer reads both M_req and
+-- M_arch) are declared as in ATL, with several `from` models."
+--
+-- The Report-Writer reads BOTH the Experiment-Designer's view (Experiments)
+-- and the Literature-Reviewer's view (Literature) in the SAME rule, pairing
+-- an ExperimentPlan with every Claim that shares its topic. This is a
+-- genuine n:m match, not a disguised 1:1: a topic with two claims (and
+-- therefore two plans, since Lit2Plan is 1:1) yields FOUR ReportSections
+-- for that topic -- every plan x claim combination sharing the topic, not
+-- just the plan paired back with the one claim it was itself derived from.
+module ExpLit2Report;
+create OUT : Report from IN1 : Experiments, IN2 : Literature;
+uses 'helpers.py';
+
+rule PlanAndClaim2Section {
+  from p : Experiments!ExperimentPlan, c : Literature!Claim
+           (p.topic = c.topic)  -- guard relating pattern variables from TWO different source models
+  to  s : Report!ReportSection (
+    id    <- p.sectionId(c),
+    title <- c.topic,
+    plan  <- p,
+    claim <- c,
+    body  <- @llm('Write a short report section synthesizing this experiment plan and the research claim it tests, citing both the method and the claim',
+                   p.combinedFootprint(c)),  -- footprint drawn from BOTH source elements
+    @check body.notTooShort() )
+}
