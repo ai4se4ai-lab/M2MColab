@@ -2,11 +2,11 @@
 module's `uses 'helpers.py';` declaration. `passesDryRun` is the
 executable-oracle validator: it does not just parse `script`, it actually
 runs it as a subprocess and checks it exits cleanly, reusing
-agentm2m.engine.validators.run_pytest_oracle.
+agenthot.engine.validators.run_pytest_oracle.
 """
 from __future__ import annotations
 
-from agentm2m.engine.validators import run_pytest_oracle
+from agenthot.engine.validators import run_pytest_oracle
 
 
 def parsesRisk(raw: str) -> bool:

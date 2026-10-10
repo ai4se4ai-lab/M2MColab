@@ -15,10 +15,10 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-PLUGIN = REPO / "plugin" / "agentm2m"
+PLUGIN = REPO / "plugin" / "autom2m"
 sys.path.insert(0, str(REPO / "src"))
 
-from agentm2m.workspace import Workspace  # noqa: E402
+from agenthot.workspace import Workspace  # noqa: E402
 
 GOOD_SIGNATURE = "markTaskDone(id: TaskId) -> Task"
 GOOD_BODY = "def op(task_id):\n    return {'id': task_id, 'done': True}\n"

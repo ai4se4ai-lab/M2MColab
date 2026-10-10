@@ -1,21 +1,21 @@
 """View metamodels for the ResearchTeam example (examples/04_research_team):
 Literature (Literature-Reviewer), Experiments (Experiment-Designer), Report
 (Report-Writer). Each is an EMF-compatible pyecore EPackage built with
-agentm2m.metamodel.MetamodelBuilder, following the same style as
+agenthot.metamodel.MetamodelBuilder, following the same style as
 examples/01_devteam/metamodels.py.
 
 Unlike 01_devteam's exclusively 1:1 hand-offs, this example's Report view is
-populated by an n:m (multi-source) hand-off -- see rules/ExpLit2Report.agentm2m
+populated by an n:m (multi-source) hand-off -- see rules/ExpLit2Report.agenthot
 and README.md -- so ReportSection references BOTH an Experiments!ExperimentPlan
 and a Literature!Claim.
 """
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_literature_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Literature", "http://agentm2m/examples/research_team/literature")
+    b = MetamodelBuilder("Literature", "http://agenthot/examples/research_team/literature")
     paper = b.eclass("Paper")
     b.attribute(paper, "id")
     b.attribute(paper, "title")
@@ -33,7 +33,7 @@ def build_literature_mm() -> MetamodelBuilder:
 
 
 def build_experiments_mm(literature_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Experiments", "http://agentm2m/examples/research_team/experiments")
+    b = MetamodelBuilder("Experiments", "http://agenthot/examples/research_team/experiments")
     plan = b.eclass("ExperimentPlan")
     b.attribute(plan, "id")
     b.attribute(plan, "topic")
@@ -46,7 +46,7 @@ def build_experiments_mm(literature_mm: MetamodelBuilder) -> MetamodelBuilder:
 
 
 def build_report_mm(experiments_mm: MetamodelBuilder, literature_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Report", "http://agentm2m/examples/research_team/report")
+    b = MetamodelBuilder("Report", "http://agenthot/examples/research_team/report")
     section = b.eclass("ReportSection")
     b.attribute(section, "id")
     b.attribute(section, "title")

@@ -11,12 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from agentm2m.engine.executor import acceptance_holds, run_handoff
-from agentm2m.engine.helpers_loader import load_helpers
-from agentm2m.engine.trace import TraceModel
-from agentm2m.llm.mock_backend import MockBackend
-from agentm2m.metamodel.builder import MetamodelBuilder
-from agentm2m.rules.parser import parse_module_file
+from agenthot.engine.executor import acceptance_holds, run_handoff
+from agenthot.engine.helpers_loader import load_helpers
+from agenthot.engine.trace import TraceModel
+from agenthot.llm.mock_backend import MockBackend
+from agenthot.metamodel.builder import MetamodelBuilder
+from agenthot.rules.parser import parse_module_file
 
 RULE_TEXT = """
 module Req2Arch;
@@ -59,7 +59,7 @@ def params(signature):
 
 
 def _build_req_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Req", "http://agentm2m/req")
+    b = MetamodelBuilder("Req", "http://agenthot/req")
     epic = b.eclass("Epic")
     b.attribute(epic, "name")
     criterion = b.eclass("Criterion")
@@ -76,7 +76,7 @@ def _build_req_mm() -> MetamodelBuilder:
 
 
 def _build_arch_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Arch", "http://agentm2m/arch")
+    b = MetamodelBuilder("Arch", "http://agenthot/arch")
     component = b.eclass("Component")
     b.attribute(component, "name")
     operation = b.eclass("Operation")
@@ -91,7 +91,7 @@ def _build_arch_mm() -> MetamodelBuilder:
 
 @pytest.fixture()
 def rule_dir(tmp_path: Path) -> Path:
-    (tmp_path / "Req2Arch.agentm2m").write_text(RULE_TEXT)
+    (tmp_path / "Req2Arch.agenthot").write_text(RULE_TEXT)
     (tmp_path / "helpers.py").write_text(HELPERS_TEXT)
     return tmp_path
 
@@ -112,7 +112,7 @@ def test_story2operation_end_to_end(rule_dir: Path):
 
     arch_root = arch_mm.get("ArchModel")()
 
-    module = parse_module_file(rule_dir / "Req2Arch.agentm2m")
+    module = parse_module_file(rule_dir / "Req2Arch.agenthot")
     trace = TraceModel(handoff="Req2Arch")
     llm = MockBackend(script=["handleThing(id: string) -> Result"])
 
@@ -168,7 +168,7 @@ def test_change_propagation_triggers_resample(rule_dir: Path):
     req_root.stories.append(s1)
     arch_root = arch_mm.get("ArchModel")()
 
-    module = parse_module_file(rule_dir / "Req2Arch.agentm2m")
+    module = parse_module_file(rule_dir / "Req2Arch.agenthot")
     trace = TraceModel(handoff="Req2Arch")
     llm = MockBackend(script=["v1(a: string) -> Result", "v2(a: string, b: string) -> Result"])
 

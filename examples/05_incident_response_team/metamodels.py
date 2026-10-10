@@ -3,18 +3,18 @@
 Actions (Remediation), Reports (Postmortem).
 
 Unlike every earlier example, `RemediationAction` is populated by a Lift
-binding (see rules/Incident2Action.agentm2m and
-agentm2m.engine.lift.lift_json_into_element): its `name`, `command`, and
+binding (see rules/Incident2Action.agenthot and
+agenthot.engine.lift.lift_json_into_element): its `name`, `command`, and
 `risk_level` EAttributes are all written in one stochastic call, from
 LLM-sampled JSON, rather than one attribute per binding.
 """
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_alerts_mm() -> MetamodelBuilder:
-    b = MetamodelBuilder("Alerts", "http://agentm2m/examples/incident_response/alerts")
+    b = MetamodelBuilder("Alerts", "http://agenthot/examples/incident_response/alerts")
     alert = b.eclass("Alert")
     b.attribute(alert, "id")
     b.attribute(alert, "source")
@@ -26,7 +26,7 @@ def build_alerts_mm() -> MetamodelBuilder:
 
 
 def build_incidents_mm(alerts_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Incidents", "http://agentm2m/examples/incident_response/incidents")
+    b = MetamodelBuilder("Incidents", "http://agenthot/examples/incident_response/incidents")
     incident = b.eclass("Incident")
     b.attribute(incident, "id")
     b.attribute(incident, "severity")
@@ -39,7 +39,7 @@ def build_incidents_mm(alerts_mm: MetamodelBuilder) -> MetamodelBuilder:
 
 
 def build_actions_mm(incidents_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Actions", "http://agentm2m/examples/incident_response/actions")
+    b = MetamodelBuilder("Actions", "http://agenthot/examples/incident_response/actions")
     action = b.eclass("RemediationAction")
     b.attribute(action, "id")
     # name / command / risk_level are written in ONE call by the Lift
@@ -48,7 +48,7 @@ def build_actions_mm(incidents_mm: MetamodelBuilder) -> MetamodelBuilder:
     b.attribute(action, "command")
     b.attribute(action, "risk_level")
     # dryRun is a SEPARATE, ordinary stochastic binding validated by an
-    # executable-oracle @check (see rules/Incident2Action.agentm2m).
+    # executable-oracle @check (see rules/Incident2Action.agenthot).
     b.attribute(action, "dryRun")
     b.reference(action, "incident", incidents_mm.get("Incident"), many=False, containment=False)
 
@@ -58,7 +58,7 @@ def build_actions_mm(incidents_mm: MetamodelBuilder) -> MetamodelBuilder:
 
 
 def build_reports_mm(actions_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Reports", "http://agentm2m/examples/incident_response/reports")
+    b = MetamodelBuilder("Reports", "http://agenthot/examples/incident_response/reports")
     report = b.eclass("PostmortemReport")
     b.attribute(report, "id")
     b.attribute(report, "narrative")

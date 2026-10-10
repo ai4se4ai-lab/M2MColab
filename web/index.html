@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoM2M: Checked Composition for LLM Agent Teams</title>
+    <meta name="description" content="AutoM2M makes a team builder hand over a typed team and lets a deterministic checker decide whether it may run. Composition defects in automatically assembled LLM agent teams, prevented, located and repaired." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // set the theme before first paint to avoid a flash
+      (function () {
+        var t = null
+        try { t = localStorage.getItem('autom2m-theme') } catch (e) {}
+        if (t !== 'light' && t !== 'dark') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = t
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

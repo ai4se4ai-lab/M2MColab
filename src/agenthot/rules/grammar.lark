@@ -1,0 +1,90 @@
+// Grammar for the agenthot hand-off DSL: ATL-flavored matched rules
+// extended with @llm(prompt, footprint) stochastic bindings and @check
+// validators (Definition 1 / Fig. "Running example" in docs/DS-A2A.tex).
+
+start: module_decl create_decl uses_decl? rule_decl*
+
+module_decl: "module" NAME ";"
+
+create_decl: "create" NAME ":" NAME "from" from_model_list ";"
+from_model_list: from_model ("," from_model)*
+from_model: NAME ":" NAME
+
+uses_decl: "uses" STRING ";"
+
+rule_decl: "rule" NAME "{" from_clause to_clause "}"
+
+from_clause: "from" source_pattern_list guard?
+source_pattern_list: source_pattern ("," source_pattern)*
+source_pattern: NAME ":" NAME "!" NAME
+guard: "(" expr ")"
+
+to_clause: "to" target_pattern_list
+target_pattern_list: target_pattern ("," target_pattern)*
+target_pattern: NAME ":" NAME "!" NAME "(" binding_list? ")"
+binding_list: binding ("," binding)*
+
+?binding: stochastic_binding
+        | structural_binding
+        | check_clause
+
+structural_binding: NAME "<-" expr
+stochastic_binding: NAME "<-" "@llm" "(" expr "," expr ")"
+check_clause: "@check" expr
+
+// ---- OCL-subset expression grammar -----------------------------------
+
+?expr: or_expr
+
+?or_expr: or_expr "or" and_expr   -> or_op
+        | and_expr
+
+?and_expr: and_expr "and" not_expr -> and_op
+         | not_expr
+
+?not_expr: "not" not_expr -> not_op
+         | comparison
+
+?comparison: arrow_expr comp_op arrow_expr -> compare
+           | arrow_expr
+
+comp_op: EQ | NE | LE | GE | LT | GT
+EQ: "="
+NE: "<>"
+LE: "<="
+GE: ">="
+LT: "<"
+GT: ">"
+
+?arrow_expr: arrow_expr "->" NAME arrow_args -> arrow_call
+           | postfix
+
+arrow_args: "(" [arrow_lambda | arglist] ")"
+arrow_lambda: NAME "|" expr
+arglist: expr ("," expr)*
+
+?postfix: postfix "." NAME call_args -> method_call
+        | postfix "." NAME          -> attr_access
+        | atom
+
+call_args: "(" [arglist] ")"
+
+?atom: literal
+     | NAME -> var
+     | "(" expr ")"
+
+literal: STRING -> string_lit
+       | SIGNED_NUMBER -> number_lit
+       | "true" -> true_lit
+       | "false" -> false_lit
+       | "#" NAME -> symbol_lit
+
+// ---- lexer -------------------------------------------------------------
+
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+STRING: /'(?:[^'\\]|\\.)*'/ | /"(?:[^"\\]|\\.)*"/
+%import common.SIGNED_NUMBER
+%import common.WS
+%ignore WS
+COMMENT: /--[^\n]*/
+%ignore COMMENT

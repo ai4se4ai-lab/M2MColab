@@ -3,11 +3,11 @@ runtime by the HOT in this example -- not part of the original team.
 """
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_sec_mm(arch_mm: MetamodelBuilder) -> MetamodelBuilder:
-    b = MetamodelBuilder("Sec", "http://agentm2m/examples/devteam/sec")
+    b = MetamodelBuilder("Sec", "http://agenthot/examples/devteam/sec")
     review = b.eclass("SecurityReview")
     b.attribute(review, "notes")
     b.attribute(review, "risk")

@@ -1,0 +1,52 @@
+"""OpenAI (or OpenAI-compatible) chat-completions backend."""
+from __future__ import annotations
+
+import requests
+
+from .base import LLMBackend, LLMError
+
+
+class OpenAIBackend(LLMBackend):
+    name = "openai"
+
+    def __init__(self, api_key: str, model: str, *, base_url: str = "https://api.openai.com/v1", timeout: float = 120.0) -> None:
+        if not api_key:
+            raise LLMError("OPENAI_API_KEY is not set")
+        self.api_key = api_key
+        self.model = model
+        self.base_url = base_url.rstrip("/")
+        self.timeout = timeout
+
+    def generate(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        format: str | dict | None = None,
+        system: str | None = None,
+        max_tokens: int | None = None,
+    ) -> str:
+        self.last_usage = None
+        messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
+        body: dict = {"model": self.model, "messages": messages, "temperature": temperature}
+        if max_tokens:
+            body["max_tokens"] = int(max_tokens)
+        if format == "json":
+            body["response_format"] = {"type": "json_object"}
+        elif isinstance(format, dict):
+            body["response_format"] = {"type": "json_schema", "json_schema": {"name": "output", "schema": format}}
+        try:
+            resp = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json=body,
+                timeout=self.timeout,
+            )
+            resp.raise_for_status()
+        except requests.RequestException as exc:
+            raise LLMError(f"OpenAI generate() failed: {exc}") from exc
+        data = resp.json()
+        usage = data.get("usage") or {}
+        if usage:
+            self.last_usage = (int(usage.get("prompt_tokens", 0)), int(usage.get("completion_tokens", 0)))
+        return data["choices"][0]["message"]["content"].strip()

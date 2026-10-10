@@ -1,72 +1,38 @@
 {
   "name": "devteam",
-  "goal_view": "Req",
+  "goal_view": "Goal",
   "agents": [
     {
-      "name": "Analyst",
-      "role": "Turns requests into user stories with acceptance criteria.",
-      "tools": []
-    },
-    {
       "name": "Architect",
-      "role": "Designs one API operation per accepted story.",
+      "role": "You state, for one method, a precise contract: inputs, result, side effects on the object's fields and the errors it raises.",
       "tools": []
     },
     {
-      "name": "Developer",
-      "role": "Implements each operation so that its story's tests pass.",
+      "name": "Tester",
+      "role": "You turn one method's documentation and examples into executable unittest tests with concrete expected values.",
       "tools": [
         "exec"
       ]
     },
     {
-      "name": "Tester",
-      "role": "Writes executable tests for each story's acceptance criteria.",
+      "name": "Developer",
+      "role": "You implement one method of the class so that it meets its contract and passes its tests.",
       "tools": [
         "exec"
       ]
     }
   ],
   "views": {
-    "Req": {
+    "Design": {
       "classes": {
-        "UserStory": {
-          "attributes": {
-            "id": "string",
-            "title": "string",
-            "status": "string"
-          },
-          "references": {
-            "criteria": {
-              "type": "Req.Criterion",
-              "many": true
-            }
-          }
-        },
-        "Criterion": {
-          "attributes": {
-            "id": "string",
-            "text": "string"
-          },
-          "references": {
-            "story": {
-              "type": "Req.UserStory",
-              "required": true
-            }
-          }
-        }
-      }
-    },
-    "Arch": {
-      "classes": {
-        "Operation": {
+        "MethodDesign": {
           "attributes": {
             "name": "string",
-            "signature": "string"
+            "contract": "string"
           },
           "references": {
-            "story": {
-              "type": "Req.UserStory",
+            "method": {
+              "type": "Goal.Method",
               "required": true
             }
           }
@@ -75,14 +41,14 @@
     },
     "Test": {
       "classes": {
-        "TestSuite": {
+        "TestCase": {
           "attributes": {
             "name": "string",
             "code": "string"
           },
           "references": {
-            "story": {
-              "type": "Req.UserStory",
+            "method": {
+              "type": "Goal.Method",
               "required": true
             }
           }
@@ -91,18 +57,14 @@
     },
     "Code": {
       "classes": {
-        "CodeEdit": {
+        "MethodImpl": {
           "attributes": {
-            "file": "string",
+            "name": "string",
             "body": "string"
           },
           "references": {
-            "operation": {
-              "type": "Arch.Operation",
-              "required": true
-            },
-            "story": {
-              "type": "Req.UserStory",
+            "method": {
+              "type": "Goal.Method",
               "required": true
             }
           }
@@ -111,55 +73,53 @@
     }
   },
   "writes": {
-    "Analyst": [
-      "Req"
-    ],
     "Architect": [
-      "Arch"
-    ],
-    "Developer": [
-      "Code"
+      "Design"
     ],
     "Tester": [
       "Test"
+    ],
+    "Developer": [
+      "Code"
     ]
   },
   "handoffs": [
     {
-      "name": "Req2Arch",
+      "name": "Method2Design",
       "sources": [
-        "Req"
+        "Goal"
       ],
-      "target": "Arch",
+      "target": "Design",
       "rules": [
         {
-          "name": "Story2Operation",
+          "name": "Method2Design",
           "from": [
             {
-              "var": "s",
-              "type": "Req!UserStory"
+              "var": "m",
+              "type": "Goal!Method"
             }
           ],
-          "guard": "s.status = 'accepted'",
+          "guard": null,
           "to": {
-            "var": "op",
-            "type": "Arch!Operation"
+            "var": "d",
+            "type": "Design!MethodDesign"
           },
           "bind": {
-            "name": "s.title",
-            "story": "s"
+            "name": "m.name",
+            "method": "m"
           },
           "llm": [
             {
-              "feature": "signature",
-              "prompt": "Derive an API signature",
+              "feature": "contract",
+              "prompt": "State a contract",
               "footprint": [
-                "s.title",
-                "s.criteria"
+                "m.name",
+                "m.signature",
+                "m.docstring"
               ],
               "validator": [
                 {
-                  "id": "compiles"
+                  "id": "nonempty"
                 }
               ]
             }
@@ -168,42 +128,44 @@
       ]
     },
     {
-      "name": "Req2Test",
+      "name": "Method2Test",
       "sources": [
-        "Req"
+        "Goal"
       ],
       "target": "Test",
       "rules": [
         {
-          "name": "Story2TestSuite",
+          "name": "Method2Test",
           "from": [
             {
-              "var": "s",
-              "type": "Req!UserStory"
+              "var": "m",
+              "type": "Goal!Method"
             }
           ],
-          "guard": "s.status = 'accepted'",
+          "guard": null,
           "to": {
-            "var": "ts",
-            "type": "Test!TestSuite"
+            "var": "t",
+            "type": "Test!TestCase"
           },
           "bind": {
-            "name": "s.id",
-            "story": "s"
+            "name": "m.name",
+            "method": "m"
           },
           "llm": [
             {
               "feature": "code",
-              "prompt": "Write one executable test per acceptance criterion",
+              "prompt": "Write unit tests for this method",
               "footprint": [
-                "s.title",
-                "s.criteria"
+                "m.signature",
+                "m.docstring",
+                "m.examples.call",
+                "m.examples.expected"
               ],
               "validator": [
                 {
                   "id": "test_valid",
                   "args": {
-                    "method": "s"
+                    "method": "m"
                   }
                 }
               ]
@@ -213,50 +175,51 @@
       ]
     },
     {
-      "name": "Arch2Code",
+      "name": "Design2Impl",
       "sources": [
-        "Arch",
-        "Test",
-        "Req"
+        "Design",
+        "Test"
       ],
       "target": "Code",
       "rules": [
         {
-          "name": "Op2Edit",
+          "name": "Design2Impl",
           "from": [
             {
-              "var": "op",
-              "type": "Arch!Operation"
+              "var": "d",
+              "type": "Design!MethodDesign"
             },
             {
-              "var": "ts",
-              "type": "Test!TestSuite"
+              "var": "t",
+              "type": "Test!TestCase"
             }
           ],
-          "guard": "ts.story = op.story",
+          "guard": "t.method = d.method",
           "to": {
-            "var": "e",
-            "type": "Code!CodeEdit"
+            "var": "i",
+            "type": "Code!MethodImpl"
           },
           "bind": {
-            "file": "op.name",
-            "operation": "op",
-            "story": "op.story"
+            "name": "d.name",
+            "method": "d.method"
           },
           "llm": [
             {
               "feature": "body",
-              "prompt": "Implement the operation",
+              "prompt": "Implement the method",
               "footprint": [
-                "op.signature",
-                "op.story.criteria"
+                "d.method.signature",
+                "d.contract",
+                "t.code"
               ],
               "validator": [
                 {
+                  "id": "compiles"
+                },
+                {
                   "id": "passes_tests",
                   "args": {
-                    "method": "op.story",
-                    "tests": "ts.code"
+                    "tests": "t.code"
                   }
                 }
               ]
@@ -268,25 +231,29 @@
   ],
   "goal": [
     {
-      "class": "Criterion",
-      "scope": "c.story.status = 'accepted'"
+      "class": "Example",
+      "scope": "all",
+      "mode": "checked",
+      "anchors": [
+        "call",
+        "expected"
+      ]
     },
     {
-      "class": "UserStory",
-      "scope": "s.status = 'accepted'",
-      "kind": "delivered"
+      "class": "Method",
+      "scope": "all",
+      "mode": "delivered"
     }
   ],
   "deliverable": {
     "view": "Code",
-    "class": "CodeEdit",
-    "feature": "body",
-    "for": "story"
+    "class": "MethodImpl",
+    "feature": "body"
   },
   "done": [
     "cover(G)",
     "valid",
     "fresh",
-    "noObl"
+    "noEsc"
   ]
 }

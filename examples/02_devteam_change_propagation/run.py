@@ -20,9 +20,9 @@ sys.path.insert(0, str(DEVTEAM_DIR))
 
 from run import build_team  # noqa: E402
 
-from agentm2m.config import LLMConfig  # noqa: E402
-from agentm2m.llm.factory import make_backend  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.config import LLMConfig  # noqa: E402
+from agenthot.llm.factory import make_backend  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 
 def main() -> int:

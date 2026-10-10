@@ -7,7 +7,7 @@ mid-process -- adds a fifth agent, **Security Reviewer**, related to
 
 ## What it demonstrates
 
-- **A HOT is just data + `apply_hot`.** `agentm2m.team.hot.TeamChange` is
+- **A HOT is just data + `apply_hot`.** `agenthot.team.hot.TeamChange` is
   the declarative "relation model"; `apply_hot` registers the new agent,
   view, write right, and hand-off. No code generation, no hand-written
   glue between the new agent and the existing four.
@@ -34,6 +34,6 @@ view (`Sec.reviews`) ends up with exactly one entry per pre-existing
 - `metamodels.py` — `Sec` (`SecurityReview{notes, risk, operation}`),
   referencing `Arch!Operation` directly (a cross-metamodel `EReference`,
   see `MetamodelBuilder.reference`'s `target: str | EClass` parameter).
-- `rules/Arch2Sec.agentm2m` — the new hand-off, `T5` in Fig. 1.
+- `rules/Arch2Sec.agenthot` — the new hand-off, `T5` in Fig. 1.
 - `run.py` — builds the original team (reusing `01_devteam/run.py`'s
   `build_team()` unchanged), runs it, then applies the HOT.

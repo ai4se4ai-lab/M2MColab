@@ -7,26 +7,26 @@
 source "$(dirname "$0")/_common.sh"
 command -v claude >/dev/null || die "claude CLI not found"
 if [ "${1:-}" = "--remove" ]; then
-  claude plugin uninstall agentm2m@agentm2m-dev || true
-  claude plugin marketplace remove agentm2m-dev || true
+  claude plugin uninstall autom2m@autom2m-dev || true
+  claude plugin marketplace remove autom2m-dev || true
   exit 0
 fi
 command -v uvx >/dev/null || die "uv is required (https://docs.astral.sh/uv/): the MCP server starts with uvx"
 log "validating plugin"
 claude plugin validate --strict "$PLUGIN_DIR"
 log "checking the local engine starts through uvx"
-uvx --from "$REPO_ROOT" --with "mcp>=1.2" agentm2m-mcp --version
+uvx --from "$REPO_ROOT" --with "mcp>=1.2" autom2m-mcp --version
 log "registering dev marketplace + installing"
-claude plugin marketplace remove agentm2m-dev >/dev/null 2>&1 || true
+claude plugin marketplace remove autom2m-dev >/dev/null 2>&1 || true
 claude plugin marketplace add "$PLUGIN_ROOT"
-claude plugin install agentm2m@agentm2m-dev
+claude plugin install autom2m@autom2m-dev
 cat <<MSG
 
-Installed agentm2m@agentm2m-dev. Until the engine is on PyPI, start Claude Code with the local engine:
+Installed autom2m@autom2m-dev. Until the engine is on PyPI, start Claude Code with the local engine:
 
-  export AGENTM2M_ENGINE="$REPO_ROOT"
+  export AUTOM2M_ENGINE="$REPO_ROOT"
   claude
 
-Then in any scratch repo: /agentm2m:init devteam, /agentm2m:run
+Then in any scratch repo: /autom2m:init devteam, /autom2m:run
 Uninstall with: $0 --remove
 MSG

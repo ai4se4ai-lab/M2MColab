@@ -1,15 +1,15 @@
-"""team.yaml loading (agentm2m.team.spec) and the JSON model store
-(agentm2m.store): the two pieces that let a team be declared as data and
+"""team.yaml loading (agenthot.team.spec) and the JSON model store
+(agenthot.store): the two pieces that let a team be declared as data and
 persisted across processes."""
 from __future__ import annotations
 
 import pytest
 import yaml
 
-from agentm2m.engine.executor import _TARGET_KEY_ATTR
-from agentm2m.llm.mock_backend import MockBackend
-from agentm2m.store import dump_models, load_models
-from agentm2m.team.spec import (
+from agenthot.engine.executor import _TARGET_KEY_ATTR
+from agenthot.llm.mock_backend import MockBackend
+from agenthot.store import dump_models, load_models
+from agenthot.team.spec import (
     SpecError,
     build_view_metamodel,
     index_elements,
@@ -18,7 +18,7 @@ from agentm2m.team.spec import (
     resolve_refs,
     seed_root,
 )
-from agentm2m.workspace import Workspace, list_templates
+from agenthot.workspace import Workspace, list_templates
 
 
 def _views(yaml_text: str) -> dict:
@@ -135,7 +135,7 @@ def test_store_roundtrip_every_template(tmp_path, template):
 
 
 def test_workspace_spec_errors_surface(tmp_path):
-    from agentm2m.workspace import WorkspaceError
+    from agenthot.workspace import WorkspaceError
 
     ws = Workspace(tmp_path, llm=MockBackend())
     ws.init("devteam")
@@ -143,17 +143,17 @@ def test_workspace_spec_errors_surface(tmp_path):
     ws.spec_path.write_text(spec.replace("    owner: Architect\n", ""))
     with pytest.raises(WorkspaceError, match="needs an 'owner'"):
         ws.status()
-    ws.spec_path.write_text(spec.replace("rules/Req2Arch.agentm2m", "rules/Missing.agentm2m"))
+    ws.spec_path.write_text(spec.replace("rules/Req2Arch.agenthot", "rules/Missing.agenthot"))
     with pytest.raises(WorkspaceError, match="not found"):
         ws.status()
-    ws.spec_path.write_text(spec.replace("rules/Req2Arch.agentm2m", "../../outside.agentm2m"))
+    ws.spec_path.write_text(spec.replace("rules/Req2Arch.agenthot", "../../outside.agenthot"))
     with pytest.raises(WorkspaceError, match="escapes"):
         ws.status()
     ws.spec_path.write_text(spec)
     res = ws.validate()
     assert res["ok"] is True and {h["name"] for h in res["handoffs"]} == {"Req2Arch", "Arch2Code", "Req2Test"}
     # a rule creating a class the view doesn't declare is reported by validate
-    rule = ws.dir / "rules/Arch2Code.agentm2m"
+    rule = ws.dir / "rules/Arch2Code.agenthot"
     rule.write_text(rule.read_text().replace("Code!CodeEdit", "Code!Patch"))
     res = ws.validate()
     assert res["ok"] is False and "Arch2Code" in res["errors"][0]

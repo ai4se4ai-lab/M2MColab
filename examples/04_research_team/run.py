@@ -22,10 +22,10 @@ sys.path.insert(0, str(HERE))
 from metamodels import build_experiments_mm, build_literature_mm, build_report_mm  # noqa: E402
 from seed_models import build_seed_literature_model  # noqa: E402
 
-from agentm2m.config import LLMConfig  # noqa: E402
-from agentm2m.llm.factory import make_backend  # noqa: E402
-from agentm2m.team.model import Team  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.config import LLMConfig  # noqa: E402
+from agenthot.llm.factory import make_backend  # noqa: E402
+from agenthot.team.model import Team  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 
 def build_team() -> Team:
@@ -46,8 +46,8 @@ def build_team() -> Team:
     team.add_view(report_mm, report_root)
 
     rules = HERE / "rules"
-    team.add_handoff("Lit2Plan", rules / "Lit2Plan.agentm2m", target_mm="Experiments")
-    team.add_handoff("ExpLit2Report", rules / "ExpLit2Report.agentm2m", target_mm="Report")
+    team.add_handoff("Lit2Plan", rules / "Lit2Plan.agenthot", target_mm="Experiments")
+    team.add_handoff("ExpLit2Report", rules / "ExpLit2Report.agenthot", target_mm="Report")
     return team
 
 

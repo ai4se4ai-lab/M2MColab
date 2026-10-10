@@ -34,8 +34,8 @@ def _load_build_team():
     return build_team
 
 
-from agentm2m.llm.mock_backend import MockBackend  # noqa: E402
-from agentm2m.team.runtime import TeamRuntime  # noqa: E402
+from agenthot.llm.mock_backend import MockBackend  # noqa: E402
+from agenthot.team.runtime import TeamRuntime  # noqa: E402
 
 
 def test_incident_response_lift_succeeds_and_dryrun_escalates():

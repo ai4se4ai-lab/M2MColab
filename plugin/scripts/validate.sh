@@ -17,9 +17,9 @@ log "version consistency ($VERSION)"
 "$PY" "$SCRIPTS_DIR/bump_version.py" --check
 log "templates validate"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-for t in $("$PY" -m agentm2m.cli workspace templates); do
-  "$PY" -m agentm2m.cli workspace --dir "$tmp/$t" --llm mock init "$t" >/dev/null
-  "$PY" -m agentm2m.cli workspace --dir "$tmp/$t" validate --brief
+for t in $("$PY" -m agenthot.cli workspace templates); do
+  "$PY" -m agenthot.cli workspace --dir "$tmp/$t" --llm mock init "$t" >/dev/null
+  "$PY" -m agenthot.cli workspace --dir "$tmp/$t" validate --brief
 done
 log "tests"
 "$PY" -m pytest -q "$REPO_ROOT/tests" "$PLUGIN_ROOT/tests"

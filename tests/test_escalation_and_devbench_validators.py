@@ -18,11 +18,11 @@ from pathlib import Path
 
 import pytest
 
-from agentm2m.engine.executor import acceptance_holds, run_handoff
-from agentm2m.engine.helpers_loader import load_helpers
-from agentm2m.engine.trace import TraceModel
-from agentm2m.llm.mock_backend import MockBackend
-from agentm2m.rules.parser import parse_module_file
+from agenthot.engine.executor import acceptance_holds, run_handoff
+from agenthot.engine.helpers_loader import load_helpers
+from agenthot.engine.trace import TraceModel
+from agenthot.llm.mock_backend import MockBackend
+from agenthot.rules.parser import parse_module_file
 from evaluation.harness.devbench_rules import helpers as devbench_helpers
 from evaluation.harness.token_meter import TokenMeter
 from tests.test_engine_devteam_smoke import HELPERS_TEXT, RULE_TEXT, _build_arch_mm, _build_req_mm
@@ -30,7 +30,7 @@ from tests.test_engine_devteam_smoke import HELPERS_TEXT, RULE_TEXT, _build_arch
 
 @pytest.fixture()
 def rule_dir(tmp_path: Path) -> Path:
-    (tmp_path / "Req2Arch.agentm2m").write_text(RULE_TEXT)
+    (tmp_path / "Req2Arch.agenthot").write_text(RULE_TEXT)
     (tmp_path / "helpers.py").write_text(HELPERS_TEXT)
     return tmp_path
 
@@ -56,7 +56,7 @@ def _run(module, req_root, arch_root, arch_mm, trace, llm, rule_dir):
 
 def test_escalated_binding_not_resampled_on_unchanged_footprint(rule_dir: Path):
     req_root, arch_root, arch_mm, story = _seed()
-    module = parse_module_file(rule_dir / "Req2Arch.agentm2m")
+    module = parse_module_file(rule_dir / "Req2Arch.agenthot")
     helpers = load_helpers(module.uses, rule_dir)
     trace = TraceModel(handoff="Req2Arch")
     llm = TokenMeter(MockBackend(script=["not a signature"]))  # always rejected by @check
@@ -80,7 +80,7 @@ def test_escalated_binding_not_resampled_on_unchanged_footprint(rule_dir: Path):
 
 def test_accepted_after_retry_clears_failed_stamp(rule_dir: Path):
     req_root, arch_root, arch_mm, story = _seed()
-    module = parse_module_file(rule_dir / "Req2Arch.agentm2m")
+    module = parse_module_file(rule_dir / "Req2Arch.agenthot")
     trace = TraceModel(handoff="Req2Arch")
     llm = MockBackend(script=["bad", "bad", "handleThing(id: string) -> Result"])
 
@@ -134,7 +134,7 @@ class _RecordingBackend(MockBackend):
 
 def test_resample_prompt_carries_rejection_feedback(rule_dir: Path):
     req_root, arch_root, arch_mm, _story = _seed()
-    module = parse_module_file(rule_dir / "Req2Arch.agentm2m")
+    module = parse_module_file(rule_dir / "Req2Arch.agenthot")
     trace = TraceModel(handoff="Req2Arch")
     llm = _RecordingBackend(["The op takes an id.", "handleThing(id: string) -> Result"])
 
@@ -166,17 +166,17 @@ def test_validators_explain_rejections():
 
 def test_resample_prompt_carries_validator_reason(tmp_path: Path):
     helpers_text = HELPERS_TEXT + (
-        "\nfrom agentm2m.engine.validators import Rejected\n"
+        "\nfrom agenthot.engine.validators import Rejected\n"
         "def strict(sig):\n"
         "    return True if parses(sig) else Rejected('use name(args) -> Type')\n"
     )
     (tmp_path / "helpers.py").write_text(helpers_text)
-    (tmp_path / "Req2Arch.agentm2m").write_text(
+    (tmp_path / "Req2Arch.agenthot").write_text(
         RULE_TEXT.replace("@check signature.parses()\n          and signature.params->notEmpty()",
                           "@check signature.strict() and signature.params->notEmpty()")
     )
     req_root, arch_root, arch_mm, _story = _seed()
-    module = parse_module_file(tmp_path / "Req2Arch.agentm2m")
+    module = parse_module_file(tmp_path / "Req2Arch.agenthot")
     llm = _RecordingBackend(["nope", "handleThing(id: string) -> Result"])
     report = _run(module, req_root, arch_root, arch_mm, TraceModel(handoff="Req2Arch"), llm, tmp_path)
     assert not report.escalations
@@ -190,9 +190,9 @@ def test_parses_accepts_inline_backticked_signature():
 def test_truncated_oracle_is_salvaged():
     truncated = (
         "def test_oracle():\n"
-        "    assert implementation('agentm2m') == 'CANARY_OK'\n"
+        "    assert implementation('agenthot') == 'CANARY_OK'\n"
         "    assert implementation('x') == 'CANARY_MISS'\n"
-        "    assert implementation('agentm2m is in the middle"
+        "    assert implementation('agenthot is in the middle"
     )
     assert devbench_helpers.failsOnStub(truncated)
 

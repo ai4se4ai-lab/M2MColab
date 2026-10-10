@@ -4,7 +4,7 @@ it out) and the S2 story used in the paper's "Change scenario" runbox.
 """
 from __future__ import annotations
 
-from agentm2m.metamodel import MetamodelBuilder
+from agenthot.metamodel import MetamodelBuilder
 
 
 def build_seed_req_model(req_mm: MetamodelBuilder):

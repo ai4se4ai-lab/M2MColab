@@ -1,6 +1,6 @@
 """Helpers for the DevTeam rule modules, loaded via each module's
-`uses 'helpers.py';` declaration (see agentm2m.engine.helpers_loader).
-Reuses the generic validator building blocks from agentm2m.engine.validators
+`uses 'helpers.py';` declaration (see agenthot.engine.helpers_loader).
+Reuses the generic validator building blocks from agenthot.engine.validators
 where possible; adds the DevTeam-specific ones the paper's listing calls
 (`toOpName`, `parses`, `params`).
 """
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from agentm2m.engine.validators import python_compiles, signature_parses, signature_params
+from agenthot.engine.validators import python_compiles, signature_parses, signature_params
 
 
 def toOpName(story_id: str) -> str:

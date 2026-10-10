@@ -1,0 +1,28 @@
+{
+  "description": "autom2m: announce a workspace (and an AutoM2M team) at session start; re-validate the team after edits to its spec, rules, helpers or typed-team JSON",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/validate-on-edit.sh\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

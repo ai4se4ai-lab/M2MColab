@@ -80,7 +80,7 @@
 \newcommand{\pmark}{\ding{109}}
 
 % --- shorthands (same as the paper) ---
-\newcommand{\tool}{\textsc{AgentM2M}}
+\newcommand{\tool}{\textsc{AgentHOT}}
 \newcommand{\auto}{\textsc{AutoM2M}}
 \newcommand{\Team}{\Theta}
 \newcommand{\W}[1]{\textsf{W#1}}
@@ -125,7 +125,7 @@
 \lstdefinestyle{raw}{backgroundcolor=\color{rawbg}, rulecolor=\color{rawbar}, literate={}}
 % "model" = a view model or metamodel as the engine holds it
 \lstdefinestyle{model}{backgroundcolor=\color{modelbg}, rulecolor=\color{modelbar}}
-% "engine" = deterministic output of the AgentM2M runtime
+% "engine" = deterministic output of the AgentHOT runtime
 \lstdefinestyle{engine}{backgroundcolor=\color{enginebg}, rulecolor=\color{enginebar}, literate={}}
 % "llm" = a prompt sent to / answer received from an LLM
 \lstdefinestyle{llm}{backgroundcolor=\color{llmbg}, rulecolor=\color{llmbar}, literate={}}
@@ -184,7 +184,7 @@
 and How Model Transformations Can Check Them\par}
 \vspace{10pt}
 {\small\itshape Builds on ``\tool{}: M2M Transformations for Agentic
-Collaborations in Software Engineering''~\cite{agentm2m2026}\par}
+Collaborations in Software Engineering''~\cite{agenthot2026}\par}
 \vspace{8pt}
 {\color{accent!40}\rule{0.35\textwidth}{0.6pt}}
 \end{center}
@@ -1080,7 +1080,7 @@ correctly. Our claim is narrower and, we believe, more useful: the
 \section{Background: \tool{} in plain words}\label{sec:background}
 % ===========================================================================
 
-\tool{}~\cite{agentm2m2026} closes the composition gap for teams that a
+\tool{}~\cite{agenthot2026} closes the composition gap for teams that a
 human designs. This section explains it on its running example, without
 assuming a background in model-driven engineering (MDE). \Cref{tab:glossary}
 at the end collects the vocabulary.
@@ -1201,7 +1201,7 @@ and recall 1.00 on all 48 injected changes), propagating a change cost
 19--38$\times$ fewer tokens than re-running free-text hand-offs, all 40
 injected ``canary'' criteria reached the code (7 and 25 of 40 with free
 text), and a reviewer added at runtime covered all existing operations with
-7 lines of glue~\cite{agentm2m2026}. These results hold for a team whose
+7 lines of glue~\cite{agenthot2026}. These results hold for a team whose
 metamodels, rules and team model were \emph{written by a person}.
 
 That is the opening for this document. The \tool{} paper names ``learning
@@ -1703,7 +1703,7 @@ $\Team \gets \textsc{Propose}(x)$;\ \ $i\gets 0$ \hfill \textit{Step A}\\
 \textbf{while} $\textsc{Check}(\Team)=\mathit{diag}\neq\emptyset$ \textbf{and} $i<k_{\mathit{adm}}$:\ \ $\Team\gets\textsc{Revise}(\Team,\mathit{diag})$; $i\gets i+1$ \hfill \textit{Steps B, C}\\
 \textbf{if} $\mathit{diag}\neq\emptyset$ \textbf{then return} \textsc{NotAdmitted}($\mathit{diag}$)\\
 \textbf{for} $j=0,\dots,k_{\mathit{rep}}$:\\
-\>$(\mathit{ok},\mathit{fails})\gets\textsc{RunAgentM2M}(\Team)$ \hfill \textit{Step D}\\
+\>$(\mathit{ok},\mathit{fails})\gets\textsc{RunAgentHOT}(\Team)$ \hfill \textit{Step D}\\
 \>\textbf{if} $\mathit{ok}$ \textbf{then return} \textsc{Done}\\
 \>$\mathit{report}\gets\textsc{Attribute}(\mathit{fails},r)$ \hfill \textit{Step E}\\
 \>$\Delta\gets\textsc{ProposeDelta}(\Team,\mathit{report})$;\ \textbf{if} $\textsc{Check}(\Team\oplus\Delta)=\emptyset$ \textbf{then} $\Team\gets\textsc{ApplyHOT}(\Team,\Delta)$ \hfill \textit{Step F}\\
@@ -1714,7 +1714,7 @@ $\Team \gets \textsc{Propose}(x)$;\ \ $i\gets 0$ \hfill \textit{Step A}\\
 \end{center}
 \phantomsection\label{alg:auto}
 {\small Only \textsc{Propose}, \textsc{Revise}, \textsc{ProposeDelta} and the
-bindings inside \textsc{RunAgentM2M} call an LLM; admission, execution
+bindings inside \textsc{RunAgentHOT} call an LLM; admission, execution
 structure, attribution lookup and completion are deterministic.}
 
 
@@ -1798,7 +1798,7 @@ hand-off feeds code into a behavioural check; criteria are tested, but the
 tests never run against the code. The \tool{} reports describe the same
 weakness informally: its validators checked form, not meaning, a
 \code{compiles()} check accepted a function that ignored its criterion, and
-no configuration passed DevBench's acceptance tests~\cite{agentm2m2026}.
+no configuration passed DevBench's acceptance tests~\cite{agenthot2026}.
 The checker turns that observation into a named violation at a named place.
 One delta, replacing the body's validator by a behavioural one that
 executes the criteria's oracles (and needs the code-execution tool the
@@ -1926,7 +1926,7 @@ meta-feedback). All are open source.
 connect with Who\&When~\cite{zhang2025whowhen}, and software-engineering
 tasks: the Python repositories of DevBench~\cite{li2024devbench}, whose
 PRDs, UML diagrams and executable tests the \tool{} pilot already
-uses~\cite{agentm2m2026}.
+uses~\cite{agenthot2026}.
 
 \paragraph{Models} At least two model families, one open-weight, at fixed
 temperature, five seeds per task and configuration; all builders and
@@ -2147,7 +2147,7 @@ script and its output (\file{audit_whowhen.py}), the reference checker
 (\file{teamcheck.py}), the six typed teams (\file{teams/*.json}), the
 mutation and scaling scripts with their outputs (\file{mutate.py},
 \file{scale.py}), and the RQ1 codebook; the \tool{} prototype on which \auto{} builds is available as
-described in~\cite{agentm2m2026}.
+described in~\cite{agenthot2026}.
 
 \appendix
 % ===========================================================================
