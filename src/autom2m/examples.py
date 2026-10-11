@@ -182,9 +182,9 @@ TEAM_INV = {
     "name": "inventory_team",
     "goal_view": "Goal",
     "agents": [
-        {"name": "Analyst", "role": "You list, for one method, its edge cases and error conditions.", "tools": []},
-        {"name": "Architect", "role": "You state, for one method, a precise contract: inputs, result, side effects, errors.", "tools": []},
-        {"name": "Tester", "role": "You write unittest tests for one method from its examples and edge cases.", "tools": ["exec"]},
+        {"name": "Analyst", "role": "You list, for one method, the edge cases its docstring and examples state; you never invent errors they do not mention.", "tools": []},
+        {"name": "Architect", "role": "You state, for one method, a precise contract: inputs, result, side effects and only the errors its docstring states.", "tools": []},
+        {"name": "Tester", "role": "You write unittest tests for one method from its examples and documented edge cases, asserting only stated behaviour.", "tools": ["exec"]},
         {"name": "Developer", "role": "You implement one method so that it meets its contract and passes its tests.", "tools": ["exec"]},
     ],
     "views": {
@@ -202,7 +202,7 @@ TEAM_INV = {
         {"name": "Goal2Analysis", "sources": ["Goal"], "target": "Analysis", "rules": [{
             "name": "Method2Cases", "from": [{"var": "m", "type": "Goal!Method"}], "guard": None,
             "to": {"var": "a", "type": "Analysis!EdgeCases"}, "bind": {"name": "m.name", "method": "m"},
-            "llm": [{"feature": "cases", "prompt": "List the edge cases and error conditions of this method.",
+            "llm": [{"feature": "cases", "prompt": "List the edge cases this method's docstring and examples state. Do not invent errors they do not mention.",
                      "footprint": ["m.signature", "m.docstring", "m.examples.call", "m.examples.expected"],
                      "validator": [{"id": "nonempty"}]}]}]},
         {"name": "Goal2Design", "sources": ["Goal"], "target": "Design", "rules": [{
@@ -213,8 +213,8 @@ TEAM_INV = {
         {"name": "Analysis2Test", "sources": ["Analysis"], "target": "Test", "rules": [{
             "name": "Cases2Suite", "from": [{"var": "a", "type": "Analysis!EdgeCases"}], "guard": None,
             "to": {"var": "s", "type": "Test!Suite"}, "bind": {"name": "a.name", "method": "a.method"},
-            "llm": [{"feature": "code", "prompt": "Write unit tests for the examples and the edge cases.",
-                     "footprint": ["a.method.signature", "a.method.examples.call", "a.method.examples.expected", "a.cases"],
+            "llm": [{"feature": "code", "prompt": "Write unit tests for the examples and the documented edge cases. Assert only behaviour the docstring states.",
+                     "footprint": ["a.method.task.outline", "a.method.signature", "a.method.examples.call", "a.method.examples.expected", "a.cases"],
                      "validator": [{"id": "test_valid", "args": {"method": "a.method"}}]}]}]},
         {"name": "Build2Code", "sources": ["Design", "Test"], "target": "Code", "rules": [{
             "name": "Contract2Impl",
@@ -234,14 +234,14 @@ TEAM_INV = {
 
 PROSE_INV = {
     "agents": [
-        {"name": "Analyst", "role": "Requirements analyst. You list each method's edge cases and error conditions.", "tools": []},
+        {"name": "Analyst", "role": "Requirements analyst. You list the edge cases each method's docstring and examples state; you never invent errors they do not mention.", "tools": []},
         {"name": "Architect", "role": "Software architect. You state each method's contract.", "tools": []},
-        {"name": "Tester", "role": "Expert in unit testing. You write unittest tests for the examples and edge cases and run them.", "tools": ["exec"]},
+        {"name": "Tester", "role": "Expert in unit testing. You write unittest tests for the examples and documented edge cases, asserting only stated behaviour, and run them.", "tools": ["exec"]},
         {"name": "Developer", "role": "Expert Python developer. You implement the complete class in one python block.", "tools": ["exec"]},
     ],
-    "plan": ["Analyst: list the edge cases of add and reserve.",
+    "plan": ["Analyst: list the documented edge cases of add and reserve.",
              "Architect: state the contracts of add and reserve.",
-             "Tester: write unittest tests for the examples and edge cases.",
+             "Tester: write unittest tests for the examples and documented edge cases.",
              "Developer: write the complete Inventory class in one python block.",
              "Tester: run the tests and report failures; Developer fixes them.",
              "When the tests pass, reply TERMINATE."],

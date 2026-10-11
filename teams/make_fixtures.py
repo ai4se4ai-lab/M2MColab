@@ -151,6 +151,15 @@ def classeval_reference() -> dict:
     """The Typed-Ref condition: the admitted DevTeam (G2), hand-written."""
     t = devteam_admitted(g2=True)
     t["name"] = "typed_ref"
+    # ClassEval methods share the object's state: every agent reads the class
+    # outline (constructor, fields, sibling docstrings) next to its method
+    for h in t["handoffs"]:
+        for r in h["rules"]:
+            var = r["from"][0]["var"]
+            for b in r["llm"]:
+                fp = b["footprint"]
+                if not any(x.endswith("task.outline") for x in fp):
+                    fp.insert(0, f"{var}.task.outline" if r["from"][0]["type"] == "Goal!Method" else f"{var}.method.task.outline")
     return t
 
 

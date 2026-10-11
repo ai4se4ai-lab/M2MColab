@@ -12,7 +12,7 @@
 # AM2M_CODERS / AM2M_CRITICS / AM2M_SEEDER / AM2M_JUDGE say otherwise.
 set -u
 cd "$(dirname "$0")/../.."
-export HF_DATASETS_OFFLINE=1 PYTHONPATH=. AM2M_OLLAMA="${AM2M_OLLAMA:-http://127.0.0.1:11435}"
+export AM2M_BUILDER="${AM2M_BUILDER:-v2}" HF_DATASETS_OFFLINE=1 PYTHONPATH=. AM2M_OLLAMA="${AM2M_OLLAMA:-http://127.0.0.1:11435}"
 PY=.venv/bin/python
 M="${MODEL:-qwen2.5-coder:7b}"
 W="${WORKERS:-16}"

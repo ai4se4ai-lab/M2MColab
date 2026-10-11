@@ -217,8 +217,11 @@ class AutoM2M:
             team_json, team, diags, ct, first = self._build_v2(task, task_text, out)
             out.first_team = out.first_team or team_json
         else:
+            schema = None
+            if self.builder == "v2":  # Typed-NC with the checked builder: one schema-constrained proposal
+                from .builder import TEAM_SCHEMA as schema
             team_json = initial_team if initial_team is not None else \
-                self._builder(propose_prompt(task_text, task.kind, n_examples=self.n_examples), "propose")
+                self._builder(propose_prompt(task_text, task.kind, n_examples=self.n_examples), "propose", schema)
             out.first_team = team_json
             team, diags, ct, first = self._admit(team_json, task)
             out.diagnostics.append(diags)
@@ -355,6 +358,55 @@ class AutoM2M:
         return team_json, team, diags, ct, out.first_violation
 
     # ---- Repair (step F) ----------------------------------------------
+    def _delta_v2(self, cur: dict, reports: list[FaultReport]) -> tuple[dict | None, int]:
+        """Localized builder delta: pointer fixes to the fragments the fault
+        reports locate; a delta the checker refuses is repaired from its
+        diagnostics like a proposal (k_rev samples per round, at most k_rev
+        rounds). Returns the admissible Theta (+) Delta, or None."""
+        from .builder import (FIX_SCHEMA, apply_fixes, delta_prompt_v2, fault_fragments, fragments_for,
+                              path_catalogue, repair_prompt)
+        from .prompts import FORMAT, RULES
+        from .vlib import catalogue
+
+        def rules_of(frags):
+            return [str(v.get("name")) for k, v in frags.items() if "/rules/" in k and isinstance(v, dict)]
+
+        frags = fault_fragments(cur, reports)
+        if not frags:
+            return None, 0
+        dp = delta_prompt_v2(cur, [r.summary() for r in reports], frags, path_catalogue(cur, rules_of(frags)),
+                             RULES, FORMAT, catalogue())
+        best = None
+        for _ in range(max(1, self.k_rev)):
+            fx = self._builder(dp, "delta", FIX_SCHEMA)
+            if fx is None:
+                continue
+            tj = apply_fixes(cur, fx.get("fixes"), set(frags))
+            if json.dumps(tj, sort_keys=True) == json.dumps(cur, sort_keys=True):
+                continue  # no change is no repair
+            cand = (*self._assess(tj)[::2], tj)  # (score, diagnostics, team_json)
+            if best is None or cand[0] < best[0]:
+                best = cand
+            if cand[0] == 0:
+                return tj, 0
+        rounds = 0
+        while best is not None and best[0] > 0 and rounds < self.k_rev:
+            rounds += 1
+            rf = fragments_for(best[2], best[1] or [])
+            rp = repair_prompt(best[2], best[1] or [], rf, path_catalogue(best[2], rules_of(rf)), RULES, FORMAT,
+                               catalogue())
+            for _ in range(max(1, self.k_rev)):
+                fx = self._builder(rp, "revise", FIX_SCHEMA)
+                if fx is None:
+                    continue
+                tj = apply_fixes(best[2], fx.get("fixes"), set(rf))
+                cand = (*self._assess(tj)[::2], tj)
+                if cand[0] < best[0]:
+                    best = cand
+                if cand[0] == 0:
+                    return tj, rounds
+        return None, rounds
+
     def _repair(self, session: Session, reports: list[FaultReport], task) -> tuple[Session, dict]:
         """The planner chooses the cheapest repair per fault class; every
         change of the team model passes the checker before it is applied."""
@@ -364,7 +416,12 @@ class AutoM2M:
         cur = session.ct.typed.raw
         new_json = widen_delta(cur, p.widen) if p.widen else None
         if p.builder:
-            proposed = self._builder(delta_prompt(json.dumps(new_json or cur), [r.summary() for r in p.builder]), "delta")
+            proposed = None
+            if self.builder == "v2":
+                proposed, info["delta_rounds"] = self._delta_v2(new_json or cur, p.builder)
+            if proposed is None:  # v1, or no admissible localized delta: the full-team delta
+                proposed = self._builder(delta_prompt(json.dumps(new_json or cur), [r.summary() for r in p.builder]), "delta")
+                info["delta_full"] = True
             if proposed is not None:
                 new_json = proposed
             info["builder_unchanged"] = proposed is None or \

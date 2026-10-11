@@ -256,3 +256,39 @@ def test_typed_nc_compiles_ill_typed_bindings_to_escalations():
     esc = [e for e in res.escalations if e.rule == "Design2Impl"]
     assert esc and "footprint cannot be evaluated" in esc[0].reason
     assert not res.phi and llm.calls >= 1
+
+
+def test_v2_repair_delta_rewrites_only_the_faulty_rule(tmp_path):
+    """After a run, a specification fault is repaired by a pointer fix to the
+    rule attribution located, checked and applied in place (regression: a 7B
+    builder asked for the full revised team dropped `writes` and `goal`, so
+    the delta was refused)."""
+    from autom2m.loop import AutoM2M
+
+    team_json = normalize(_team("classeval_reference"))
+    bad = copy.deepcopy(team_json)
+    bad["handoffs"][2]["rules"][0]["llm"][0]["validator"] = [{"id": "unsat"}]
+    s = _session(Scripted([GOOD_CODE]), bad, k=1)
+    res = s.run()
+    reports, _ = attribute_all(s, res.failures)
+    assert reports[0].fault_class == "specification"
+    tests_stamped = sum(len(l.stamps) for l in s.ct.team.traces["Method2Test"].links())
+
+    class Builder(Scripted):
+        prompts: list = []
+
+        def generate(self, prompt, *, format=None, **kw):
+            if isinstance(format, dict) and "fixes" in format.get("properties", {}):
+                self.prompts.append(prompt)
+                return json.dumps({"fixes": [{"pointer": "/handoffs/2/rules/0",
+                                              "value": team_json["handoffs"][2]["rules"][0]}]})
+            assert format is None, "no full-team rewrite expected"
+            return super().generate(prompt, **kw)
+
+    b = Builder([GOOD_CODE])
+    s.llm = b
+    s2, info = AutoM2M(b, builder="v2", k_rev=1, workdir=tmp_path)._repair(s, reports, TASK)
+    assert "/handoffs/2/rules/0" in b.prompts[0] and "Fault reports" in b.prompts[0]
+    assert info["mode"] == "in-place" and not info.get("delta_full") and not info["delta_diagnostics"]
+    assert info["kept"] >= tests_stamped
+    assert s2.run().phi

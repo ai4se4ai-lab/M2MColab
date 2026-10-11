@@ -113,6 +113,7 @@
               "feature": "contract",
               "prompt": "State a contract",
               "footprint": [
+                "m.task.outline",
                 "m.name",
                 "m.signature",
                 "m.docstring"
@@ -156,6 +157,7 @@
               "feature": "code",
               "prompt": "Write unit tests for this method",
               "footprint": [
+                "m.task.outline",
                 "m.signature",
                 "m.docstring",
                 "m.examples.call",
@@ -208,6 +210,7 @@
               "feature": "body",
               "prompt": "Implement the method",
               "footprint": [
+                "d.method.task.outline",
                 "d.method.signature",
                 "d.contract",
                 "t.code"

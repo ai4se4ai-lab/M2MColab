@@ -169,11 +169,11 @@ class Session:
     def _goal_method(self, obj: Any) -> Any:
         """The goal Method a deliverable object belongs to: a reference of the
         object (or of an object it references), else its trace ancestry."""
-        from autom2m.vlib import is_goal
+        from autom2m.vlib import _single, is_goal
 
         for f in obj.eClass.eAllStructuralFeatures():
             if f.is_reference:
-                v = getattr(obj, f.name, None)
+                v = _single(getattr(obj, f.name, None))
                 if hasattr(v, "eClass") and is_goal(v) and v.eClass.name == "Method":
                     return v
         tk = getattr(obj, "_amt_target_key", None)

@@ -2353,7 +2353,14 @@ Typed-Ref's author knew ClassEval's style; outputs are
 non-deterministic~\cite{ouyang2025nondeterminism}.
 
 \paragraph{External validity} Results may depend on the three worked examples
-given to builders, whose choice we did not vary, and on the builder procedure:
+given to builders, whose choice we did not vary, and on their wording: in a
+pilot, one example's analyst asked for ``edge cases and error conditions'',
+and with Qwen2.5-Coder 7B the builders' teams copied it into tests that demand
+exceptions the task never specifies, which their developers then had to raise.
+We reworded that example, in both its typed and its prose rendering, to ask
+only for documented behaviour, and reran every condition whose builder sees
+the examples; Single and Typed-Ref involve no builder and were not rerun. The
+results also depend on the builder procedure:
 admission depends strongly on whether the builder ranks proposals with the
 checker and repairs locally (Section~\ref{sec:res-rq2}); we report the
 procedure-level ablation for one model only. We lift only Python tasks, which favour

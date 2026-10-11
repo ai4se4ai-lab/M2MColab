@@ -104,6 +104,18 @@ def apply_structural_bindings(
                 coll.clear()
                 coll.extend(v for v in items if v is not None)
             else:
+                if isinstance(value, (list, tuple)) or (hasattr(value, "__iter__") and not isinstance(value, (str, bytes, dict)) and not hasattr(value, "eClass")):
+                    # a collection given to a single-valued feature: its one element,
+                    # the lines of a text, or nothing
+                    items = [v for v in value if v is not None]
+                    if not items:
+                        continue
+                    if len(items) == 1:
+                        value = items[0]
+                    elif all(isinstance(v, str) for v in items):
+                        value = "\n".join(items)
+                    else:
+                        value = items[0]
                 setattr(target_obj, b.name, value)
 
 

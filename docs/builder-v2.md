@@ -151,6 +151,12 @@ Admission-only study (`python -m evaluation.rq2.builder_ablation`): the same 40 
 library and checker. Only the builder procedure differs. Raw data:
 `results/rq2/builder_ablation__qwen2.5-coder_7b.jsonl`.
 
+> **Status (2026-10-11).** The figures below were measured before the third worked example was
+> reworded (its analyst asked for "edge cases and error conditions"; it now asks only for documented
+> behaviour, see `docs/experiment-log.md`). The study is being rerun with the reworded examples; the
+> previous raw data is kept in `results/backup/builder_ablation__qwen2.5-coder_7b.before_examples.jsonl`,
+> and this table will be replaced by the new figures.
+
 | | v1 (Algorithm 1 as written) | v2 (checked builder) |
 |---|---|---|
 | Sessions admitted | **16/40 (40%)** | **36/40 (90%)** |

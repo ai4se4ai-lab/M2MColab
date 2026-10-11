@@ -28,6 +28,8 @@ FORMAT = f"""A typed team is ONE JSON object with these keys:
    For every match of "from" (that satisfies the guard) the engine creates one "to" object, fills "bind"
    deterministically and asks the owning agent's LLM for each "llm" feature, showing it ONLY the footprint.
    Paths may navigate references, also into the Goal view (e.g. "d.method.examples.call").
+   A footprint that writes code or tests must include the task outline (e.g. "m.task.outline" or
+   "d.method.task.outline"): it is the only place that names the class, its constructor and attributes.
 - "goal": [{{"class": GoalClass, "scope": "all", "mode": "checked" | "delivered", "anchors": [features of the class]}}]
    checked: the anchor features must reach a value checked by a behaviour validator, through its footprint AND its
    validator; delivered: every such object must get a deliverable.

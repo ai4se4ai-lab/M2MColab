@@ -20,6 +20,8 @@ with methods that have no accepted value yet replaced by stubs.
 """
 from __future__ import annotations
 
+import textwrap
+
 import ast
 import contextvars
 import random
@@ -173,17 +175,29 @@ def is_goal(obj: Any) -> bool:
     return getattr(getattr(obj, "eClass", None), "_amt_goal", False)
 
 
+def _single(v: Any) -> Any:
+    """A reference value; a many-valued reference holding one object is that object."""
+    if v is None or hasattr(v, "eClass") or isinstance(v, (str, bytes)):
+        return v
+    try:
+        items = [x for x in v if x is not None]
+    except TypeError:
+        return v
+    return items[0] if len(items) == 1 else None
+
+
 def goal_method_of(target: Any, explicit: Any = None) -> Any:
     """The goal Method a value belongs to: the explicit locator argument, or
     the goal Method the target object references (directly or through one
     reference), or the only Method of a function-level task."""
+    explicit = _single(explicit)
     if explicit is not None and hasattr(explicit, "eClass"):
         return explicit
     if target is not None and hasattr(target, "eClass"):
         seen = []
         for f in target.eClass.eAllStructuralFeatures():
             if f.is_reference:
-                v = getattr(target, f.name, None)
+                v = _single(getattr(target, f.name, None))
                 if hasattr(v, "eClass"):
                     if is_goal(v) and v.eClass.name == "Method":
                         return v
@@ -191,7 +205,7 @@ def goal_method_of(target: Any, explicit: Any = None) -> Any:
         for v in seen:
             for f in v.eClass.eAllStructuralFeatures():
                 if f.is_reference:
-                    w = getattr(v, f.name, None)
+                    w = _single(getattr(v, f.name, None))
                     if hasattr(w, "eClass") and is_goal(w) and w.eClass.name == "Method":
                         return w
     ctx = _ctx()
@@ -242,7 +256,7 @@ def v_compiles(value: Any, target: Any = None) -> bool | Rejected:
     if not code.strip():
         return Rejected("no code found")
     try:
-        compile(code, "<value>", "exec")
+        compile(textwrap.dedent(code), "<value>", "exec")  # a method may come indented as in its class
         return True
     except (SyntaxError, ValueError) as exc:
         return Rejected(f"does not compile: {exc}")
@@ -377,7 +391,9 @@ def v_test_valid(value: Any, target: Any = None, method: Any = None) -> bool | R
         return Rejected(f"test code does not load: {res['error'][:300]}")
     if res.get("n", 0) == 0:
         return Rejected("no test found: write unittest.TestCase classes or functions named test_*")
-    if not res.get("errors"):
+    if not res.get("errors") and not res.get("pending"):
+        # vacuous only if they pass; a test stopped by a method that has no accepted value yet
+        # (e.g. one the constructor calls) does not pass, and `valid` re-checks it on the final models
         return Rejected("tests pass on a stub implementation; they check nothing")
     # they must fail because of the stub, not crash on their own setup
     crash = next((e for e in res["errors"] if e.split(":")[0].strip().split(".")[-1] in _SETUP_ERRORS), None)

@@ -323,3 +323,33 @@ def test_fragment_localisation():
     frags = fragments_for(t, check(t).diagnostics)
     # W4 (Example unanchored) offers the rules and views that should carry it, which covers Design2Impl's rule
     assert {"/handoffs", "/views", "/writes", "/done", "/goal", "/agents"} <= set(frags)
+
+
+def test_test_valid_accepts_tests_stopped_by_a_pending_method():
+    """A constructor that calls a method without an accepted value yet stops
+    the test as 'pending': the test does not pass on the stub, so it is not
+    vacuous (regression: ClassEval classes whose __init__ calls a method)."""
+    from autom2m.pywork import run_tests, splice_class
+
+    frame = "class P:\n    def __init__(self, s):\n        self.s = s\n        self.clean()\n"
+    code = splice_class(frame, [("clean", []), ("info", [])],
+                        {"info": "def info(*args, **kwargs):\n    raise NotImplementedError('stub')"})
+    tests = "import unittest\nclass T(unittest.TestCase):\n    def test(self):\n        self.assertEqual(P('01').info(), 1)\n"
+    res = run_tests(code, tests)
+    assert not res["errors"] and res["pending"] == 1  # what the validator sees
+
+
+def test_goal_method_through_a_many_valued_reference():
+    """A builder may declare `method` as many-valued; a collection holding one
+    goal Method still locates the value (regression: every Impl escalated
+    with 'cannot tell which method this value implements')."""
+    from autom2m.vlib import _single
+
+    class O:
+        eClass = None
+
+    o = O()
+    assert _single([o]) is o and _single([None, o]) is o
+    assert _single([o, O()]) is None and _single([]) is None and _single(None) is None
+    assert _single(o) is o
+

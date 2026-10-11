@@ -254,3 +254,52 @@ views by rewriting the view's class):
 
 Answer JSON {{"fixes": [{{"pointer": <one of the pointers above>, "value": <the corrected fragment>}}]}}.
 Rewrite a fragment completely (the full rule, the full class, the full "writes" map, ...)."""
+
+
+def fault_fragments(team: dict, reports: list) -> dict[str, Any]:
+    """The fragments a post-run repair may rewrite: the rules the fault
+    reports locate (and their upstream producers), with the classes they
+    create or read; an unlocated or coverage fault opens the goal and rules."""
+    from types import SimpleNamespace as NS
+
+    diags = []
+    for r in reports:
+        if getattr(r, "rule", None):
+            diags.append(NS(element=r.rule, cond="F"))
+        up = getattr(r, "upstream", None) or {}
+        if up.get("rule"):
+            diags.append(NS(element=up["rule"], cond="F"))
+        if not getattr(r, "rule", None):
+            diags.append(NS(element="", cond="W4"))
+    return fragments_for(team, diags)
+
+
+def delta_prompt_v2(team: dict, reports: list[str], frags: dict[str, Any], catalogue: dict[str, list[str]],
+                    rules_text: str, format_text: str, vlib_text: str) -> str:
+    rep = "\n".join(reports)
+    frag_text = "\n".join(f"{p}:\n{json.dumps(v, indent=1)}" for p, v in frags.items())
+    cat = "\n".join(f"- rule {r}: {', '.join(ps)}" for r, ps in catalogue.items()) or "(none)"
+    return f"""You are a team builder. Your admitted typed team ran, but the engine's acceptance predicate failed.
+Attribution located the faults below. Remove them by rewriting ONLY the fragments listed below (for example widen a
+footprint, sharpen a prompt, change a validator). Everything else stays exactly as it is, so the values accepted
+outside the changed fragments are kept. The changed team is checked again before it is applied.
+
+{format_text}
+Validator library:
+{vlib_text}
+
+{rules_text}
+The whole team, for reference (do not repeat it):
+{json.dumps(team, separators=(",", ":"))}
+
+Fault reports:
+{rep}
+
+Fragments you may rewrite (JSON pointer, then its current value):
+{frag_text}
+
+Navigation paths that type-check in each of these rules:
+{cat}
+
+Answer JSON {{"fixes": [{{"pointer": <one of the pointers above>, "value": <the corrected fragment>}}]}}.
+Rewrite a fragment completely (the full rule, the full class, ...)."""
