@@ -116,7 +116,18 @@ def apply_structural_bindings(
                         value = "\n".join(items)
                     else:
                         value = items[0]
-                setattr(target_obj, b.name, value)
+                try:
+                    setattr(target_obj, b.name, value)
+                except Exception:  # noqa: BLE001
+                    # an unchecked team (Typed-NC) may bind a value of the wrong type: a
+                    # collection feature takes it as its one element, anything else drops it
+                    coll = getattr(target_obj, b.name, None)
+                    if hasattr(coll, "extend") and not isinstance(coll, (str, bytes)):
+                        try:
+                            coll.clear()
+                            coll.append(value)
+                        except Exception:  # noqa: BLE001
+                            coll.clear()
 
 
 def _footprint_to_text(value: Any) -> str:

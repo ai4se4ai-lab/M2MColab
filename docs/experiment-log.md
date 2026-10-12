@@ -7,6 +7,8 @@ Backups of every raw file before a purge are in `results/backup/` or were taken 
 
 ## Fixes and the runs they invalidated
 
+Fixes 1 to 13 were made in this order.
+
 | # | Change | Where | Runs redone |
 |---|---|---|---|
 | 1 | Test runner serves the solution under any module name the tests import; public examples run in one namespace in docstring order | `src/autom2m/pywork.py` | Typed conditions and Single-Gate, ClassEval seed 1 |
@@ -18,6 +20,10 @@ Backups of every raw file before a purge are in `results/backup/` or were taken 
 | 7 | A many-valued `method` reference holding one goal Method locates the value | `src/autom2m/vlib.py`, `src/agenthot/session.py` | 3 Typed-NC runs; AutoM2M in 8 |
 | 8 | Post-run builder repair uses localized pointer fixes instead of a full revised team | `src/autom2m/loop.py` (`_delta_v2`), `builder.py` | AutoM2M, Typed-Ref, ClassEval seed 1 |
 | 9 | The third worked example asks only for documented behaviour, typed and prose alike | `src/autom2m/examples.py` (`TEAM_INV`, `PROSE_INV`) | see below |
+| 10 | Lenient compilation (Typed-NC) drops a rule over undeclared classes instead of crashing the engine | `src/agenthot/compiler.py` | ClassEval seed-1 rows with status `error`, redone after the rerun of fix 9 |
+| 11 | RQ4 injection: installing a fault keeps the clean run's escalations (no fresh budgets), and footprint and upstream faults count only on values the clean run accepted | `evaluation/rq4/inject.py` | RQ4 inject and transcript, both teams; old data in `results/backup/*.before_protocol_fix.jsonl` |
+| 12 | The builder's decoding schema requires every property (`guard`, validator `args`, goal `anchors`, reference flags); before, constrained decoding never emitted an optional property, so no builder team had a guard | `src/autom2m/builder.py` (`TEAM_SCHEMA`) | see "Fix 12" |
+| 13 | A structural binding of the wrong type (Typed-NC) goes into a collection as its one element or is dropped, instead of crashing the engine | `src/agenthot/engine/binding.py` | the ClassEval seed-1 `error` row, redone after the step that produced it |
 
 Fix 8 is described in the paper's "Checked repair" paragraph. Fix 9 is reported under External validity.
 
@@ -44,6 +50,57 @@ Kept:
 - AutoM2M with one example: it only sees the meter example.
 
 Phases 3 to 6 (RQ4, RQ1, RQ3, seeds 2 and 3, analysis) run after the reruns, so they read only the new runs.
+
+## Fix 11: the RQ4 injection protocol
+
+The first RQ4 pass classified 68% of injected faults correctly on reference teams and 44% on builder teams. On
+builder teams, only 6 of 47 validator faults were classified correctly. The cause was the protocol, not attribution.
+The fault was installed with `apply_delta`, which after a repair gives every escalated binding a fresh budget. Methods
+that escalated in the clean run were therefore re-implemented during the faulted run. A method the clean run had
+accepted is tested against the whole class, so it could now fail because a sibling changed. Attribution then found a
+stable failure and correctly reported a specification fault, which did not match the injected label.
+
+Two further problems surfaced while testing the fix:
+
+- A value accepted early in the clean run can fail later. `passes_tests` checks a method inside the whole class,
+  and sibling methods may change after the value is accepted. Such a value is invalid at the end of the clean run,
+  so the injection cannot be blamed for its failure.
+- Methods were found by substring (`Method#count` also matched `Method#count_all`). So the validator fault replayed
+  the wrong method's accepted code.
+
+The protocol now:
+
+- keeps the clean run's escalations in the faulted run;
+- replays every value the clean run accepted;
+- counts a fault only on a value the clean run accepted and still held valid at its end (for upstream faults, the
+  value downstream of the corrupted one);
+- matches methods on name boundaries.
+
+The paper's RQ4 setup paragraph states this.
+
+## Fix 12: the builder schema dropped every guard
+
+No team proposed by the schema-constrained builder had a guard. Constrained decoding never emitted an optional
+property, and `guard` was optional. A rule that reads a `Contract` and a `Suite` then fired for every pair. Each method
+got one implementation per test suite, including other methods' suites, and some were checked against the wrong
+tests. This affected 86 of 89 admitted ClassEval teams and 85 of 107 admitted HumanEval+ teams, always on the rule
+producing the deliverable. With every property required, 8 of 8 ClassEval sessions were admitted (7 at the first
+proposal) and every implementation rule joins its inputs (`s.method = c.method`). On HumanEval+, 5 of 8 were admitted,
+also with joins.
+
+Rerun with `evaluation/scripts/resume_after_schema.sh`; everything removed is in `results/backup/before_schema/`.
+
+- Seed 1, both benchmarks: Typed-NC and AutoM2M, then Single-Gate (its budget follows AutoM2M).
+- ClassEval: AutoM2M with one example.
+- The v2 half of the builder ablation.
+- RQ2: the natural-mutant and independent-seeding studies on builder teams.
+- RQ4, all of it, with the fix 11 protocol.
+- Then phases 4 to 6.
+
+Kept:
+
+- Single, Free, Critic, Schema and Typed-Ref: none uses the typed-team schema.
+- RQ2 mutation, scale and audit studies: they use the hand-written fixture teams.
 
 ## Runs kept by decision
 

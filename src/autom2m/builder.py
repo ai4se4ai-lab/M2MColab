@@ -31,6 +31,9 @@ from .vlib import LIBRARY_CLAUSES, TOOLS, VLIB
 _STR = {"type": "string"}
 _STRMAP = {"type": "object", "additionalProperties": {"type": "string"}}
 
+# Every property is required: constrained decoding never emits an optional
+# property (a guard, validator args, goal anchors), so an optional one would be
+# silently missing from every proposal. Null or empty values stay allowed.
 def _obj(props: dict, required: list[str]) -> dict:
     return {"type": "object", "required": required, "properties": props}
 
@@ -41,19 +44,21 @@ def _arr(items: dict) -> dict:
 
 _AGENT = _obj({"name": _STR, "role": _STR, "tools": _arr({"type": "string", "enum": list(TOOLS)})},
               ["name", "role", "tools"])
-_REF = _obj({"type": _STR, "required": {"type": "boolean"}, "many": {"type": "boolean"}}, ["type"])
-_CLASS = _obj({"attributes": _STRMAP, "references": {"type": "object", "additionalProperties": _REF}}, ["attributes"])
+_REF = _obj({"type": _STR, "required": {"type": "boolean"}, "many": {"type": "boolean"}}, ["type", "required", "many"])
+_CLASS = _obj({"attributes": _STRMAP, "references": {"type": "object", "additionalProperties": _REF}},
+              ["attributes", "references"])
 _VIEW = _obj({"classes": {"type": "object", "additionalProperties": _CLASS}}, ["classes"])
-_VALIDATOR = _obj({"id": {"type": "string", "enum": [k for k, v in VLIB.items() if v.offered]}, "args": _STRMAP}, ["id"])
+_VALIDATOR = _obj({"id": {"type": "string", "enum": [k for k, v in VLIB.items() if v.offered]}, "args": _STRMAP},
+                  ["id", "args"])
 _LLM = _obj({"feature": _STR, "prompt": _STR, "footprint": _arr(_STR), "validator": _arr(_VALIDATOR)},
             ["feature", "prompt", "footprint", "validator"])
 _VAR = _obj({"var": _STR, "type": _STR}, ["var", "type"])
 _RULE = _obj({"name": _STR, "from": _arr(_VAR), "guard": {"type": ["string", "null"]}, "to": _VAR, "bind": _STRMAP,
-              "llm": _arr(_LLM)}, ["name", "from", "to", "bind", "llm"])
+              "llm": _arr(_LLM)}, ["name", "from", "guard", "to", "bind", "llm"])
 _HANDOFF = _obj({"name": _STR, "sources": _arr(_STR), "target": _STR, "rules": _arr(_RULE)},
                 ["name", "sources", "target", "rules"])
 _GOAL = _obj({"class": _STR, "scope": _STR, "mode": {"type": "string", "enum": ["checked", "delivered"]},
-              "anchors": _arr(_STR)}, ["class", "scope", "mode"])
+              "anchors": _arr(_STR)}, ["class", "scope", "mode", "anchors"])
 _CLAUSE = {"type": "string", "enum": ["cover(G)", "valid", "fresh", "noEsc", *LIBRARY_CLAUSES]}
 
 TEAM_SCHEMA: dict = _obj({

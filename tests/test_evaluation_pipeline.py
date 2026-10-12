@@ -246,12 +246,16 @@ def test_fixture_teams_are_admitted_and_compile(name, tmp_path):
 
 def test_typed_nc_survives_structural_defects(tmp_path):
     """Unchecked teams: a rule matching an undeclared view, a reference bound
-    to the wrong class, a string bound to a boolean."""
+    to the wrong class, a string bound to a boolean, a rule creating an
+    undeclared class (regression: KeyError 'MethodDesign' in the engine)."""
     t = normalize(_team("classeval_reference"))
     t["handoffs"][1]["sources"] = ["Design"]  # Method2Test matches Goal!Method, Goal not declared
     t["views"]["Test"]["classes"]["TestCase"]["attributes"]["ok"] = "boolean"
     t["handoffs"][1]["rules"][0]["bind"]["ok"] = "m.name"  # string -> boolean
     t["handoffs"][2]["rules"][0]["bind"]["method"] = "t"  # TestCase -> Goal.Method reference
+    extra = copy.deepcopy(t["handoffs"][0]["rules"][0])
+    extra["name"], extra["to"]["type"] = "Method2Ghost", "Design!Ghost"  # Ghost is not declared
+    t["handoffs"][0]["rules"].append(extra)
     assert not check(t).admitted
     out = AutoM2M(Scripted(t), check_enabled=False, repair_enabled=False, workdir=tmp_path).solve(
         TASK, TASK.prompt, TaskWorkbench(TASK))
@@ -353,3 +357,44 @@ def test_goal_method_through_a_many_valued_reference():
     assert _single([o, O()]) is None and _single([]) is None and _single(None) is None
     assert _single(o) is o
 
+
+
+def test_team_schema_requires_every_property():
+    """Constrained decoding never emits optional properties; the builder's
+    joins (guards) were missing from every proposal while `guard` was
+    optional (regression)."""
+    from autom2m.builder import TEAM_SCHEMA
+
+    def walk(s, path="$"):
+        if isinstance(s, dict):
+            if s.get("type") == "object" and "properties" in s:
+                missing = set(s["properties"]) - set(s.get("required", []))
+                assert not missing, f"{path}: optional {sorted(missing)}"
+            for k, v in s.items():
+                walk(v, f"{path}.{k}")
+        elif isinstance(s, list):
+            for i, v in enumerate(s):
+                walk(v, f"{path}[{i}]")
+
+    walk(TEAM_SCHEMA)
+
+
+def test_structural_binding_of_the_wrong_type_does_not_crash(monkeypatch):
+    """A value of the wrong type for its feature (an unchecked Typed-NC team)
+    goes into a collection as its one element, or is dropped (regression:
+    BadValueError for a text bound to a many-valued attribute)."""
+    from pyecore.ecore import EAttribute, EClass, EInt, EString
+
+    from agenthot.engine import binding as B
+    from agenthot.engine.matcher import Match
+    from agenthot.rules.ast import StructuralBinding, TargetPattern
+
+    C = EClass("C")
+    C.eStructuralFeatures.append(EAttribute("tags", EString, upper=-1))
+    C.eStructuralFeatures.append(EAttribute("n", EInt))
+    o = C()
+    monkeypatch.setattr(B, "_find_feature", lambda obj, name: None)  # the case that crashed
+    monkeypatch.setattr(B, "eval_expr", lambda expr, bindings, helpers: expr)
+    tp = TargetPattern("o", "OUT", "C", [StructuralBinding("tags", "some text"), StructuralBinding("n", "not a number")])
+    B.apply_structural_bindings(tp, o, Match("r", {}, "k"), None, {}, None)
+    assert list(o.tags) == ["some text"] and o.n == 0

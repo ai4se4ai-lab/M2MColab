@@ -13,7 +13,7 @@ With `lenient=True` (the Typed-NC ablation: a typed team that was never
 checked) ill-typed parts do not stop compilation: an ill-typed stochastic
 binding compiles to a footprint that raises, so the engine escalates it
 without sampling; an ill-typed structural binding is dropped; an ill-typed
-guard never matches.
+guard never matches; a rule over undeclared classes is dropped.
 """
 from __future__ import annotations
 
@@ -219,6 +219,9 @@ def generate_module(team: TypedTeam, h, registry: dict[str, str], bindings: dict
     froms = ", ".join(f"IN_{s} : {s}" for s in srcs)
     lines = [f"module {h.name};", f"create OUT : {h.target} from {froms};", "uses 'helpers.py';"]
     for r in h.rules:
+        if lenient and (r.target_view != h.target or team.cls(r.target_view, r.target_cls) is None
+                        or any(team.cls(view, c) is None for _v, view, c in r.sources)):
+            continue  # a rule over undeclared classes never matches or creates anything
         env = rule_env(r)
         vars_ = set(env)
         src = ", ".join(f"{v} : {view}!{c}" for v, view, c in r.sources)

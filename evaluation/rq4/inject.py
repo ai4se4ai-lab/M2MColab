@@ -17,7 +17,10 @@ only what the injection makes stale is re-sampled (in-place semantics):
   validator      the deliverable binding gets a flaky validator; responsible:
                  the validator, not an agent
 
-A fault counts when it manifests (phi fails at the injected binding). Then
+A fault counts when it manifests: phi fails at the injected binding, for
+sampling, validator and footprint faults on a value the clean run had
+accepted and still holds valid at its end. The clean run's escalations keep their state, so the faulted run
+differs from the clean run only by the injection. Then
 trace-based attribution runs in exhaustive mode, so the classification under
 one replay and under the adaptive budget come from the same draws; the full
 run (every LLM call with its input, output and check verdict) is stored for
@@ -132,6 +135,14 @@ class Replay:
         return self.inner.generate(prompt, **kw)
 
 
+def _for_method(target_key: str, name: str) -> bool:
+    """Does a target key belong to goal method `name`? (`Method#count` must not
+    match `Method#count_all`.)"""
+    import re as _re
+
+    return _re.search(rf"Method#{_re.escape(name)}(?![\w])", target_key) is not None
+
+
 def method_of_prompt(prompt: str) -> str | None:
     """The method a binding prompt is for: its footprint's signature line."""
     import re as _re
@@ -243,11 +254,15 @@ def run_task(task_id: str, team_kind: str, model: str, faults: list[str], seed: 
         clean_events = len(events)
         clean_tokens = llm.totals()["out_tokens"]
         accepted_impl, accepted_vals = [], {}
+        # values the clean run accepted and still holds valid at its end (a value accepted early can
+        # fail later against siblings that changed; the injection must not be blamed for that)
+        clean_bad = {f.target_key for f in clean.failures if f.clause in ("noEsc", "valid")}
         for link in s0.ct.team.traces[base_json["handoffs"][hi]["name"]].links():
             if dfeat in link.stamps:
-                accepted_impl.append(link.target_key)
+                if link.target_key not in clean_bad:
+                    accepted_impl.append(link.target_key)
                 obj = s0.object_by_target_key(link.target_key)
-                meth = next((m.name for m in task.methods if f"Method#{m.name}" in link.target_key), None)
+                meth = next((m.name for m in task.methods if _for_method(link.target_key, m.name)), None)
                 if obj is not None and meth:
                     accepted_vals[meth] = getattr(obj, dfeat)
         for fault in faults:
@@ -266,8 +281,16 @@ def run_task(task_id: str, team_kind: str, model: str, faults: list[str], seed: 
                 truth = {"class": fault, "binding": f"{drule}.{dfeat}", "agent": s.ct.bindings[(drule, dfeat)].owner,
                          "target": None}
                 if fault in ("footprint", "specification", "validator"):
+                    # installing the fault must not give the clean run's escalations a fresh budget
+                    # (apply_delta does that after a repair): the faulted run differs from the clean
+                    # run only by the injection
+                    escalated = {(h, l.target_key): dict(l.failed_stamps)
+                                 for h, t in s.ct.team.traces.items() for l in t.links() if l.failed_stamps}
                     ar = apply_delta(s, parse_team(tj), task)
                     s = ar.session
+                    for h, t in s.ct.team.traces.items():
+                        for l in t.links():
+                            l.failed_stamps.update(escalated.get((h, l.target_key), {}))
                     if fault == "validator":
                         truth["agent"] = "(validator)"
                         if not accepted_vals:
@@ -288,7 +311,7 @@ def run_task(task_id: str, team_kind: str, model: str, faults: list[str], seed: 
                         if link.target_key in accepted_set:
                             link.stamps.pop(dfeat, None)  # the degraded agent re-samples every value it accepted
                 elif fault == "upstream":
-                    up = _upstream_target(s, base_json, hi, ri, bi, task)
+                    up = _upstream_target(s, base_json, hi, ri, bi, task, ok=set(accepted_impl))
                     if up is None:
                         continue
                     truth.update(binding=up["binding"], agent=up["agent"], target=up["target"], method=up["method"],
@@ -297,8 +320,8 @@ def run_task(task_id: str, team_kind: str, model: str, faults: list[str], seed: 
                 res = s.run()
                 row["phi"] = res.phi
                 failing = [f for f in res.failures if f.clause in ("noEsc", "valid") and f.rule == drule and f.binding == dfeat]
-                if fault in ("sampling", "validator"):
-                    # only values the clean run had accepted fail because of the injection alone
+                if fault in ("sampling", "validator", "footprint"):
+                    # only values the clean run had accepted (and still held valid) fail because of the injection alone
                     failing = [f for f in failing if f.target_key in set(accepted_impl)]
                 if fault == "upstream":
                     failing = [f for f in failing if f.target_key == truth.get("symptom_target")]
@@ -349,7 +372,7 @@ def _summary(events: list) -> list[dict]:
     return out
 
 
-def _upstream_target(s, team: dict, hi: int, ri: int, bi: int, task) -> dict | None:
+def _upstream_target(s, team: dict, hi: int, ri: int, bi: int, task, ok: set | None = None) -> dict | None:
     """Give one method's upstream test (or text) value an extra wrong element,
     keeping its stamp: its validator accepted the original and is too weak."""
     from autom2m.typed_team import parse_team, rule_env, type_path
@@ -373,8 +396,15 @@ def _upstream_target(s, team: dict, hi: int, ri: int, bi: int, task) -> dict | N
             if ux.feature not in link.stamps:
                 continue
             obj = s.object_by_target_key(link.target_key)
-            meth = next((m for m in task.methods if f"Method#{m.name}" in link.target_key), None)
+            meth = next((m for m in task.methods if _for_method(link.target_key, m.name)), None)
             if obj is None or meth is None:
+                continue
+            # the symptom must be a value the clean run had accepted
+            dfeat = team["handoffs"][hi]["rules"][ri]["llm"][bi]["feature"]
+            downstream = next((l.target_key for l in s.ct.team.traces[team["handoffs"][hi]["name"]].links()
+                               if _for_method(l.target_key, meth.name) and dfeat in l.stamps
+                               and (ok is None or l.target_key in ok)), None)
+            if downstream is None:
                 continue
             from autom2m.lift import split_doctests
 
@@ -394,8 +424,6 @@ def _upstream_target(s, team: dict, hi: int, ri: int, bi: int, task) -> dict | N
                 setattr(obj, ux.feature, f"```python\n{code.rstrip()}{extra}```")
             else:
                 setattr(obj, ux.feature, str(val) + f"\nNote: {meth.name} must always return None.")
-            downstream = next((l.target_key for l in s.ct.team.traces[team["handoffs"][hi]["name"]].links()
-                               if f"Method#{meth.name}" in l.target_key), None)
             return {"binding": f"{ur.name}.{ux.feature}", "agent": s.ct.bindings[(ur.name, ux.feature)].owner,
                     "target": link.target_key, "method": meth.name, "downstream": downstream}
     return None
