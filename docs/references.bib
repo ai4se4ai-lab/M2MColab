@@ -1,0 +1,615 @@
+% References for "When the Team Writes Itself" (AutoM2M).
+% Every entry was checked against the publisher, the proceedings index,
+% or the arXiv abstract page in October 2026. Full author lists; no "and others".
+
+% ---------------------------------------------------------------------------
+% Prior work by the authors (anonymised for double-anonymous review)
+% ---------------------------------------------------------------------------
+@misc{agenthot2026,
+  author       = {{Anonymous}},
+  title        = {{AgentHOT}: {M2M} Transformations for Agentic Collaborations in Software Engineering},
+  year         = {2026},
+  note         = {Under review; anonymised for double-anonymous review. Prototype and pilot data in the anonymous artifact}
+}
+
+% ---------------------------------------------------------------------------
+% Failure evidence for LLM multi-agent systems
+% ---------------------------------------------------------------------------
+@inproceedings{cemri2025mast,
+  author    = {Cemri, Mert and Pan, Melissa Z. and Yang, Shuyi and Agrawal, Lakshya A.
+               and Chopra, Bhavya and Tiwari, Rishabh and Keutzer, Kurt
+               and Parameswaran, Aditya and Klein, Dan and Ramchandran, Kannan
+               and Zaharia, Matei and Gonzalez, Joseph E. and Stoica, Ion},
+  title     = {Why Do Multi-Agent {LLM} Systems Fail?},
+  booktitle = {Advances in Neural Information Processing Systems (Datasets and Benchmarks Track)},
+  year      = {2025}
+}
+
+@inproceedings{zhang2025whowhen,
+  author    = {Zhang, Shaokun and Yin, Ming and Zhang, Jieyu and Liu, Jiale and Han, Zhiguang
+               and Zhang, Jingyang and Li, Beibin and Wang, Chi and Wang, Huazheng
+               and Chen, Yiran and Wu, Qingyun},
+  title     = {Which Agent Causes Task Failures and When? On Automated Failure Attribution of {LLM} Multi-Agent Systems},
+  booktitle = {Proceedings of the 42nd International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {267},
+  pages     = {76583--76599},
+  year      = {2025}
+}
+
+@misc{chen2026traceelephant,
+  author       = {Chen, Mengzhuo and Wang, Junjie and Mu, Fangwen and Wang, Yawen and Liu, Zhe
+                  and Feng, Huanxiang and Wang, Qing},
+  title        = {Seeing the Whole Elephant: A Benchmark for Failure Attribution in {LLM}-based Multi-Agent Systems},
+  year         = {2026},
+  howpublished = {arXiv preprint arXiv:2604.22708}
+}
+
+@inproceedings{lin2026agentask,
+  author    = {Lin, Bohan and Yang, Kuo and Tan, Zelin and Lai, Yingchuan and Zhang, Chen
+               and Zhang, Guibin and Yu, Xinlei and Yu, Miao and Wang, Xu and Zhang, Yudong
+               and Wang, Yang},
+  title     = {{AgentAsk}: Multi-Agent Systems Need to Ask},
+  booktitle = {Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  year      = {2026}
+}
+
+@misc{kim2025scaling,
+  author       = {Kim, Yubin and Gu, Ken and Park, Chanwoo and Park, Chunjong and Schmidgall, Samuel
+                  and Heydari, A. Ali and Yan, Yao and Zhang, Zhihan and Zhuang, Yuchen and Liu, Yun
+                  and Malhotra, Mark and Liang, Paul Pu and Park, Hae Won and Yang, Yuzhe and Xu, Xuhai
+                  and Du, Yilun and Patel, Shwetak and Althoff, Tim and McDuff, Daniel and Liu, Xin},
+  title        = {Towards a Science of Scaling Agent Systems},
+  year         = {2025},
+  howpublished = {arXiv preprint arXiv:2512.08296}
+}
+
+@inproceedings{lu2025exploring,
+  author    = {Lu, Ruofan and Li, Yichen and Huo, Yintong},
+  title     = {Exploring Autonomous Agents: A Closer Look at Why They Fail When Completing Tasks},
+  booktitle = {Proceedings of the 40th IEEE/ACM International Conference on Automated Software Engineering (ASE), New Ideas and Emerging Results Track},
+  year      = {2025}
+}
+
+@inproceedings{lamalfa2025miss,
+  author    = {La Malfa, Emanuele and La Malfa, Gabriele and Marro, Samuele and Zhang, Jie M.
+               and Black, Elizabeth and Luck, Michael and Torr, Philip and Wooldridge, Michael},
+  title     = {Large Language Models Miss the Multi-Agent Mark},
+  booktitle = {Advances in Neural Information Processing Systems (Position Paper Track)},
+  year      = {2025}
+}
+
+% ---------------------------------------------------------------------------
+% Automatic construction of agent teams
+% ---------------------------------------------------------------------------
+@misc{song2024captain,
+  author       = {Song, Linxin and Liu, Jiale and Zhang, Jieyu and Zhang, Shaokun and Luo, Ao
+                  and Wang, Shijian and Wu, Qingyun and Wang, Chi},
+  title        = {Adaptive In-conversation Team Building for Language Model Agents},
+  year         = {2024},
+  howpublished = {arXiv preprint arXiv:2405.19425}
+}
+
+@inproceedings{chen2024autoagents,
+  author    = {Chen, Guangyao and Dong, Siwei and Shu, Yu and Zhang, Ge and Sesay, Jaward
+               and Karlsson, B{\"o}rje F. and Fu, Jie and Shi, Yemin},
+  title     = {{AutoAgents}: A Framework for Automatic Agent Generation},
+  booktitle = {Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence (IJCAI)},
+  pages     = {22--30},
+  year      = {2024}
+}
+
+@inproceedings{chen2024agentverse,
+  author    = {Chen, Weize and Su, Yusheng and Zuo, Jingwei and Yang, Cheng
+               and Yuan, Chenfei and Chan, Chi-Min and Yu, Heyang and Lu, Yaxi
+               and Hung, Yi-Hsin and Qian, Chen and Qin, Yujia and Cong, Xin
+               and Xie, Ruobing and Liu, Zhiyuan and Sun, Maosong and Zhou, Jie},
+  title     = {{AgentVerse}: Facilitating Multi-Agent Collaboration and Exploring Emergent Behaviors},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2024},
+  url       = {https://openreview.net/forum?id=EHg5GDnyq1}
+}
+
+@inproceedings{liu2024dylan,
+  author    = {Liu, Zijun and Zhang, Yanzhe and Li, Peng and Liu, Yang and Yang, Diyi},
+  title     = {A Dynamic {LLM}-Powered Agent Network for Task-Oriented Agent Collaboration},
+  booktitle = {Proceedings of the First Conference on Language Modeling (COLM)},
+  year      = {2024}
+}
+
+@inproceedings{yuan2025evoagent,
+  author    = {Yuan, Siyu and Song, Kaitao and Chen, Jiangjie and Tan, Xu and Li, Dongsheng and Yang, Deqing},
+  title     = {{EvoAgent}: Towards Automatic Multi-Agent Generation via Evolutionary Algorithms},
+  booktitle = {Proceedings of the 2025 Conference of the Nations of the Americas Chapter of the Association for Computational Linguistics (NAACL)},
+  year      = {2025},
+  doi       = {10.18653/v1/2025.naacl-long.315}
+}
+
+@inproceedings{zhang2025metaagent,
+  author    = {Zhang, Yaolun and Liu, Xiaogeng and Xiao, Chaowei},
+  title     = {{MetaAgent}: Automatically Constructing Multi-Agent Systems Based on Finite State Machines},
+  booktitle = {Proceedings of the 42nd International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {267},
+  pages     = {75667--75694},
+  year      = {2025}
+}
+
+@inproceedings{zhang2025maas,
+  author    = {Zhang, Guibin and Niu, Luyang and Fang, Junfeng and Wang, Kun and Bai, Lei and Wang, Xiang},
+  title     = {Multi-agent Architecture Search via Agentic Supernet},
+  booktitle = {Proceedings of the 42nd International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {267},
+  pages     = {75834--75852},
+  year      = {2025}
+}
+
+@inproceedings{ke2025maszero,
+  author    = {Ke, Zixuan and Xu, Austin and Ming, Yifei and Nguyen, Xuan-Phi and Chin, Ryan
+               and Xiong, Caiming and Joty, Shafiq},
+  title     = {{MAS-Zero}: Designing Multi-Agent Systems with Zero Supervision},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2025}
+}
+
+@inproceedings{hu2025adas,
+  author    = {Hu, Shengran and Lu, Cong and Clune, Jeff},
+  title     = {Automated Design of Agentic Systems},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2025}
+}
+
+@inproceedings{zhang2025aflow,
+  author    = {Zhang, Jiayi and Xiang, Jinyu and Yu, Zhaoyang and Teng, Fengwei
+               and Chen, Xiong-Hui and Chen, Jiaqi and Zhuge, Mingchen and Cheng, Xin
+               and Hong, Sirui and Wang, Jinlin and Zheng, Bingnan and Liu, Bang
+               and Luo, Yuyu and Wu, Chenglin},
+  title     = {{AFlow}: Automating Agentic Workflow Generation},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2025}
+}
+
+@inproceedings{zhuge2024gptswarm,
+  author    = {Zhuge, Mingchen and Wang, Wenyi and Kirsch, Louis and Faccio, Francesco
+               and Khizbullin, Dmitrii and Schmidhuber, J{\"u}rgen},
+  title     = {{GPTSwarm}: Language Agents as Optimizable Graphs},
+  booktitle = {Proceedings of the 41st International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {235},
+  pages     = {62743--62767},
+  year      = {2024}
+}
+
+@misc{he2026tpgo,
+  author       = {He, Shanhong and Wang, Run-Ze and Du, Zhuo-Yun and Bai, Hui-Yu and Cao, Zou-Ying
+                  and Cheng, Yu and Zheng, Bo},
+  title        = {Learning to Evolve: A Self-Improving Framework for Multi-Agent Systems via Textual Parameter Graph Optimization},
+  year         = {2026},
+  howpublished = {arXiv preprint arXiv:2604.20714}
+}
+
+@inproceedings{qian2025macnet,
+  author    = {Qian, Chen and Xie, Zihao and Wang, Yifei and Liu, Wei and Zhu, Kunlun
+               and Xia, Hanchen and Dang, Yufan and Du, Zhuoyun and Chen, Weize
+               and Yang, Cheng and Liu, Zhiyuan and Sun, Maosong},
+  title     = {Scaling Large Language Model-based Multi-Agent Collaboration},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2025}
+}
+
+% ---------------------------------------------------------------------------
+% LLM multi-agent systems, SE, protocols
+% ---------------------------------------------------------------------------
+@article{he2025lma,
+  author  = {He, Junda and Treude, Christoph and Lo, David},
+  title   = {{LLM}-Based Multi-Agent Systems for Software Engineering:
+             Literature Review, Vision, and the Road Ahead},
+  journal = {ACM Transactions on Software Engineering and Methodology},
+  volume  = {34},
+  number  = {5},
+  pages   = {1--30},
+  articleno = {124},
+  year    = {2025},
+  doi     = {10.1145/3712003}
+}
+
+@article{dong2024selfcollab,
+  author  = {Dong, Yihong and Jiang, Xue and Jin, Zhi and Li, Ge},
+  title   = {Self-Collaboration Code Generation via {ChatGPT}},
+  journal = {ACM Transactions on Software Engineering and Methodology},
+  volume  = {33},
+  number  = {7},
+  pages   = {1--38},
+  year    = {2024}
+}
+
+@inproceedings{hong2024metagpt,
+  author    = {Hong, Sirui and Zhuge, Mingchen and Chen, Jonathan and Zheng, Xiawu
+               and Cheng, Yuheng and Wang, Jinlin and Zhang, Ceyao and Wang, Zili
+               and Yau, Steven Ka Shing and Lin, Zijuan and Zhou, Liyang
+               and Ran, Chenyu and Xiao, Lingfeng and Wu, Chenglin and Schmidhuber, J{\"u}rgen},
+  title     = {{MetaGPT}: Meta Programming for a Multi-Agent Collaborative Framework},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2024}
+}
+
+@inproceedings{qian2024chatdev,
+  author    = {Qian, Chen and Liu, Wei and Liu, Hongzhang and Chen, Nuo
+               and Dang, Yufan and Li, Jiahao and Yang, Cheng and Chen, Weize
+               and Su, Yusheng and Cong, Xin and Xu, Juyuan and Li, Dahai
+               and Liu, Zhiyuan and Sun, Maosong},
+  title     = {{ChatDev}: Communicative Agents for Software Development},
+  booktitle = {Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  pages     = {15174--15186},
+  year      = {2024},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/2024.acl-long.810}
+}
+
+@inproceedings{wu2024autogen,
+  author    = {Wu, Qingyun and Bansal, Gagan and Zhang, Jieyu and Wu, Yiran
+               and Li, Beibin and Zhu, Erkang (Eric) and Jiang, Li and Zhang, Xiaoyun
+               and Zhang, Shaokun and Awadallah, Ahmed and White, Ryen W.
+               and Burger, Doug and Wang, Chi},
+  title     = {{AutoGen}: Enabling Next-Gen {LLM} Applications via Multi-Agent Conversation},
+  booktitle = {Proceedings of the 1st Conference on Language Modeling},
+  year      = {2024}
+}
+
+@inproceedings{guo2024survey,
+  author    = {Guo, Taicheng and Chen, Xiuying and Wang, Yaqi and Chang, Ruidi and Pei, Shichao
+               and Chawla, Nitesh V. and Wiest, Olaf and Zhang, Xiangliang},
+  title     = {Large Language Model Based Multi-Agents: A Survey of Progress and Challenges},
+  booktitle = {Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence (IJCAI)},
+  pages     = {8048--8057},
+  year      = {2024}
+}
+
+@misc{marro2024agora,
+  author       = {Marro, Samuele and La Malfa, Emanuele and Wright, Jesse and Li, Guohao
+                  and Shadbolt, Nigel and Wooldridge, Michael and Torr, Philip},
+  title        = {A Scalable Communication Protocol for Networks of Large Language Models},
+  year         = {2024},
+  howpublished = {arXiv preprint arXiv:2410.11905}
+}
+
+@misc{mcp2024,
+  author       = {{Anthropic}},
+  title        = {Model Context Protocol},
+  year         = {2024},
+  howpublished = {Specification},
+  url          = {https://modelcontextprotocol.io/specification}
+}
+
+@misc{a2a2025,
+  author       = {{Google}},
+  title        = {{Agent2Agent (A2A)} Protocol},
+  year         = {2025},
+  howpublished = {Specification},
+  url          = {https://a2a-protocol.org/}
+}
+
+@misc{zhang2026patchboard,
+  author       = {Zhang, Shuyu and Shi, Yaqi and Wang, Lu},
+  title        = {{PatchBoard}: Schema-Grounded State Mutation for Reliable and Auditable {LLM} Multi-Agent Collaboration},
+  year         = {2026},
+  howpublished = {arXiv preprint arXiv:2605.29313},
+  doi          = {10.48550/arXiv.2605.29313},
+  url          = {https://arxiv.org/abs/2605.29313}
+}
+
+@inproceedings{khattab2024dspy,
+  author    = {Khattab, Omar and Singhvi, Arnav and Maheshwari, Paridhi and Zhang, Zhiyuan
+               and Santhanam, Keshav and Vardhamanan, Sri and Haq, Saiful and Sharma, Ashutosh
+               and Joshi, Thomas T. and Moazam, Hanna and Miller, Heather and Zaharia, Matei
+               and Potts, Christopher},
+  title     = {{DSPy}: Compiling Declarative Language Model Calls into Self-Improving Pipelines},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2024}
+}
+
+@misc{li2024devbench,
+  author       = {Li, Bowen and Wu, Wenhan and Tang, Ziwei and Shi, Lin and
+                  Yang, John and Li, Jinyang and Yao, Shunyu and Qian, Chen and
+                  Hui, Binyuan and Zhang, Qicheng and Yu, Zhiyin and Du, He and
+                  Yang, Ping and Lin, Dahua and Peng, Chao and Chen, Kai},
+  title        = {Prompting Large Language Models to Tackle the Full Software Development Lifecycle: A Case Study},
+  year         = {2024},
+  howpublished = {arXiv preprint arXiv:2403.08604},
+  doi          = {10.48550/arXiv.2403.08604},
+  url          = {https://arxiv.org/abs/2403.08604}
+}
+
+% ---------------------------------------------------------------------------
+% Classic multi-agent systems and agent-oriented SE
+% ---------------------------------------------------------------------------
+@inproceedings{stone2010adhoc,
+  author    = {Stone, Peter and Kaminka, Gal A. and Kraus, Sarit and Rosenschein, Jeffrey S.},
+  title     = {Ad Hoc Autonomous Agent Teams: Collaboration without Pre-Coordination},
+  booktitle = {Proceedings of the Twenty-Fourth AAAI Conference on Artificial Intelligence},
+  pages     = {1504--1509},
+  year      = {2010}
+}
+
+@inproceedings{wang2024oaht,
+  author    = {Wang, Jianhong and Li, Yang and Zhang, Yuan and Pan, Wei and Kaski, Samuel},
+  title     = {Open Ad Hoc Teamwork with Cooperative Game Theory},
+  booktitle = {Proceedings of the 41st International Conference on Machine Learning},
+  year      = {2024}
+}
+
+@inproceedings{finin1994kqml,
+  author    = {Finin, Tim and Fritzson, Richard and McKay, Don and McEntire, Robin},
+  title     = {{KQML} as an Agent Communication Language},
+  booktitle = {Proceedings of the Third International Conference on Information and Knowledge Management (CIKM)},
+  pages     = {456--463},
+  year      = {1994}
+}
+
+@article{wooldridge2000gaia,
+  author  = {Wooldridge, Michael and Jennings, Nicholas R. and Kinny, David},
+  title   = {The {Gaia} Methodology for Agent-Oriented Analysis and Design},
+  journal = {Autonomous Agents and Multi-Agent Systems},
+  volume  = {3},
+  number  = {3},
+  pages   = {285--312},
+  year    = {2000}
+}
+
+% ---------------------------------------------------------------------------
+% Software architecture, contracts
+% ---------------------------------------------------------------------------
+@article{garlan1995mismatch,
+  author  = {Garlan, David and Allen, Robert and Ockerbloom, John},
+  title   = {Architectural Mismatch: Why Reuse Is So Hard},
+  journal = {IEEE Software},
+  volume  = {12},
+  number  = {6},
+  pages   = {17--26},
+  year    = {1995}
+}
+
+@article{garlan2009mismatch,
+  author  = {Garlan, David and Allen, Robert and Ockerbloom, John},
+  title   = {Architectural Mismatch: Why Reuse Is Still So Hard},
+  journal = {IEEE Software},
+  volume  = {26},
+  number  = {4},
+  pages   = {66--69},
+  year    = {2009}
+}
+
+@article{allen1997connection,
+  author  = {Allen, Robert and Garlan, David},
+  title   = {A Formal Basis for Architectural Connection},
+  journal = {ACM Transactions on Software Engineering and Methodology},
+  volume  = {6},
+  number  = {3},
+  pages   = {213--249},
+  year    = {1997}
+}
+
+@article{meyer1992dbc,
+  author  = {Meyer, Bertrand},
+  title   = {Applying ``Design by Contract''},
+  journal = {Computer},
+  volume  = {25},
+  number  = {10},
+  pages   = {40--51},
+  year    = {1992}
+}
+
+% ---------------------------------------------------------------------------
+% Model-driven engineering
+% ---------------------------------------------------------------------------
+@article{jouault2008atl,
+  author  = {Jouault, Fr{\'e}d{\'e}ric and Allilaire, Freddy and B{\'e}zivin, Jean
+             and Kurtev, Ivan},
+  title   = {{ATL}: A Model Transformation Tool},
+  journal = {Science of Computer Programming},
+  volume  = {72},
+  number  = {1--2},
+  pages   = {31--39},
+  year    = {2008},
+  doi     = {10.1016/j.scico.2007.08.002}
+}
+
+@inproceedings{jouault2005traceability,
+  author    = {Jouault, Fr{\'e}d{\'e}ric},
+  title     = {Loosely Coupled Traceability for {ATL}},
+  booktitle = {Proceedings of the European Conference on Model Driven Architecture Workshop on Traceability},
+  volume    = {91},
+  pages     = {29--37},
+  year      = {2005},
+  address   = {Nuremberg, Germany},
+  isbn      = {82-14-03813-8}
+}
+
+@inproceedings{jouault2010incremental,
+  author    = {Jouault, Fr{\'e}d{\'e}ric and Tisi, Massimo},
+  title     = {Towards Incremental Execution of {ATL} Transformations},
+  booktitle = {Theory and Practice of Model Transformations},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {6142},
+  pages     = {123--137},
+  year      = {2010},
+  publisher = {Springer},
+  doi       = {10.1007/978-3-642-13688-7_9}
+}
+
+@article{vara2014metagem,
+  author  = {Vara, Juan Manuel and Bollati, Ver{\'o}nica A. and Jim{\'e}nez, {\'A}lvaro
+             and Marcos, Esperanza},
+  title   = {Dealing with Traceability in the {MDD} of Model Transformations},
+  journal = {IEEE Transactions on Software Engineering},
+  volume  = {40},
+  number  = {6},
+  pages   = {555--583},
+  year    = {2014},
+  doi     = {10.1109/TSE.2014.2316132}
+}
+
+@inproceedings{tisi2009hot,
+  author    = {Tisi, Massimo and Jouault, Fr{\'e}d{\'e}ric and Fraternali, Piero
+               and Ceri, Stefano and B{\'e}zivin, Jean},
+  title     = {On the Use of Higher-Order Model Transformations},
+  booktitle = {Model Driven Architecture -- Foundations and Applications},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {5562},
+  pages     = {18--33},
+  year      = {2009},
+  publisher = {Springer},
+  doi       = {10.1007/978-3-642-02674-4_3}
+}
+
+@article{blair2009runtime,
+  author  = {Blair, Gordon and Bencomo, Nelly and France, Robert B.},
+  title   = {Models@run.time},
+  journal = {Computer},
+  volume  = {42},
+  number  = {10},
+  pages   = {22--27},
+  year    = {2009},
+  doi     = {10.1109/MC.2009.326}
+}
+
+@article{klare2021vitruvius,
+  author  = {Klare, Heiko and Kramer, Max E. and Langhammer, Michael and Werle, Dominik
+             and Burger, Erik and Reussner, Ralf},
+  title   = {Enabling Consistency in View-Based System Development---The {Vitruvius} Approach},
+  journal = {Journal of Systems and Software},
+  volume  = {171},
+  pages   = {110815},
+  year    = {2021},
+  doi     = {10.1016/j.jss.2020.110815}
+}
+
+@article{bruneliere2019views,
+  author  = {Bruneliere, Hugo and Burger, Erik and Cabot, Jordi and Wimmer, Manuel},
+  title   = {A Feature-Based Survey of Model View Approaches},
+  journal = {Software and Systems Modeling},
+  volume  = {18},
+  number  = {3},
+  pages   = {1931--1952},
+  year    = {2019},
+  doi     = {10.1007/s10270-017-0622-9}
+}
+
+@article{stevens2010qvt,
+  author  = {Stevens, Perdita},
+  title   = {Bidirectional Model Transformations in {QVT}: Semantic Issues and Open Questions},
+  journal = {Software and Systems Modeling},
+  volume  = {9},
+  number  = {1},
+  pages   = {7--20},
+  year    = {2010},
+  doi     = {10.1007/s10270-008-0109-9}
+}
+
+@article{klare2023termination,
+  author  = {Klare, Heiko and Gleitze, Joshua},
+  title   = {Termination and Expressiveness of Execution Strategies for Networks of Bidirectional Model Transformations},
+  journal = {Formal Aspects of Computing},
+  volume  = {35},
+  number  = {3},
+  pages   = {1--35},
+  year    = {2023},
+  doi     = {10.1145/3543845}
+}
+
+@article{stevens2020networks,
+  title={Maintaining consistency in networks of models: bidirectional transformations in the large},
+  author={Stevens, Perdita},
+  journal={Software and Systems Modeling},
+  volume={19},
+  number={1},
+  pages={39--65},
+  year={2020},
+  publisher={Springer}
+}
+
+% LLMs producing models (feasibility of Step A)
+@inproceedings{chen2023domainmodeling,
+  author    = {Chen, Kua and Yang, Yujing and Chen, Boqi and Hern{\'a}ndez L{\'o}pez,
+               Jos{\'e} Antonio and Mussbacher, Gunter and Varr{\'o}, D{\'a}niel},
+  title     = {Automated Domain Modeling with Large Language Models: A Comparative Study},
+  booktitle = {2023 ACM/IEEE 26th International Conference on Model Driven Engineering Languages and Systems (MODELS)},
+  pages     = {162--172},
+  year      = {2023},
+  doi       = {10.1109/MODELS58315.2023.00037}
+}
+
+@inproceedings{chaaben2023fewshot,
+  author    = {Ben Chaaben, Meriem and Burgue{\~n}o, Lola and Sahraoui, Houari A.},
+  title     = {Towards Using Few-Shot Prompt Learning for Automating Model Completion},
+  booktitle = {2023 ACM/IEEE 45th International Conference on Software Engineering: New Ideas and Emerging Results (ICSE-NIER)},
+  pages     = {7--12},
+  year      = {2023},
+  doi       = {10.1109/ICSE-NIER58687.2023.00008}
+}
+
+@inproceedings{clariso2023mdpe,
+  author    = {Claris{\'o}, Robert and Cabot, Jordi},
+  title     = {Model-Driven Prompt Engineering},
+  booktitle = {2023 ACM/IEEE 26th International Conference on Model Driven Engineering Languages and Systems (MODELS)},
+  pages     = {47--54},
+  year      = {2023},
+  doi       = {10.1109/MODELS58315.2023.00020}
+}
+
+@inproceedings{du2024classeval,
+  author    = {Du, Xueying and Liu, Mingwei and Wang, Kaixin and Wang, Hanlin and Liu, Junwei and Chen, Yixuan
+               and Feng, Jiayi and Sha, Chaofeng and Peng, Xin and Lou, Yiling},
+  title     = {Evaluating Large Language Models in Class-Level Code Generation},
+  booktitle = {Proceedings of the 46th IEEE/ACM International Conference on Software Engineering (ICSE)},
+  pages     = {81:1--81:13},
+  year      = {2024}
+}
+
+@inproceedings{liu2023evalplus,
+  author    = {Liu, Jiawei and Xia, Chunqiu Steven and Wang, Yuyao and Zhang, Lingming},
+  title     = {Is Your Code Generated by {ChatGPT} Really Correct? {R}igorous Evaluation of Large Language Models for Code Generation},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023}
+}
+
+@misc{chen2021codex,
+  author       = {Chen, Mark and Tworek, Jerry and Jun, Heewoo and others},
+  title        = {Evaluating Large Language Models Trained on Code},
+  howpublished = {arXiv:2107.03374},
+  year         = {2021}
+}
+
+@misc{hui2024qwen25coder,
+  author       = {Hui, Binyuan and Yang, Jian and Cui, Zeyu and others},
+  title        = {{Qwen2.5-Coder} Technical Report},
+  howpublished = {arXiv:2409.12186},
+  year         = {2024}
+}
+
+@misc{qwen2025qwen3,
+  author       = {{Qwen Team}},
+  title        = {{Qwen3} Technical Report},
+  howpublished = {arXiv:2505.09388},
+  year         = {2025}
+}
+
+@article{arcuri2014guide,
+  author  = {Arcuri, Andrea and Briand, Lionel},
+  title   = {A Hitchhiker's Guide to Statistical Tests for Assessing Randomized Algorithms in Software Engineering},
+  journal = {Software Testing, Verification and Reliability},
+  volume  = {24},
+  number  = {3},
+  pages   = {219--250},
+  year    = {2014}
+}
+
+@inproceedings{jia2011mutation,
+  author    = {Papadakis, Mike and Kintis, Marinos and Zhang, Jie and Jia, Yue and Le Traon, Yves and Harman, Mark},
+  title     = {Mutation Testing Advances: An Analysis and Survey},
+  booktitle = {Advances in Computers},
+  volume    = {112},
+  pages     = {275--378},
+  year      = {2019}
+}

@@ -1,0 +1,2853 @@
+%!TEX TS-program = pdflatex
+% AutoM2M -- EMSE submission draft (self-contained version; runtime named AgentHOT).
+% Revision: readability pass (motivated definitions, running example separated from
+% definitions, implementation details moved to Section 5.2, Discussion and Threats as
+% top-level sections). All numbers are unchanged from the previous draft.
+% Compile: pdflatex emse; bibtex emse; pdflatex emse; pdflatex emse
+% Needs: sn-jnl.cls, sn-mathphys-num.bst, autom2m-emse.bib, figures/ (all tables are inline)
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
+\usepackage{url}
+\usepackage{subcaption}
+\usepackage{placeins}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{fillbetween}
+\usepgfplotslibrary{statistics}
+\usetikzlibrary{intersections}
+
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{upquote}
+
+
+%%%% Standard Packages
+\usepackage{graphicx}%
+\usepackage{multirow}%
+\usepackage{amsmath,amssymb,amsfonts}%
+\usepackage{amsthm}%
+\usepackage{mathrsfs}%
+\usepackage[title]{appendix}%
+\usepackage{xcolor}%
+\usepackage{manyfoot}%
+\usepackage{booktabs}%
+\usepackage{algorithm}%
+\usepackage{algorithmicx}%
+\usepackage[noend]{algpseudocode}%
+\usepackage{listings}%
+\usepackage{tikz}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+\usepackage{threeparttable}
+\usepackage{rotating}
+\usepackage{enumitem}
+\usepackage{pifont}
+\usepackage{stmaryrd}
+\usepackage{hyperref}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=black, citecolor=black}
+
+% ---------------- theorem-like environments (sn-jnl styles)
+\theoremstyle{thmstyleone}%
+\newtheorem{theorem}{Theorem}%
+\newtheorem{proposition}[theorem]{Proposition}%
+\theoremstyle{thmstyletwo}%
+\newtheorem{example}{Example}%
+\newtheorem{remark}{Remark}%
+\theoremstyle{thmstylethree}%
+\newtheorem{definition}{Definition}%
+
+\raggedbottom
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.6}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.85}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\setlength{\textfloatsep}{12pt plus 2pt minus 4pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+
+% ---------------- shorthands
+\newcommand{\tool}{\textsc{AgentHOT}}
+\newcommand{\auto}{\textsc{AutoM2M}}
+\newcommand{\devteam}{\textsc{DevTeam}}
+\newcommand{\Team}{\Theta}
+\newcommand{\W}[1]{\textsf{W#1}}
+\newcommand{\D}[1]{\textsf{D#1}}
+\newcommand{\MM}{\mathit{MM}}
+\newcommand{\Mods}[1]{\mathcal{M}(#1)}
+\newcommand{\TL}{\mathit{TL}}
+\newcommand{\fp}{\mathit{fp}}
+\newcommand{\Stale}{\mathit{Stale}}
+\newcommand{\chk}{\mathit{chk}}
+\newcommand{\cls}[1]{\textsf{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\RQ}[1]{\textbf{RQ#1}}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\newcommand{\pmark}{\ding{109}}
+\newcommand{\conformsTo}{\mathrel{\chi}}
+\algnewcommand{\LineComment}[1]{\State \(\triangleright\) \textit{#1}}
+
+% ---------------- colours and listings
+\definecolor{rawbg}{RGB}{255,248,230}
+\definecolor{rawbar}{RGB}{214,150,40}
+\definecolor{modelbg}{RGB}{235,244,255}
+\definecolor{modelbar}{RGB}{60,110,180}
+\definecolor{enginebg}{RGB}{236,250,238}
+\definecolor{enginebar}{RGB}{60,145,80}
+\definecolor{llmbg}{RGB}{248,238,252}
+\definecolor{llmbar}{RGB}{140,80,160}
+
+\lstdefinelanguage{ATL}{
+  morekeywords={module,create,from,rule,to,uses,and,or,not,in,handoff,agents,writes,goal,done,tools,views,class,attribute,reference},
+  morekeywords=[2]{@llm,@check}, alsoletter={@},
+  sensitive=true, morecomment=[l]{--}, morestring=[b]'}
+\lstdefinelanguage{KM3}{
+  morekeywords={package,class,attribute,reference,container,enumeration,literal,datatype},
+  sensitive=true, morecomment=[l]{--}}
+\lstset{frame=l, framerule=2pt, framesep=6pt, xleftmargin=9pt, framexleftmargin=0pt,
+        basicstyle=\ttfamily\fontsize{6.8}{7.9}\selectfont, breaklines=false, columns=fullflexible,
+        keepspaces=true, showstringspaces=false, numbers=none, upquote=true,
+        keywordstyle=\bfseries, keywordstyle={[2]\bfseries\color{purple}},
+        commentstyle=\itshape\color{black!55}, captionpos=t, float=tbp, aboveskip=6pt, belowskip=4pt,
+        literate={->}{{$\rightarrow$}}2 {<-}{{$\leftarrow$}}2}
+\lstdefinestyle{raw}{backgroundcolor=\color{rawbg}, rulecolor=\color{rawbar}, literate={}}
+\lstdefinestyle{model}{backgroundcolor=\color{modelbg}, rulecolor=\color{modelbar}}
+\lstdefinestyle{engine}{backgroundcolor=\color{enginebg}, rulecolor=\color{enginebar}, literate={}}
+\renewcommand{\lstlistingname}{Listing}
+
+% ---------------- synthetic-data notice (remove when real runs replace data/*.csv)
+\newcommand{\SyntheticNotice}{%
+\begin{tcolorbox}[enhanced, breakable, colback=rawbg, colframe=rawbar, boxrule=0.6pt, arc=1pt,
+  left=6pt, right=6pt, top=4pt, bottom=4pt]
+\small\textbf{Status of the data in this version.} The mutation results for
+path-only and one-sided \W{4} (Table~\ref{tab:mutation}), the 0/88 ``detach''
+result on natural teams, the example-copying observation, the 70/105 unchanged
+repairs, the builder ablation of Section~\ref{sec:res-rq2} (36 vs.\ 16 of 40 admitted sessions) and the chain-scaling anchor points at 1{,}000 and 3{,}000 views
+(Figure~\ref{fig:scale-a}; all other points and panels are placeholders) come
+from our completed runs. The Qwen2.5-Coder~7B ClassEval targets equal our completed
+single-seed results, around which three seeds are simulated. All other numbers in
+Section~\ref{sec:eval} are \emph{synthetic placeholders} produced by
+\texttt{analysis/simulate.py} (fixed seed; targets calibrated against published
+results) so that the analysis pipeline, figures and tables could be finalised
+before the full matrix completes. Every number is regenerated by
+\texttt{analysis/analyze.py} from \texttt{data/*.csv}; the text must be
+re-checked against \texttt{data/summary.json} once the real logs replace the
+synthetic ones.
+\end{tcolorbox}}
+
+% run-in paragraph headings (as in Springer's svjour3 layout used by EMSE)
+\makeatletter
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+  {6pt \@plus 2pt \@minus 1pt}{-0.6em}{\normalfont\normalsize\bfseries}}
+\makeatother
+
+\begin{document}
+
+\title[AutoM2M: Checking LLM-Assembled Agent Teams with Model Transformations]{When the Team Writes Itself: An Empirical Study of Composition Defects in LLM-Assembled Agent Teams and Their Prevention with Model Transformations}
+
+\author*[1]{\fnm{Majid} \sur{Babaei}}\email{majid.babaei@ufv.ca}
+\affil*[1]{\orgdiv{School of Computing}, \orgname{University of the Fraser Valley}, \orgaddress{\state{BC}, \country{Canada}}}
+
+\abstract{\textbf{Context.} Team builders let a large language model (LLM)
+design a team of LLM agents for each task. Such teams fail often, and their
+failures are hard to attribute.
+\textbf{Problem.} Agents in these teams are specified only by prose roles,
+every hand-off between agents is free text, and nothing checks before execution
+that the parts fit together. We call this the \emph{composition gap}.
+\textbf{Approach.} We present \auto{}, which brings model-driven engineering to
+team building. A builder LLM proposes a \emph{typed team}, in which every agent
+has a metamodel as its interface and every hand-off is a model-to-model
+transformation. The transformations run on \tool{}, a runtime we introduce: a
+deterministic engine fixes the structure of each hand-off, and LLMs fill in only
+individual values, each of which must pass a validator. A checker admits a team
+only if six well-formedness conditions hold, including a two-sided,
+feature-level anchoring criterion for coverage; trace models reduce failure
+attribution to a lookup plus a bounded replay, and every repair must pass the
+same checker.
+\textbf{Evaluation.} We coded the decisive cause of 584 failures and executed
+44{,}352 runs on ClassEval and HumanEval+ with seven open-weight code models
+from six families under eight conditions, comparing \auto{} with free-form, critic, shared-schema and
+single-agent baselines, including a compute-matched single agent.
+\textbf{Results.} Composition defects decide 36--43\% of the failures of
+LLM-assembled teams. The checker detects 96\% of independently seeded defects
+with 7\% false alarms; LLM critics detect at most 58\% with at least 35\% false
+alarms. Among executed teams, \auto{} cuts composition-caused failures by 79\%
+relative to free-form teams and doubles the precision of the team's own
+``done''. On task success, \auto{} is non-inferior to free-form teams in the
+pooled test; exploratory analyses show a gain only with the largest model. Weak
+models often cannot write an admissible team, and a compute-matched single agent
+with an execution gate has the highest mean success. Trace-based attribution
+classifies 84\% of injected faults correctly on reference teams and 81\% on
+builder-generated teams.
+\textbf{Conclusion.} Checked interfaces make LLM-assembled teams fail less
+often for composition reasons and fail more diagnosably; they do not make
+agents reason better.}
+
+\keywords{{LLM-based multi-agent systems, team builders, model-driven engineering, model-to-model transformation, ATL, static analysis, failure attribution, empirical study}}
+
+\maketitle
+
+\section{Introduction}\label{sec:introduction}
+
+Software is increasingly produced by \emph{teams} of large language model
+(LLM) agents. Each agent is an LLM that runs in a loop with tools and a role,
+and the team divides analysis, design, implementation and testing among its
+members~\cite{he2025lma,liu2024agents4se}. The first such teams were designed
+by hand~\cite{hong2024metagpt,qian2024chatdev,dong2024selfcollab}. A second
+generation removes the human designer. \emph{Per-task team builders} read a
+task, decide which agents to create, write their role prompts and wire who
+talks to whom~\cite{song2024captain,chen2024autoagents,zhang2025metaagent,ke2025maszero};
+offline methods search over agentic
+workflows~\cite{hu2025adas,zhang2025aflow,zhuge2024gptswarm}; and orchestrators
+trained by reinforcement learning pick the next agent, write workflows or emit
+whole teams~\cite{dang2025puppeteer,nielsen2026conductor,ke2026masorchestra}.
+
+These teams fail often, and their failures are hard to explain. Cemri et
+al.\ annotated more than 1{,}600 traces of seven multi-agent frameworks and
+found that system-design issues (44.2\% of failure-mode occurrences) and
+inter-agent misalignment (32.3\%) outnumber task-verification problems
+(23.5\%)~\cite{cemri2025mast}. Lin et al.\ locate errors on the \emph{edges} of
+a team, the hand-offs, where information is dropped, corrupted or
+re-interpreted~\cite{lin2026agentask}. Even naming the culprit is hard. On the
+Who\&When benchmark of annotated multi-agent failures, the best automated
+methods identify the responsible agent in 53.5\% of cases and the decisive step
+in 14.2\%~\cite{zhang2025whowhen}. With full input traces, agent accuracy rises
+only to about two thirds and step accuracy to about one
+third~\cite{chen2026traceelephant}.
+
+\paragraph{The composition gap} We argue that a large share of these failures
+has a cause familiar to every software engineer: the parts of the team have no
+interfaces. A team builder composes a system out of components (agents) and
+connectors (hand-offs). Yet each component is specified only by a
+natural-language job description, every hand-off is free text that the next LLM
+re-interprets, and nothing checks that the parts fit before the team runs. A
+deterministic audit of the 126 automatically assembled teams of Who\&When
+(Section~\ref{sec:defects}) illustrates the point: none of the 356 generated
+role prompts names a teammate or states what its agent must produce, and no
+team plan assigns a step to a named role. Software architecture calls this
+situation \emph{architectural mismatch}: components that work alone fail
+together because of unchecked assumptions about each
+other~\cite{garlan1995mismatch,garlan2009mismatch}. Its classical remedies are
+typed interfaces, contracts and specified
+connectors~\cite{meyer1992dbc,allen1997connection}. We call the absence of such
+interfaces in LLM agent teams the \emph{composition gap}. It gives rise to
+\emph{composition defects}, such as parts of the task that no agent owns,
+hand-offs whose content the receiver cannot use, artefacts with two writers,
+completion that is merely claimed, and work routed to agents without the
+needed tools. Today these defects are neither prevented before execution, nor
+detected during it, nor attributable after it.
+
+\paragraph{Key insight} Model-driven engineering (MDE) already offers checkable
+interfaces for artefacts that are derived from one another. A metamodel states
+what an artefact may contain, a model-to-model (M2M) transformation states rule
+by rule how one artefact is derived from
+another~\cite{czarnecki2006survey,mens2006taxonomy}, and static analysis can
+reject an ill-typed or incomplete transformation before it
+runs~\cite{cuadrado2017static}. We therefore treat each agent's output as a
+model, each hand-off as a transformation, and the team as a network of
+transformations. Because an LLM, not a person, now writes these metamodels and
+transformations, the composition gap moves up one level: from the messages to
+the \emph{team specification}, which must itself be checked.
+
+\paragraph{This paper} We present \auto{}, which applies one principle at two
+levels: \emph{LLMs propose; programs decide}. At the level of hand-offs,
+\auto{}'s execution layer \tool{} (Agent Hand-Off Transformations) executes
+\emph{hybrid} transformations: a deterministic engine fixes which objects exist
+and how they are linked, and an LLM fills in only the values that no formula
+can compute, each from a declared input and behind a validator. At the level of
+the team, an LLM proposes a \emph{typed team}, and a deterministic checker
+decides whether the team may run. The checker evaluates six well-formedness
+conditions (\W{1}--\W{6}) on the specification alone; each rules out a
+composition defect or a part of one. When an admitted team fails, trace models
+locate the failed value, a bounded replay classifies the fault, and every
+repair must pass the same checker before it takes effect.
+
+Our goal is not primarily higher task success. We evaluate whether checked
+interfaces reduce composition failures, make the team's own ``done''
+trustworthy and make failures diagnosable, and we report success and cost
+alongside. The study asks four research questions:
+\begin{itemize}[leftmargin=1.4em, itemsep=1pt]
+\item \RQ{1}: How often do composition defects decide failures?
+\item \RQ{2}: Does the checker detect composition defects, and can LLM builders
+produce admissible teams?
+\item \RQ{3}: What do typing and checking do to task success, composition-caused
+failures, the trustworthiness of ``done'' and cost?
+\item \RQ{4}: Do trace-based attribution and checked repair outperform
+transcript-based alternatives?
+\end{itemize}
+
+\paragraph{Contributions}
+\begin{enumerate}[label=\textbf{C\arabic*}, leftmargin=2.2em, itemsep=1pt]
+\item \emph{A problem analysis} that grounds five composition defects
+(\D{1}--\D{5}) in published failure taxonomies and in an audit of 126
+automatically built teams, and a coding study of 584 failures that estimates
+how often each defect is the decisive cause (Sections~\ref{sec:defects}
+and~\ref{sec:res-rq1}).
+\item \emph{A formulation} of LLM agent teams as networks of hybrid M2M
+transformations, built on standard MDE notions: the semantics of hybrid
+hand-offs, the \tool{} runtime that executes them, and typed teams as their
+checkable specifications (Section~\ref{sec:approach}).
+\item \emph{Six admission conditions}, including a two-sided, feature-level
+\emph{anchoring} criterion for coverage; two propositions on their cost and on
+the structural coverage they guarantee; and an attribution procedure that
+turns failure localisation into a lookup plus a bounded replay
+(Section~\ref{sec:approach}).
+\item \emph{An empirical evaluation} with seven open-weight models on ClassEval
+and HumanEval+ against single-agent, free-form, critic and shared-schema
+baselines and two ablations (typed format without checker; hand-written team),
+with mutation analysis, independently seeded defects and fault injection
+(Section~\ref{sec:eval}).
+\item \emph{A replication package} with the checker, the runtime, the team
+fixtures, the analysis pipeline and all raw data (Section~\ref{sec:data}).
+\end{enumerate}
+
+\paragraph{Summary of findings} Composition defects decide 36--43\% of the
+failures of LLM-assembled teams. The checker detects 96\% of independently
+seeded defects with 7\% false alarms, where LLM critics detect at most 58\%.
+Among executed teams, \auto{} cuts composition-caused failures by 79\% relative
+to free-form teams and doubles the precision of ``done''. It does not, however,
+make teams more successful than a single agent: a compute-matched single agent
+with an execution gate has the highest mean success, and \auto{} is only
+non-inferior to free-form teams. Trace-based attribution classifies 84\% of
+injected faults correctly on reference teams and 81\% on builder-generated
+teams, at about six LLM calls.
+
+\paragraph{Structure} Section~\ref{sec:background} introduces LLM agent teams,
+the running example, the composition defects and the MDE notions we build on.
+Section~\ref{sec:approach} presents \auto{}. Section~\ref{sec:related} discusses
+related work, Section~\ref{sec:eval} reports the evaluation,
+Sections~\ref{sec:discussion} and~\ref{sec:threats} discuss implications and
+threats to validity, and Section~\ref{sec:conclusion} concludes.
+
+\section{Background and Running Example}\label{sec:background}
+
+\auto{} sits between LLM-based multi-agent systems and model-driven
+engineering. We therefore start on the agent side: what an agent team and a
+team builder are (Section~\ref{sec:bg-agents}), a running example of a team
+that a builder produces (Section~\ref{sec:example}), and the composition
+defects such a team can contain (Section~\ref{sec:defects}). We then introduce
+the MDE notions on which our remedy rests: models, metamodels and conformance
+(Section~\ref{sec:bg-models}), and model-to-model transformations in ATL
+(Section~\ref{sec:bg-m2m}).
+
+\subsection{LLM agents, teams and team builders}\label{sec:bg-agents}
+
+An LLM's output is sampled, so the same prompt can yield different answers,
+some fluent yet wrong~\cite{ouyang2025nondeterminism,sallou2024breaking}. An
+\emph{agent} runs an LLM in a loop with tools until the LLM declares that it is
+done~\cite{wu2024autogen,yang2024sweagent}. To say precisely what a team
+builder outputs, we need a minimal notion of a team.
+
+\begin{definition}[Agent team, hand-off]\label{def:team}
+An agent team is a tuple $(A,\rho,\kappa,E,\mathit{stop})$ of a set of agents
+$A$, a role description $\rho(a)$ and a tool set $\kappa(a)$ for each agent
+$a\in A$, a set of communication edges $E\subseteq A\times A$, and a
+termination rule $\mathit{stop}$. A \emph{hand-off} is the passing of one
+agent's output to another agent along an edge in $E$.
+\end{definition}
+
+In most frameworks, $\rho$ is free text, every hand-off is a natural-language
+message, and $\mathit{stop}$ is either an agent's declaration (for example the
+token \code{TERMINATE}) or a turn limit~\cite{wu2024autogen,song2024captain}.
+A \emph{team builder} is a procedure, typically an LLM or a learned policy,
+that maps a task to an agent team. Builders are optimised by end-to-end scores
+or by an LLM's judgement of a transcript; Section~\ref{sec:rw-builders} reviews
+them.
+
+\subsection{Running example}\label{sec:example}
+
+We use one small task throughout the paper. It has the shape of a ClassEval
+task~\cite{du2024classeval}, the larger of our two benchmarks
+(Listing~\ref{lst:task}).
+
+\begin{lstlisting}[float=tb, style=raw, caption={Raw input: the \code{TaskBoard} task as given to every condition (abridged).}, label={lst:task}]
+class TaskBoard:
+    """A small in-memory to-do board."""
+    def add_task(self, title):
+        """Add a task and return its integer id. Raises ValueError if title is empty.
+        >>> b = TaskBoard(); b.add_task('write report')
+        1"""
+    def mark_done(self, task_id):
+        """Mark a task as done. Raises ValueError if the task is already done.
+        >>> b.mark_done(1)
+        >>> b.mark_done(1)
+        Traceback (most recent call last): ... ValueError"""
+    def export_csv(self):
+        """Return all tasks as CSV text with header 'id,title,done'."""
+\end{lstlisting}
+
+The task has three methods and three docstring examples. We write E$i.j$ for
+the $j$-th example of method $i$. Two details matter later. First, the
+examples of \code{mark\_done} (E2.1 and E2.2) run on the board that E1.1
+created, so they depend on its state. Second, \emph{E2.2} is the example that
+requires a \code{ValueError} on a repeated call, and \code{export\_csv} has no
+example at all. ClassEval's hidden tests check every method, including the
+second call to \code{mark\_done}.
+
+Listing~\ref{lst:freeteam} shows a team that a free-form builder in the style
+of CaptainAgent produces for this task. The role prompts are well written, and
+the plan is reasonable. Section~\ref{sec:defects} shows that every composition
+defect we study is nevertheless latent in it.
+
+\begin{lstlisting}[float=tb, style=raw, caption={Raw input: a free-form team for \code{TaskBoard} (role prompts abridged; generated in the style of CaptainAgent~\cite{song2024captain}).}, label={lst:freeteam}]
+Python_Expert:       "Expert in Python classes and clean, idiomatic implementations ..."
+QA_Expert:           "Expert in designing thorough test suites and edge cases ..."
+Verification_Expert: "Vigilantly verify that the final solution is correct ..."
+                     tools: [search]
+## Plan  1. Understand the class.  2. Implement the methods.  3. Test.
+##       4. Verify and reply TERMINATE.
+## Output format: the complete class.
+\end{lstlisting}
+
+In Section~\ref{sec:approach}, the same task is solved by a \emph{typed} team
+that we call \devteam{}. It has an Architect who states a contract for each
+method, a Tester who writes unit tests from each method's examples, and a
+Developer who implements each method. Its views, rules, a defective first
+proposal and the checker's diagnostics are introduced step by step
+(Listings~\ref{lst:views}--\ref{lst:diag}).
+
+\subsection{Composition defects}\label{sec:defects}
+
+Published failure analyses describe \emph{what} goes wrong in multi-agent runs.
+To design checks, we need to know \emph{where in the team's specification} a
+failure originates. We therefore read the published evidence as five defects
+that a team builder can introduce when it composes agents, plus one
+consequence.
+
+\begin{definition}[Composition defect]\label{def:defect}
+A composition defect is a property of an agent team's \emph{specification}:
+which agent owns which work, what is handed over, which tools are where, and
+how completion is decided. It is not a property of what one agent produces from
+a given input. A specification has a composition defect if even agents that
+answer every request correctly cannot make the team deliver its task.
+\end{definition}
+
+Table~\ref{tab:defects} lists the five defects (\D{1}--\D{5}) and the
+consequence C, together with the published failure modes that each subsumes.
+The mapping from failure modes to defects is analytical; RQ1 estimates
+empirically how often each defect is the decisive cause of a failure.
+Single-agent reasoning errors (MAST FM-1.1, 2.2, 2.6) are not composition
+defects, because no composition can make an individual LLM reason correctly.
+
+\begin{table}[t]
+\centering\small
+\caption{Composition defects of automatically assembled teams. FM-$x.y$: MAST
+failure modes~\cite{cemri2025mast} (names listed there); DG/SC/RD/CG: data gap, signal corruption,
+referential drift and capability gap in the edge-level taxonomy of
+AgentAsk~\cite{lin2026agentask}. The audit column refers to the 126
+CaptainAgent teams of Who\&When~\cite{zhang2025whowhen}.}
+\label{tab:defects}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.35cm} X >{\raggedright\arraybackslash}p{2.3cm} >{\raggedright\arraybackslash}p{3.2cm}@{}}
+\toprule
+Defect & What goes wrong & Published modes & Audit evidence \\
+\midrule
+\D{1} Coverage gap & Part of the task is owned by no agent, or a goal is never checked against anything that read it. & DG; FM-2.4, FM-3.2 & 0/126 plans assign any step to a named role \\
+\D{2} Hand-off mismatch & What a producer emits is not what its consumer needs, in form, reference or content. & SC, RD; FM-1.4, 2.1, 2.5 & 0/356 roles state their output \\
+\D{3} Ownership conflict & Two agents act on the same artefact, or none knows it is theirs. & FM-1.2, FM-1.3 & 0/356 roles name a teammate \\
+\D{4} Unverifiable completion & ``Done'' is a claim in the conversation, not a checked property. & FM-1.5, 3.1, 3.3 & 82/126 failed runs ended with a \code{TERMINATE} \\
+\D{5} Capability mismatch & Work is routed to an agent that lacks the needed tool or skill. & CG & search-only verifiers check code \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Consequence}} \\
+C Opaque attribution & A failure cannot be traced to the defect or agent that caused it. & -- & 53.5\%/14.2\% agent/step accuracy~\cite{zhang2025whowhen} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The audit column of Table~\ref{tab:defects} was produced by a deterministic
+script. For each of the 126 failures of automatically assembled teams in
+Who\&When, it reads the generated role prompts and the manager brief (the plan
+that CaptainAgent writes) and records only what the specification
+\emph{states}. The audit therefore shows what the specifications lack, not that
+the lack caused each failure; RQ1 addresses the causal question.
+
+\paragraph{Defects in the running example} The free-form team of
+Listing~\ref{lst:freeteam} contains every defect of Table~\ref{tab:defects} in
+latent form. No role says what it produces (\D{2}) or names a teammate
+(\D{3}). Nothing requires that E2.2 ever reaches a test (\D{1}). The
+Verification\_Expert must check code but has only a search tool (\D{5}). And
+the run ends when the Verification\_Expert replies \code{TERMINATE} (\D{4}).
+
+\subsection{Models, metamodels and conformance}\label{sec:bg-models}
+
+Our remedy for the composition gap is to give every agent a precise interface.
+MDE provides one: a metamodel, which states what a model may contain, and
+conformance, which checks mechanically that a model stays within it. We use
+metamodels as the ``forms'' that agents fill in, and conformance as the first
+and cheapest check that what an agent produced is admissible.
+
+MDE treats models, not code, as the primary artefacts of development and relies
+on programs that check and transform
+them~\cite{schmidt2006mde,brambilla2017mdse,naveed2024mde4ml}. A model
+\emph{represents} an original for a purpose and keeps only the properties that
+serve it; a metamodel is a model of the \emph{modelling language} in which such
+models are written~\cite{kuhne2006matters}. A model \emph{conforms to} its
+metamodel~\cite{bezivin2005unification}; this is a \emph{linguistic}
+instance-of relation, between a model element and the language concept it
+instantiates~\cite{kuhne2006matters,atkinson2003foundation}.
+Definitions~\ref{def:metamodel} and~\ref{def:model} follow the usual reading of
+metamodels as type graphs with constraints and of models as typed attributed
+graphs~\cite{ehrig2006fundamentals}. Because each agent will own its own
+metamodel, but all of them must refer back to the task, we also allow
+references from one metamodel into another.
+
+\begin{definition}[Metamodel]\label{def:metamodel}
+A metamodel is a tuple $\MM=(C,\mathit{Att},\mathit{Ref},\preceq,\mathit{mult},\Phi)$
+where $C$ is a finite set of classes; $\mathit{Att}$ a set of attributes
+$a:c\to\tau$ from a class $c\in C$ to a primitive type $\tau$; $\mathit{Ref}$ a
+set of references $r:c\to c'$ between classes, some of which are
+\emph{containments} (the target object is owned by the source object);
+$\preceq$ a generalisation order on $C$; $\mathit{mult}$ a function that assigns
+each attribute and reference a multiplicity $[l..u]$; and $\Phi$ a set of
+well-formedness constraints in the Object Constraint Language
+(OCL)~\cite{omg2014ocl}. A reference may also be \emph{external},
+$r:c\to\MM'.c'$, typed by a class of another metamodel $\MM'$. A \emph{feature}
+of $c$ is an attribute or reference whose source is $c$ or a superclass of $c$.
+\end{definition}
+
+\begin{definition}[Model, conformance]\label{def:model}
+A model $M$ over $\MM$ is a finite object graph: a set of objects, each typed by
+a class of $C$, with values (slots) for its features. $M$ \emph{conforms to}
+$\MM$, written $M\conformsTo\MM$, iff every slot respects its feature's type
+and multiplicity, every object has at most one container and containment has
+no cycles, every constraint in $\Phi$ holds, and every external reference
+points to an object of the right class in the referenced model.
+$\Mods{\MM}=\{M\mid M\conformsTo\MM\}$ is the set of models of $\MM$.
+\end{definition}
+
+In the running example, the task of Listing~\ref{lst:task} is turned into a
+model with one \cls{Task}, three \cls{Method} and three \cls{Example} objects.
+Its metamodel, the \emph{goal view}, appears in Listing~\ref{lst:views}
+(Section~\ref{sec:app-handoffs}), together with the views of the three agents.
+The reference \code{MethodDesign.method : Goal.Method} in the Architect's view
+is external: it points from a design object to the goal method it designs.
+
+Conformance fixes what \emph{can} be stated, not whether the statement is
+right. We call an agent team ``typed'' in this limited sense: its interfaces are
+metamodels, so whether the parts fit together becomes a question about the
+features that each part declares, reads and writes (made precise in
+Section~\ref{sec:app-check}), rather than about prose. We do not use model
+subtyping~\cite{steel2007typing}; every view is used exactly as declared.
+
+\subsection{Model-to-model transformations and ATL}\label{sec:bg-m2m}
+
+A hand-off between agents derives one artefact from others, for example a
+design from requirements or code from a design. MDE describes such derivations
+as model transformations, ``the heart and soul'' of
+MDE~\cite{sendall2003heart}. A model transformation automatically produces a
+model from one or more source models~\cite{hoppner2022mtl,czarnecki2006survey}.
+It is \emph{exogenous} if source and target metamodels
+differ~\cite{mens2006taxonomy}, and its \emph{intent} fixes the properties it
+must satisfy, such as completeness~\cite{lucio2016intents}. In \auto{}, a
+hand-off may read the outputs of several agents but writes into one agent's
+view, which motivates the following restricted form.
+
+\begin{definition}[M2M transformation]\label{def:m2m}
+An M2M transformation is a relation
+$T\subseteq\Mods{\MM_{s_1}}\times\dots\times\Mods{\MM_{s_k}}\times\Mods{\MM_t}$
+between models of $k\ge1$ source metamodels and models of one target metamodel,
+specified by a set of rules. It is \emph{functional} if every tuple of sources
+is related to exactly one target.
+\end{definition}
+
+A hand-off in a software team is therefore an exogenous, unidirectional
+transformation whose intent includes completeness: everything the sources state
+must be reflected somewhere in the target. In the running example, the
+Developer's hand-off \code{Design2Impl} reads the Architect's and the Tester's
+views and writes the Developer's view.
+
+We build on the rule language and execution model of
+ATL~\cite{jouault2008atl,jouault2006transforming}, a transformation language
+that combines declarative and imperative constructs, restricted to its
+declarative core. ATL transformations are functional. The basic unit of an ATL
+transformation is the matched rule.
+
+\begin{definition}[Matched rule]\label{def:rule}
+A matched rule is a tuple $r=(p_r,g_r,t_r,B_r)$ where the \emph{source pattern}
+$p_r$ is a list of typed variables $x_i:C_i$ over source classes, the
+\emph{guard} $g_r$ is a Boolean OCL expression over them, the \emph{target
+pattern} $t_r$ is a list of typed variables over target classes, and the
+\emph{bindings} $B_r$ are assignments $f\leftarrow e$ of an OCL expression $e$ to
+a feature $f$ of a target variable. A \emph{match} of $r$ is an assignment of
+source objects to $p_r$ that satisfies $g_r$.
+\end{definition}
+
+In the running example, the Tester's rule \code{Method2Test}
+(Listing~\ref{lst:rules}) has the source pattern \code{m : Goal!Method}, no
+guard, the target pattern \code{t : Test!TestCase}, and among its bindings
+\code{name <- m.name}. Each goal method is a match, so the rule creates one
+test case per method.
+
+ATL executes matched rules in two phases~\cite{jouault2008atl}. The
+\emph{matching} phase computes every match, allocates its target objects and
+records a trace link. The \emph{initialisation} phase evaluates the bindings.
+When a reference binding yields a source object, ATL \emph{resolves} it: the
+target receives the object that was created from that source object, not the
+source object itself. Sources are read-only and targets are write-only. ATL
+also requires, and checks at run time, that each tuple of source objects is
+matched by at most one rule, so the result does not depend on rule order.
+Under this assumption, the target's \emph{structure} is a deterministic
+function of the sources, and every target object is accounted for by a trace
+link. Many errors, such as ill-typed navigation, unresolved bindings, rule
+conflicts and missing mandatory features, can then be found
+statically~\cite{cuadrado2017static}.
+
+\begin{definition}[Trace link and trace model]\label{def:trace}
+Let $\mathcal{R}_T$ be the rules of a transformation $T$ and
+$\mathit{Match}_T$ the set of their matches in one execution. A trace link is a
+triple $(m,t,r)$ of a match $m$, the set $t$ of target objects created for it,
+and the rule $r\in\mathcal{R}_T$. The \emph{trace model}
+$\TL_T\subseteq\mathit{Match}_T\times 2^{\mathit{Obj}_t}\times\mathcal{R}_T$ is
+the set of trace links of that execution, persisted as a model in its own
+right~\cite{jouault2005traceability,vara2014metagem}.
+\end{definition}
+
+ATL's trace links can be exported as models~\cite{jouault2005traceability} or
+generated as first-class, queryable models~\cite{vara2014metagem}, and
+incremental execution re-runs only the rules whose matches
+changed~\cite{jouault2010incremental}. \auto{} relies on both: traces locate
+failures, and incrementality lets the runtime recompute only values whose
+inputs changed.
+
+Three further notions describe \auto{} as a whole. A \emph{megamodel} is a
+model whose elements are models, metamodels and
+transformations~\cite{bezivin2005unification}; a typed team is a megamodel. A
+\emph{higher-order transformation} is one whose source or target is itself a
+transformation model~\cite{tisi2009hot}; \auto{}'s compiler, which generates
+executable rules from a typed team, is one. Finally, when a megamodel is kept
+causally connected to a running system, so that changing the model changes the
+system (models@run.time~\cite{blair2009runtime}), transforming it is a way to
+repair the system; \auto{}'s repairs work in this way. To avoid a confusion of
+terms: the name \tool{} abbreviates \emph{Agent Hand-Off Transformations}; only
+its compiler is a higher-order transformation in the sense above.
+
+\section{Approach}\label{sec:approach}
+
+\auto{} applies one idea at two levels. At the level of hand-offs, its
+execution layer \tool{} lets an LLM write individual \emph{values} while a
+deterministic engine owns the \emph{structure} of each hand-off. At the level of
+the team, \auto{} lets an LLM \emph{propose} a team while a deterministic
+checker owns the decision to \emph{admit} it. Section~\ref{sec:app-overview}
+gives an overview. The following sections introduce the parts in the order in
+which each builds on the previous one: hybrid hand-offs, the language in which
+teams are written (Section~\ref{sec:app-handoffs}); typed teams, which a builder
+proposes (Section~\ref{sec:app-typed}); how an admitted team runs
+(Section~\ref{sec:app-runtime}); the admission check
+(Section~\ref{sec:app-check}); how a builder uses that check
+(Section~\ref{sec:app-build}); and how failures are attributed and repaired
+(Section~\ref{sec:app-attr}). Implementation details are reported with the
+evaluation (Section~\ref{sec:impl}).
+
+\subsection{Overview: components and flow}\label{sec:app-overview}
+
+\begin{figure*}[t]
+\centering
+% Figure 1: component architecture of AutoM2M (requires tikz libraries: positioning, fit, backgrounds, arrows.meta, calc)
+\begin{tikzpicture}[font=\sffamily\scriptsize, >={Stealth[length=3.2pt]}, x=1cm, y=1cm,
+  sub/.style={draw, rounded corners=1.5pt, align=center, inner sep=1.6pt, minimum height=4.8mm, text width=#1, font=\sffamily\fontsize{6}{6.8}\selectfont, execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}},
+  sub/.default=2.0cm,
+  llms/.style={sub=#1, draw=llmbar, fill=llmbg},
+  engs/.style={sub=#1, draw=enginebar, fill=enginebg},
+  mods/.style={sub=#1, draw=modelbar, fill=modelbg},
+  raws/.style={sub=#1, draw=rawbar, fill=rawbg},
+  comp/.style={draw=black!40, fill=black!3, rounded corners=3pt, inner sep=3pt},
+  ttl/.style={font=\sffamily\scriptsize\bfseries, inner sep=1pt, anchor=center},
+  flow/.style={->, semithick, black!80},
+  lab/.style={font=\sffamily\fontsize{6}{6.8}\selectfont, fill=white, inner sep=0.8pt, align=center}]
+
+% ================= top row =================
+% (1) Lifter
+\node[raws=1.8cm] (task) at (1.0,2.3) {Task $x$: class skeleton, docstrings};
+\node[ttl] (Lt) at (1.0,1.55) {\ding{172} Lifter};
+\node[engs=1.8cm] (sp) at (1.0,1.07) {Skeleton parser};
+\node[engs=1.8cm] (ex) at (1.0,0.47) {Doctest extractor $\to$ \cls{Example}};
+\node[mods=1.8cm] (goal) at (1.0,-0.55) {Goal model $M_0$, conforms to $\MM_0$};
+
+% (2) Builder
+\node[ttl] (Bt) at (3.75,1.55) {\ding{173} Builder};
+\node[llms=2.0cm] (prop) at (3.75,1.07) {Proposer: $k_{\mathit{prop}}$ schema-constrained teams};
+\node[llms=2.0cm] (rev)  at (3.75,0.47) {Reviser: rewrites diagnosed fragments};
+\node[raws=2.0cm] (lib) at (3.75,-0.2) {Prompt library: schema, validators, worked examples, paths};
+
+% (3) Typed team
+\node[ttl] (Tt) at (6.9,1.55) {\ding{174} Typed team $\Team$};
+\node[mods=2.45cm] (tv) at (6.9,1.1) {Views $V$ (metamodels)};
+\node[mods=2.45cm] (tt) at (6.9,0.5) {Hand-offs $\mathbf{T}$: hybrid rules, footprints, validators};
+\node[mods=2.45cm] (tw) at (6.9,-0.1) {Agents $A$, write rights $\omega$, tools $\kappa$};
+\node[mods=2.45cm] (tg) at (6.9,-0.68) {Obligations $G$, deliverable $\delta$, predicate $\varphi$};
+
+% (4) Checker
+\node[ttl] (Ct) at (10.9,1.55) {\ding{175} Checker};
+\node[engs=1.68cm] (w1) at (10.0,1.07) {\W{1} types, strata};
+\node[engs=1.68cm] (w2) at (11.8,1.07) {\W{2} single writer};
+\node[engs=1.68cm] (w3) at (10.0,0.52) {\W{3} completeness};
+\node[engs=1.68cm] (w4) at (11.8,0.52) {\W{4} anchoring};
+\node[engs=1.68cm] (w5) at (10.0,-0.03) {\W{5} completion};
+\node[engs=1.68cm] (w6) at (11.8,-0.03) {\W{6} capability};
+\node[engs=3.5cm] (dg) at (10.9,-0.58) {Diagnostics generator};
+\node[mods=3.5cm] (vl) at (10.9,-1.13) {Validator library: strength, reads, tools};
+
+\node[raws=2.3cm] (na) at (11.5,2.3) {Refusal (\textsc{NotAdmitted})};
+
+% ================= bottom row =================
+% (5) Compiler
+\node[ttl] (Kt) at (1.0,-2.7) {\ding{176} Compiler};
+\node[engs=1.8cm] (mg) at (1.0,-3.2) {Metamodel generator};
+\node[engs=1.8cm] (rg) at (1.0,-3.82) {Rule-module generator};
+
+% (6) Runtime
+\node[ttl] (Rt) at (4.67,-2.7) {\ding{177} Runtime};
+\node[engs=1.75cm] (se) at (3.72,-3.2) {Structural engine: match, resolve};
+\node[mods=1.75cm] (ts) at (5.62,-3.2) {Trace store: links, stamps};
+\node[llms=1.75cm] (sb) at (3.72,-3.82) {Stochastic binders (owner's LLM)};
+\node[engs=1.75cm] (pe) at (5.62,-3.82) {$\varphi$ evaluator};
+\node[engs=1.75cm] (vs) at (3.72,-4.44) {Validator sandbox ($\kappa$)};
+\node[engs=1.75cm] (ob) at (5.62,-4.44) {$\mathit{cover}(G)$ tracker};
+
+% (7) Attribution
+\node[ttl] (At) at (8.42,-2.7) {\ding{178} Attribution};
+\node[engs=1.75cm] (lo) at (8.42,-3.2) {Locator: trace lookup};
+\node[llms=1.75cm] (rp) at (8.42,-3.82) {Replayer: adaptive budget};
+\node[engs=1.75cm] (cl) at (8.42,-4.44) {Fault classifier};
+
+% (8) Repair
+\node[ttl] (Pt) at (11.55,-2.7) {\ding{179} Repair};
+\node[engs=2.2cm] (pl) at (11.55,-3.2) {Planner: cheapest repair first};
+\node[engs=2.2cm] (mr) at (11.55,-3.82) {Mechanical: retry, widen, re-sample};
+\node[llms=2.2cm] (dp) at (11.55,-4.44) {Delta proposer (builder LLM)};
+
+% outputs
+\node[raws=2.6cm] (out) at (4.67,-5.55) {Deliverables, returned when $\varphi$ holds};
+\node[raws=2.6cm] (fr) at (8.42,-5.55) {Fault reports, when the repair budget is spent};
+
+% ================= containers =================
+\begin{scope}[on background layer]
+\node[comp, fit=(Lt)(sp)(ex)] (L) {};
+\node[comp, fit=(Bt)(prop)(rev)(lib)] (B) {};
+\node[comp, fit=(Tt)(tv)(tt)(tw)(tg)] (TH) {};
+\node[comp, fit=(Ct)(w1)(w2)(w5)(w6)(dg)(vl)] (C) {};
+\node[comp, fit=(Kt)(mg)(rg)] (K) {};
+\node[comp, fit=(Rt)(se)(ts)(vs)(ob)] (R) {};
+\node[comp, fit=(At)(lo)(rp)(cl)] (AT) {};
+\node[comp, fit=(Pt)(pl)(mr)(dp)] (RP) {};
+\node[draw=black!70, dashed, rounded corners=4pt, inner sep=2.5pt, fit=(K)(R)] (HOTbox) {};
+\end{scope}
+\node[anchor=north west, font=\sffamily\fontsize{6.5}{7.5}\selectfont\bfseries, inner sep=1pt] at ([yshift=-1pt]HOTbox.south west) {\tool: hand-off level};
+
+% ================= flows =================
+\draw[flow] (task) -- (L.north);
+\draw[flow] (L.south) -- (goal.north);
+\draw[flow] (task.east) -| node[lab, pos=0.3] {$x$} ([xshift=-0.55cm]B.north);
+\draw[flow] (goal.east) -- node[lab, above=1pt, pos=0.45] {$M_0$} (goal.east -| B.west);
+\draw[flow] (prop.east -| B.east) -- node[lab, above=1pt] {A} (prop.east -| TH.west);
+\draw[flow] (tt.east -| TH.east) -- node[lab, above=1pt] {B} (tt.east -| C.west);
+\draw[flow] (C.north) ++(-0.9,0) coordinate (cn) -- (cn |- 0,1.95) -| node[lab, pos=0.27] {C: ranks, diagnostics, $\le k_{\mathit{adm}}$ rounds} ([xshift=0.55cm]B.north);
+\draw[flow] (C.north) ++(1.25,0) coordinate (cr) -- (cr |- na.south);
+\draw[flow] (C.south) ++(-1.25,0) coordinate (cs) -- (cs |- 0,-2.05) -| node[lab, pos=0.18] {admit $\Team$ (or $\Team\oplus\Delta$)} ([xshift=0.45cm]K.north);
+\draw[flow] ([xshift=-0.45cm]goal.south) -- node[lab, right=1pt, pos=0.5] {$M_0$} ([xshift=-0.45cm]goal.south |- K.north);
+\draw[flow] (K.east) -- node[lab, above=1pt] {D} (K.east -| R.west);
+\draw[flow] (pe.east -| R.east) -- node[lab, below=1pt, align=center] {E\\$\neg\varphi$} (pe.east -| AT.west);
+\draw[flow, dashed] (lo.west -| AT.west) -- node[lab, above=1pt] {lookup} (lo.west -| R.east);
+\draw[flow] (lo.east -| AT.east) -- node[lab, below=1pt, align=center] {fault\\report} (lo.east -| RP.west);
+\draw[flow] (RP.north) ++(0.55,0) coordinate (rn) -- node[lab, pos=0.45, left=1pt] {F: re-check $\Team\oplus\Delta$} (rn |- C.south);
+\draw[flow] (R.south) -- (out.north);
+\draw[flow] (AT.south) -- (fr.north);
+
+% ================= legend =================
+\begin{scope}[every node/.style={font=\sffamily\fontsize{6}{6.8}\selectfont, inner sep=1pt},
+  sw/.style={minimum width=3mm, minimum height=2.2mm, inner sep=0}]
+\node[sw, draw=llmbar, fill=llmbg] (k1) at (0.15,-6.35) {};
+\node[anchor=west] (t1) at (k1.east) {calls an LLM};
+\node[sw, draw=enginebar, fill=enginebg, right=6pt of t1] (k2) {};
+\node[anchor=west] (t2) at (k2.east) {deterministic};
+\node[sw, draw=modelbar, fill=modelbg, right=6pt of t2] (k3) {};
+\node[anchor=west] (t3) at (k3.east) {model};
+\node[sw, draw=rawbar, fill=rawbg, right=6pt of t3] (k4) {};
+\node[anchor=west] (t4) at (k4.east) {raw text};
+\coordinate[right=6pt of t4] (l1); \draw[flow] (l1) -- ++(0.45,0) coordinate (l1e);
+\node[anchor=west] (t5) at (l1e) {data flow};
+\coordinate[right=6pt of t5] (l2); \draw[flow, dashed] (l2) -- ++(0.45,0) coordinate (l2e);
+\node[anchor=west] (t6) at (l2e) {trace read};
+\node[anchor=west, right=6pt of t6] {A--F: steps};
+\end{scope}
+\end{tikzpicture}
+
+\caption{Components of \auto{} (\ding{172}--\ding{179}) and their
+sub-components. Fill colours give the kind of each sub-component (legend);
+grey containers group them into components; the dashed box marks \tool{}, the
+hand-off level, and everything else is the team level. Letters A--F mark the
+steps of Algorithm~\ref{alg:auto}; steps A--C are detailed in
+Algorithm~\ref{alg:build}. A~propose candidates, B~check and rank them,
+C~revise the diagnosed fragments (at most $k_{\mathit{adm}}$ rounds), D~run,
+E~attribute a failure, F~re-check a repair delta. No team reaches the compiler,
+and no delta reaches the runtime, without passing the checker.}
+\label{fig:pipeline}
+\end{figure*}
+
+Figure~\ref{fig:pipeline} shows the eight components of \auto{}. The compiler
+and the runtime (\ding{176}, \ding{177}) form \tool{}, which executes a typed
+team. The other components build, check, diagnose and repair the team. As in
+any model-driven tool chain~\cite{bezivin2005unification,brambilla2017mdse},
+the artefacts that flow between components are \emph{models} that conform to
+metamodels (the goal model, the typed team, trace models and fault reports) and
+\emph{transformations} (hand-offs and the rule modules compiled from them).
+The compiler is a higher-order transformation~\cite{tisi2009hot}, since it
+produces transformations, and so is a repair delta whenever it changes
+hand-offs.
+
+\noindent\textbf{\ding{172} Lifter.} Parses the task text into a \emph{goal
+model}, which records the task's classes, methods and examples. This is a
+deterministic text-to-model \emph{injection}, that is, parsing text into a
+model~\cite{brambilla2017mdse,bruneliere2014modisco}.
+
+\noindent\textbf{\ding{173} Builder.} The only component that designs. Its
+\emph{Proposer} samples several candidate teams, each constrained to the
+typed-team format (step~A), and the checker ranks them (step~B). Its
+\emph{Reviser} then rewrites only those parts of the best candidate that the
+checker's diagnostics name (step~C; Section~\ref{sec:app-build}).
+
+\noindent\textbf{\ding{174} Typed team.} The builder's output is a model, not a
+set of role prompts. It states the agents and their views, the hand-offs
+between views, who may write what, which tools each agent has, what must be
+covered and what is delivered, and when the run is done
+(Section~\ref{sec:app-typed}). Because it is a model, a program can analyse it
+before it runs~\cite{cuadrado2017static}.
+
+\noindent\textbf{\ding{175} Checker.} Decides whether a team is admitted by six
+conditions, \W{1}--\W{6}, which cover typing, single writers, completeness,
+coverage, completion and tools (step~B; Section~\ref{sec:app-check}). Its
+diagnostics name the offending element, and their number ranks the builder's
+candidates. A team that is still rejected after $k_{\mathit{adm}}$ revision
+rounds is refused (\textsc{NotAdmitted}).
+
+\noindent\textbf{\ding{176} Compiler.} Generates executable metamodels and rule
+modules from an admitted team and loads the goal model (step~D). In MDE terms it
+is a \emph{synthesis} higher-order transformation.
+
+\noindent\textbf{\ding{177} Runtime.} Executes the hand-offs
+(Section~\ref{sec:app-runtime}). The engine creates all objects and links. For
+each value that no formula can compute, it asks the LLM of the agent that owns
+the target view, and a validator accepts or rejects the value. Agents never
+converse with each other. The engine, not an agent, decides when the run is
+done.
+
+\noindent\textbf{\ding{178} Attribution.} When the run is not done (step~E),
+the locator follows trace links to the value that failed, and a bounded replay
+of that value decides why it failed (Section~\ref{sec:app-attr}).
+
+\noindent\textbf{\ding{179} Repair.} Turns a fault report into a \emph{delta},
+an edit of the team model~\cite{kehrer2011lifting,tinnes2025evolution}.
+Faults that need no redesign (for example a retry or a wider input) are
+repaired mechanically; other deltas are proposed by the builder's LLM. Every
+delta takes effect only after the checker admits the edited team (step~F).
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{MDE concepts on which \auto{} is built, their counterpart in an agent
+team, and what changes when an LLM is the author. Circled numbers refer to the
+components of Figure~\ref{fig:pipeline}.}
+\label{tab:mapping}
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.9cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{3.6cm}@{}}
+\toprule
+MDE concept (sources) & Counterpart in \auto{} & What changes with an LLM author \\
+\midrule
+Metamodel, conformance~\cite{bezivin2005unification,kuhne2006matters,ehrig2006fundamentals} & An agent's \emph{view} \ding{174}; the goal view $\MM_0$ & views are proposed by an LLM, so they must be checked (\W{1}--\W{3}) \\
+Exogenous M2M transformation, rules~\cite{mens2006taxonomy,czarnecki2006survey,jouault2008atl} & A \emph{hand-off} \ding{174}, executed by the runtime \ding{177} & values are sampled, not computed \\
+Relational semantics~\cite{omg2016qvt,stevens2010qvt,zhao2025kbx}; incremental propagation~\cite{jouault2010incremental} & Meaning of a hand-off as a set of admissible targets (Def.~\ref{def:hsem}); re-running stale bindings & one direction only; membership is decided by validators \\
+Transformation chain, correspondence~\cite{reiche2025coupling,klare2021vitruvius,stevens2020networks} & The \emph{team} as an acyclic network of hand-offs \ding{174} & coverage of goals along the network must be shown (\W{4}) \\
+Traceability~\cite{jouault2005traceability,vara2014metagem,hoppner2024traceability} & Persisted trace models with stamps \ding{177} & traces also locate failures \ding{178} \\
+Static analysis of transformations~\cite{cuadrado2017static} & Admission \W{1}--\W{6} \ding{175} & applied to every LLM proposal, inside the loop \\
+Megamodel, higher-order transformation~\cite{bezivin2005unification,tisi2009hot} & The typed team, whose elements are views and hand-offs; its compilation \ding{176} & the megamodel itself is LLM-authored \\
+Edit operations, model versioning, co-evolution~\cite{kehrer2011lifting,tinnes2025evolution,homolka2026coevolution,diruscio2023techdebt} & Repair \emph{deltas} on the team model \ding{179}, admitted only if $\Team\oplus\Delta$ is admissible \ding{175} & proposed by an LLM; preservation is re-checked, not assumed \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\auto{} invents no new modelling concepts. It reinterprets an agent team in
+established MDE terms and asks which classical guarantees survive when LLMs
+write the transformations and produce their values. Table~\ref{tab:mapping}
+summarises this correspondence. Two findings from the MDE literature shaped the
+design. First, developers and experts rank \emph{traceability} among the
+transformation-language capabilities that matter
+most~\cite{hoppner2024traceability,hoppner2022mtl}; \auto{} keeps traces as
+first-class models and uses them not only for change propagation but also for
+attribution. Second, model evolution is described by edit operations whose
+effect can be expressed at the level of the modeller's intent and traced across
+metamodel and model
+layers~\cite{kehrer2011lifting,tinnes2025evolution,homolka2026coevolution};
+\auto{}'s repair deltas are such operations on the team model.
+
+Algorithm~\ref{alg:auto} summarises the flow as a loop. \textsc{RunTeam}
+includes compilation, and \textsc{Build} is detailed in
+Algorithm~\ref{alg:build} (Section~\ref{sec:app-build}).
+
+\begin{algorithm}[t]
+\caption{\auto{}: build, admit, run, attribute, repair}\label{alg:auto}
+\begin{algorithmic}[1]
+\Require task $x$; budgets $k_{\mathit{prop}}$, $k_{\mathit{rev}}$, $k_{\mathit{adm}}$ (building), $k_{\mathit{rep}}$ (repair rounds)
+\State $M_0\gets\textsc{Lift}(x)$;\ \ $(\Team,\mathit{diag})\gets\textsc{Build}(x,M_0;k_{\mathit{prop}},k_{\mathit{rev}},k_{\mathit{adm}})$ \Comment{Steps A--C, Alg.~\ref{alg:build}}
+\If{$\mathit{diag}\neq\emptyset$} \Return \textsc{NotAdmitted}$(\mathit{diag})$ \EndIf
+\For{$j=0$ \textbf{to} $k_{\mathit{rep}}$}
+  \State $(\mathit{ok},F)\gets\textsc{RunTeam}(\Team,M_0)$ \Comment{Step D; $\mathit{ok}$: $\varphi$ holds; $F$: failed bindings}
+  \If{$\mathit{ok}$} \Return \textsc{Done}(deliverables) \EndIf
+  \If{$j<k_{\mathit{rep}}$}
+    \State $\Delta\gets\textsc{Repair}(\Team,\{\textsc{Attribute}(f)\mid f\in F\})$ \Comment{Step E, Alg.~\ref{alg:attr}}
+    \State \textbf{if} $\textsc{Admit}(\Team\oplus\Delta)=\emptyset$ \textbf{then} $\Team\gets\textsc{Apply}(\Team,\Delta)$ \Comment{F; else $\Team$ unchanged}
+  \EndIf
+\EndFor
+\State \Return \textsc{Failed}(fault reports)
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{The running example through Figure~\ref{fig:pipeline}} The lifter
+turns \code{TaskBoard} into a goal model with one task, three methods and three
+examples. The builder's first proposal for \devteam{} has an Architect, a
+Tester and a Developer, but contains one instance of each defect; the checker
+rejects it with five diagnostics, and the reviser repairs the named parts until
+the team is admitted (Section~\ref{sec:app-check}). The compiled team then runs.
+The implementation of \code{mark\_done} fails, attribution traces the failure to
+the Tester's input, and a mechanical repair widens that input, after which the
+engine declares the run done (Section~\ref{sec:app-attr}).
+
+% =========================================================================
+\subsection{Hybrid hand-offs}\label{sec:app-handoffs}
+
+This section defines the language in which every hand-off of a typed team is
+written: views as the agents' interfaces, and hybrid rules that split each
+hand-off between a deterministic engine and an LLM.
+
+\paragraph{Views} Every agent owns a \emph{view}, a metamodel
+(Definition~\ref{def:metamodel}) that fixes what the agent may state. Views stay
+heterogeneous: each is sized to its agent's job, and how views correspond is
+recorded by trace models (Definition~\ref{def:trace}) rather than by a shared
+schema, as in view-based
+development~\cite{klare2021vitruvius,bruneliere2019views}. Metamodels of this
+kind are also used to define the views through which information about a system
+is retrieved~\cite{kirschner2025retriever} and the inputs of model-based
+analyses~\cite{cortellessa2022performance}. One view is special: the
+\emph{goal view} $\MM_0$, into which the lifter turns the task. The lifter
+separates examples from prose: every docstring example becomes an object of its
+own rather than a part of the docstring text. Whether a hand-off reads the
+examples is therefore visible in its data flow, which the coverage check of
+Section~\ref{sec:app-check} relies on.
+
+\begin{lstlisting}[float=tb, language=KM3, style=model, caption={Goal view and agent views of the typed \devteam{} in KM3 notation~\cite{jouault2006km3}; \code{Goal.Method} is an external (cross-view) reference.}, label={lst:views}]
+package Goal {                                                   -- MM0, filled by Lift
+  class Task       { attribute name : String;  attribute description : String;
+                     reference methods [1-*] container : Method;
+                     reference examples [0-*] : Example; }       -- in docstring order
+  class Method     { attribute name : String;  attribute signature : String;
+                     attribute docstring : String;  reference task : Task;
+                     reference examples [0-*] container : Example; }
+  class Example    { attribute call : String;  attribute expected : String; } }
+package Design { class MethodDesign { attribute name : String;  attribute contract : String;
+                                      reference method : Goal.Method; } }
+package Test   { class TestCase     { attribute name : String;  attribute code : String;
+                                      reference method : Goal.Method; } }
+package Code   { class MethodImpl   { attribute name : String;  attribute body : String;
+                                      reference method : Goal.Method; } }
+\end{lstlisting}
+
+In the running example, the lifter parses the class skeleton of
+Listing~\ref{lst:task} into a goal model $M_0$ with one \cls{Task}, three
+\cls{Method}s and three \cls{Example}s (Listing~\ref{lst:views}). Each method
+contains its own examples; the task additionally lists all examples in
+docstring order, which later lets a hand-off read the examples of other methods.
+A rule that reads only \code{Method.docstring} does not see the examples.
+
+\paragraph{Hybrid rules} A hand-off is written as a set of matched rules
+(Definition~\ref{def:rule}). Some of its bindings can be computed by a formula,
+such as copying a method's name; others, such as the body of a method, can only
+be written by an LLM. \tool{} splits every rule along the line that ATL's
+two-phase execution already draws: matching, object creation and reference
+resolution stay with a deterministic engine, and only the bindings whose value
+no OCL expression can compute are delegated to an LLM.
+
+\begin{definition}[Hybrid rule, stochastic binding]\label{def:hybrid}
+A hybrid rule is a matched rule whose bindings are partitioned as
+$B_r=B_r^{\mathrm{str}}\uplus B_r^{\mathrm{sto}}$. A \emph{structural} binding
+$f\leftarrow e\in B_r^{\mathrm{str}}$ is evaluated by the engine. A
+\emph{stochastic} binding
+$b=f\leftarrow\texttt{@llm}(\pi_b,\,e_b)\ \texttt{@check}\ \chk_b\in B_r^{\mathrm{sto}}$
+targets a primitive attribute $f$; $\pi_b$ is a prompt, $e_b$ an OCL expression
+over the rule's source variables, and $\chk_b$ a validator. A \emph{hybrid
+hand-off} is a transformation whose rules are hybrid rules.
+\end{definition}
+
+Two design choices follow from the aim of making failures diagnosable. First,
+each LLM call sees a declared input, its \emph{footprint}, rather than the
+whole conversation. What a value was produced from is then known exactly and
+can be recorded and replayed. Second, a validator may read data that the LLM
+does not see; for example, a test validator may compare a test against the
+goal's examples even when the LLM writes the test from the docstring. A version
+stamp, finally, records the inputs a value was produced and checked from, so
+that the value can be recomputed when, and only when, these inputs change.
+
+\begin{definition}[Footprint, validator reads, version stamp]\label{def:footprint}
+Let $b$ be a stochastic binding of rule $r$ and $m$ a match of $r$. A
+\emph{location} is a pair (object, feature) of a source model. The
+\emph{footprint} $\fp_b(m)$ is the set of locations that the expression $e_b$
+navigates for $m$; they are the only values the LLM may see. The
+\emph{validator reads} $\mathit{vr}_b(m)$ are the locations that $\chk_b$
+inspects besides the candidate value; $\chk_b$ is a predicate over the
+candidate value and the values at $\mathit{vr}_b(m)$. The \emph{version stamp}
+of an accepted value is the digest $\#(\fp_b(m)\cup\mathit{vr}_b(m))$ of the
+values at all locations its production and its check read.
+\end{definition}
+
+A value written by an LLM must not decide which objects exist; otherwise the
+structure of a hand-off would itself become random. We therefore require
+\emph{stratification}: no guard and no structural binding may read a feature
+that a stochastic binding writes. The condition is checked by \W{1}
+(Section~\ref{sec:app-check}).
+
+Our runtime departs from ATL in one respect. A reference binding whose expected
+type lies in a \emph{source} view (for example \code{method <- m}, typed
+\code{Goal.Method}) creates a cross-view link to the source object instead of
+being resolved through the trace, because agents' views refer to the goal by
+design. ATL would resolve \code{m} to the target that \code{m}'s own rule
+created, which here has the wrong type; we apply that resolution only to
+references whose type lies in the \emph{target} view. In addition, trace models
+are persisted, as in MeTAGeM-Trace~\cite{vara2014metagem}.
+
+We can now state what a hybrid hand-off means. Because its values are sampled,
+a hand-off cannot denote a single target model. It denotes the set of targets
+that its validators would accept.
+
+\begin{definition}[Semantics of a hybrid hand-off]\label{def:hsem}
+Let the \emph{structural part} $T^{\mathrm{str}}$ of a hybrid hand-off $T$ be
+$T$ with every stochastic binding removed. Given source models $\vec M$, the
+\emph{skeleton} $T^{\mathrm{str}}(\vec M)$ is computed by ATL's matching and
+initialisation, with the cross-view links above, and is deterministic. Like a
+relation of QVT Relations (QVT-R)~\cite{omg2016qvt,stevens2010qvt}, and unlike
+an ATL function, $T$ denotes the \emph{set} of admissible targets
+\[\llbracket T\rrbracket(\vec M)=\{M_t\mid M_t\sqsupseteq T^{\mathrm{str}}(\vec M)\ \wedge\ \forall(m,b):\ \chk_b(M_t[m,b],\mathit{vr}_b(m))\},\]
+where $M_t\sqsupseteq T^{\mathrm{str}}(\vec M)$ means that $M_t$ extends the
+skeleton by exactly one value $M_t[m,b]$ for each match $m$ and stochastic
+binding $b$. We require $\mathit{tgt}(T)\notin\mathit{src}(T)$. An execution
+of $T$ samples one element of this set, or \emph{escalates} the bindings for
+which no admissible value was found. An escalated execution lies outside
+$\llbracket T\rrbracket$ and makes the run fail; an escalation is a recorded
+fault, not a hand-over to a person.
+\end{definition}
+
+A team of hand-offs denotes the set of tuples of models, one per view, in which
+every hand-off's target is admissible for its sources. On an acyclic hand-off
+graph, such tuples are obtained hand-off by hand-off in topological order. The
+footprint does not appear in $\llbracket T\rrbracket$: it constrains how a
+value is produced, not which values are admissible, and the runtime enforces it
+(Section~\ref{sec:app-runtime}).
+
+\begin{lstlisting}[float=tb, language=ATL, style=model, caption={The three hybrid hand-offs of the admitted typed \devteam{}. \code{@llm} marks a stochastic binding (second argument: footprint); \code{@check} its validator (Table~\ref{tab:validators}).}, label={lst:rules}]
+rule Method2Design {                             -- Goal -> Design (owner: Architect)
+  from m : Goal!Method
+  to   d : Design!MethodDesign ( name <- m.name, method <- m,
+         contract <- @llm('State a contract', Sequence{m.name, m.signature, m.docstring})
+         @check nonempty(contract) ) }
+rule Method2Test {                               -- Goal -> Test (owner: Tester)
+  from m : Goal!Method
+  to   t : Test!TestCase ( name <- m.name, method <- m,       -- structural; cross-view link
+         code <- @llm('Write unit tests for this method',
+                      Sequence{m.signature, m.docstring, m.examples.call, m.examples.expected})
+         @check test_valid(code, m) ) }                        -- behaviour validator
+rule Design2Impl {                               -- Design, Test -> Code (owner: Developer)
+  from d : Design!MethodDesign, t : Test!TestCase (t.method = d.method)
+  to   i : Code!MethodImpl ( name <- d.name, method <- d.method,
+         body <- @llm('Implement the method',
+                      Sequence{d.method.signature, d.contract, t.code})
+         @check compiles(body) and passes_tests(body, t.code) ) }
+\end{lstlisting}
+
+In the running example, Listing~\ref{lst:rules} shows the three hand-offs of
+the admitted \devteam{}. In \code{Method2Test}, the engine decides which test
+cases exist and which method each one belongs to: one per goal method. The LLM
+writes only the code, from the method's signature, docstring and examples. No
+LLM can therefore forget to test \code{mark\_done}. The binding
+\code{method <- m} is a cross-view link to the goal method, and the footprint
+of \code{code} contains the four listed paths.
+
+% =========================================================================
+\subsection{What the builder proposes: typed teams}\label{sec:app-typed}
+
+\tool{} executes a team but does not design one. In \auto{}, a builder LLM
+writes the views, rules and validators, so they become an artefact that must be
+checked. A free-form builder outputs role prompts
+(Listing~\ref{lst:freeteam}); an \auto{} builder must output a \emph{typed
+team}. Each component of a typed team makes explicit one aspect of the
+specification that a composition defect concerns: the views and hand-offs fix
+what is handed over (\D{2}), write rights fix who owns which artefact (\D{3}),
+goal obligations fix what must be covered (\D{1}), the acceptance predicate
+fixes how completion is decided (\D{4}), and the tool assignment fixes who can
+do what (\D{5}).
+
+\begin{definition}[Typed team]\label{def:typed}
+A typed team is a tuple $\Team=(A,V,\mathbf{T},\omega,\kappa,G,\delta,\varphi)$
+with the following components.
+\begin{itemize}[leftmargin=1.3em, itemsep=1pt, topsep=2pt]
+\item $A$: a set of agents, each with a free-text role prompt.
+\item $V=\{\MM_0,\dots,\MM_n\}$: a set of views with goal view $\MM_0$.
+\item $\mathbf{T}$: a set of hybrid hand-offs, each with source views
+$\mathit{src}(T)\subseteq V$ and one target view $\mathit{tgt}(T)\neq\MM_0$.
+\item $\omega:A\to2^V$: the \emph{write rights} of each agent.
+\item $\kappa:A\to2^{\mathit{Tools}}$: the tools of each agent.
+\item $G$: a set of \emph{goal obligations} $(C,s,\mu,F_C)$. Each names a goal
+class $C$, a \emph{scope} predicate $s$ that selects the objects of $C$ it
+concerns, a set of \emph{anchor features} $F_C$ of $C$ (by default, all
+attributes of $C$), and a mode $\mu$. Mode $\mathit{checked}$ requires that the
+anchor features of every in-scope object reach a behavioural check; mode
+$\mathit{delivered}$ requires a deliverable for every in-scope object.
+\item $\delta=(D,g)$: the \emph{deliverable feature}, a target class $D$ and
+its feature $g$ whose values form the deliverable.
+\item $\varphi$: the proposed \emph{acceptance predicate}, a conjunction of
+clauses that the engine evaluates at the end of a run
+(Definition~\ref{def:accept}).
+\end{itemize}
+The goal view $\MM_0$ and the goal model $M_0$ are produced by the lifter; the
+builder cannot change them.
+\end{definition}
+
+The \emph{owners} of a hand-off $T$ are the agents whose write rights include
+its target view, $\mathit{owner}(T)=\{a\mid\mathit{tgt}(T)\in\omega(a)\}$; a
+stochastic binding's owners are those of its hand-off. In an admitted team,
+\W{2} makes the owner unique (Section~\ref{sec:app-check}).
+
+\paragraph{Restricted expressions and the validator library} To keep every
+admission condition decidable, a builder cannot write arbitrary OCL. Guards are
+conjunctions of comparisons between navigation paths and literals; structural
+bindings and footprints are navigation paths or literals; and validators are
+chosen from a library rather than written. Each library entry declares a
+\emph{strength}, either \emph{form} (the value parses, compiles or conforms) or
+\emph{behaviour} (the value is executed against an oracle or a test); the tools
+it needs; and which of its arguments it \emph{reads}. For a binding $b$, the
+read arguments determine the validator reads $\mathit{vr}_b(m)$, and the
+declared tools determine the tools $\tau(b)$ that the binding's owner needs;
+$\tau(b)$ is derived, not proposed. Table~\ref{tab:validators} lists the
+entries used in this paper.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Validator library entries used in the examples and the evaluation, as
+instantiated for Python. Reads: arguments and paths the validator inspects
+besides the candidate value $v$.}
+\label{tab:validators}
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{@{}l l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{2.3cm} l@{}}
+\toprule
+Validator & Strength & Accepts the candidate value $v$ if & Reads & Tools \\
+\midrule
+\code{nonempty(v)} & form & $v$ is a non-empty string & -- & -- \\
+\code{compiles(v)} & form & $v$ parses and compiles as Python & -- & -- \\
+\code{smoke\_test(v, b)} & behaviour & $v$ equals the outcome of a fixed smoke test of the class assembled with body $b$ & $b$ & \code{exec} \\
+\code{test\_valid(v, m)} & behaviour & $v$ runs, fails on a stub of $m$, and asserts every example of $m$ & \code{m.signature}, \code{m.examples.*} & \code{exec} \\
+\code{passes\_tests(v, c)} & behaviour & the assembled class with $v$ passes the test code $c$ & $c$ & \code{exec} \\
+\code{examples\_run(v, m)} & behaviour & the assembled class with $v$ passes the examples of $m$ & \code{m.examples.*} & \code{exec} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{lstlisting}[float=tb, style=model, language=ATL, caption={An illustrative first proposal of a typed \devteam{}, in a concise textual syntax. Its views (not shown) differ from Listing~\ref{lst:views} in that Test declares a class \code{TestRun} with an attribute \code{verdict}. It contains one instance of each defect \D{1}--\D{5}.}, label={lst:proposal}]
+agents:   Architect{tools: []}  Tester{tools: []}  Developer{tools: [exec]}            -- D5
+writes:   Architect: Design     Tester: Test       Developer: Code, Test                -- D3
+goal:     (Example, all, checked, {call, expected})   (Method, all, delivered)
+deliver:  MethodImpl.body
+handoffs:
+  Method2Design : Goal -> Design
+      contract <- @llm(.., Sequence{m.name, m.signature})        @check nonempty
+  Design2Impl   : Design -> Code
+      body     <- @llm(.., Sequence{d.contract, d.returnType})   @check compiles         -- D2
+  Impl2Run      : Code -> Test
+      verdict  <- @llm('Run and judge', i.body)          @check smoke_test(verdict, i.body)
+done:     cover(G), valid, fresh, noEsc, Tester.says('ALL TESTS PASS')                  -- D4
+\end{lstlisting}
+
+In the running example, Listing~\ref{lst:proposal} shows a plausible first
+proposal for \devteam{}. It reads well: an Architect designs, a Developer
+implements, and a Tester runs the code. Yet each defect is present. No rule
+reads an \cls{Example}, so E2.2 cannot influence anything that is checked
+(\D{1}). The footprint of the Developer's binding refers to
+\code{d.returnType}, which the Design view does not declare (\D{2}). Developer
+and Tester both write the Test view (\D{3}). The acceptance predicate contains
+\code{Tester.says(...)}, a clause that holds when the Tester outputs the given
+text, that is, a claim (\D{4}). And the Tester must run code without the
+\code{exec} tool (\D{5}).
+
+% =========================================================================
+\subsection{Running an admitted team}\label{sec:app-runtime}
+
+Given an admitted typed team, the runtime executes its hand-offs, records what
+every value was produced from, and decides at the end whether the run is done.
+Algorithm~\ref{alg:handoff} executes one hand-off. Line~1 performs ATL's
+matching and initialisation, made incremental~\cite{jouault2010incremental},
+and creates the skeleton. Lines~2--6 sample values only for stochastic bindings
+whose stamp is missing or \emph{stale}, that is, differs from the current
+digest $\#(\fp_b(m)\cup\mathit{vr}_b(m))$. Each sample is checked by the
+binding's validator; after $k$ rejections the binding escalates. The runtime
+repeats Algorithm~\ref{alg:handoff} over all hand-offs in topological order
+until no model changes.
+
+\begin{algorithm}[t]
+\caption{\tool{}: executing one hybrid hand-off $T$ (runtime)}\label{alg:handoff}
+\begin{algorithmic}[1]
+\Require hand-off $T$; sources $\vec{M}$; target $M_t$; trace model $\TL_T$; samples per binding $k$
+\State compute $T^{\mathrm{str}}(\vec M)$ incrementally; update $M_t$ and $\TL_T$; $\mathit{Esc}\gets\emptyset$ \Comment{structure only}
+\For{each stochastic binding $(t,b)$ of a match $m$ whose stamp is missing or stale}
+  \For{$i=1$ \textbf{to} $k$}
+    \State $v\gets\textsc{LLM}_{\mathit{owner}(T)}(\pi_b,\fp_b(m))$ \Comment{the prompt contains the footprint only}
+    \If{$\chk_b(v,\mathit{vr}_b(m))$} accept $v$; update $\mathit{stamp}(t,b)$; \textbf{break} \EndIf
+  \EndFor
+  \If{no value was accepted} $\mathit{Esc}\gets\mathit{Esc}\cup\{(t,b)\}$ \Comment{escalate} \EndIf
+\EndFor
+\State \Return $M_t,\TL_T,\mathit{Esc}$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Agents at run time} An agent is a role prompt, a model and a set of
+tools $\kappa(a)$. Agents do not converse. Each stochastic binding is one call
+to its owner's LLM, whose prompt consists of the role prompt, $\pi_b$ and the
+footprint; producing a value uses no tools. Tools are used only by validators,
+which run with exactly the tools $\kappa(a)$ of the binding's owner. Agents
+therefore see each other's work only through footprints, which is what makes a
+recorded footprint sufficient for replay. Behaviour validators judge a value in
+the context of the deliverable assembled from all values accepted so far, so
+that a method is tested together with its siblings; Section~\ref{sec:impl}
+describes how the deliverable is assembled.
+
+\paragraph{Incremental re-execution} When the team or its inputs change, only
+the affected values need to be produced again. Let a change $\Delta$ modify the
+locations $\mathit{loc}(\Delta)$. A pair $(t,b)$ of a target object and a
+stochastic binding becomes \emph{stale} if its footprint or validator reads
+contain a location in $\mathit{loc}(\Delta)$, or a location written by a pair
+that is already stale. The \emph{stale set} $\Stale(\Delta)$ is the least set of
+pairs, over the trace models of all hand-offs, that is closed under these two
+rules. All other values keep their stamps, so re-establishing the acceptance
+predicate costs at most $k\cdot|\Stale(\Delta)|$ LLM calls. This is an
+analytical property of the runtime; we use it for repair
+(Section~\ref{sec:app-attr}) but do not evaluate arbitrary source changes in
+this paper.
+
+In the running example, if E2.2 is changed to expect a \code{KeyError}, the
+stale set contains the test code of \code{mark\_done} and, one step later, its
+implementation; all other values keep their stamps.
+
+\paragraph{Deciding completion} Defect \D{4} arises when ``done'' is a claim.
+In \auto{}, the engine instead decides completion from the trace. To state that
+a goal object has been covered, we need a notion of what was derived from it,
+including objects that were only read through a footprint. Run records provide
+it.
+
+\begin{definition}[Run record, descendant]\label{def:record}
+At run time, every trace link $(m,t,r)$ carries, for each stochastic binding
+$b$ of $r$, a \emph{run record} $(b,\fp_b(m),\mathit{vr}_b(m),\mathit{stamp},v)$
+with the accepted value $v$ or an escalation mark. The link \emph{connects} to
+each object in $t$ every object of $m$ and every object that owns a location in
+a recorded footprint or validator read. An object $o'$ is a \emph{descendant}
+of $o$ if a chain of connections leads from $o$ to $o'$.
+\end{definition}
+
+\begin{definition}[Engine clauses, acceptance]\label{def:accept}
+The \emph{engine clauses} are evaluated on the final models and run records:
+\begin{itemize}[leftmargin=1.3em, itemsep=1pt, topsep=2pt]
+\item $\mathit{cover}(G)$ holds if every goal object $o$ in the scope of an
+obligation $(C,s,\mu,F_C)$ has a descendant that holds an accepted value of a
+behaviour-validated binding (if $\mu=\mathit{checked}$) or of the deliverable
+feature (if $\mu=\mathit{delivered}$);
+\item $\mathit{valid}$ holds if every accepted value passes its validator on the
+final models;
+\item $\mathit{fresh}$ holds if every stamp equals the digest of the current
+values; and
+\item $\mathit{noEsc}$ holds if no binding is escalated.
+\end{itemize}
+The acceptance predicate of an admitted team consists of all four engine
+clauses and, optionally, \emph{library clauses} that the engine evaluates on the
+deliverable, such as running its public examples (\W{5}). A run is
+\emph{done} iff $\varphi$ holds.
+\end{definition}
+
+The clause $\mathit{cover}(G)$ is deliberately one-sided: it asks only that a
+checked value descends from the goal object. That both the producer and the
+check of that value read the goal is ensured statically, by \W{4}.
+
+In the running example, each \cls{Example} has as descendant the test case
+whose footprint read it, although no rule matches \cls{Example}. Because no
+agent output can end the run, a Tester whose test for E2.2 fails cannot cause
+the team to be declared done.
+
+% =========================================================================
+\subsection{Admission: six well-formedness conditions}\label{sec:app-check}
+
+The checker decides whether a typed team may run. It evaluates six conditions
+on the typed team alone, without task data, LLM calls or execution.
+\W{1}--\W{3} adapt to LLM-authored teams the checks that static analysers
+perform on hand-written ATL transformations~\cite{cuadrado2017static};
+\W{4}--\W{6} concern the team as a whole. Two graphs support them. The
+\emph{hand-off graph} has an edge $\MM_i\to\MM_j$ for every hand-off with
+$\MM_i\in\mathit{src}(T)$ and $\MM_j=\mathit{tgt}(T)$. The second graph tracks
+data flow between features and is needed for coverage, as we explain first.
+
+\paragraph{Why coverage needs feature-level data flow} The natural way to check
+coverage is at the level of classes: require a path in the hand-off rules from
+each goal class to some behaviour-checked class. Such a \emph{path-only} check
+is not enough. A builder can create one test case per method, written from the
+method's \emph{name} only. A path from \cls{Method} to a checked class then
+exists, yet no example ever influences a check. Coverage must therefore be
+checked at the level of features, and it must consider two roles that goal
+data can play: input to the producer of a value, and input to that value's
+check.
+
+\begin{definition}[Feature-level data flow]\label{def:dataflow}
+The data-flow graph $\mathcal{F}_\Team$ has a node $(C,f)$ for every class $C$
+and feature $f$ of every view. A binding that writes feature $g$ of class $D$
+contributes a \emph{production} edge $(C,f)\to_p(D,g)$ for every $(C,f)$ that
+its expression or footprint reads, and a \emph{check} edge $(C,f)\to_c(D,g)$
+for every $(C,f)$ that its validator reads. Let $\mathcal{B}$ be the set of
+features written by stochastic bindings whose validator has behavioural
+strength.
+\end{definition}
+
+A production edge transmits data: the producer sees it. A check edge transmits
+nothing; it only gates whether the value is accepted. For a goal to be really
+covered, the producer of a checked value must have seen the goal, \emph{and}
+its check must test against the goal.
+
+\begin{definition}[Anchoring]\label{def:anchor}
+Write $\to_p^*$ for a path of zero or more production edges. A goal obligation
+$(C,s,\mathit{checked},F_C)$ is \emph{anchored} at $(D,g)\in\mathcal{B}$ if,
+for every anchor feature $f\in F_C$,
+\begin{enumerate}[label=(\roman*), leftmargin=2em, itemsep=1pt, topsep=2pt]
+\item \emph{production side:} $(C,f)\to_p^*\,\to_p(D,g)$, and
+\item \emph{check side:} $(C,f)\to_p^*(C',f')\to_c(D,g)$ for some node $(C',f')$.
+\end{enumerate}
+\end{definition}
+
+In the running example, the path \code{m.examples.call} in the footprint of
+\code{Method2Test} reads both \code{Method.examples} and \code{Example.call}, so
+it contributes production edges from both to \code{TestCase.code}; and
+\code{test\_valid} reads \code{m.examples.*}, which contributes check edges.
+Figure~\ref{fig:w4} shows the resulting graphs for the admitted team and for the
+first proposal. The \emph{one-sided} variant that requires only the check side
+(ii) is weaker: Section~\ref{sec:res-rq2} shows that it admits teams whose
+producers never see the goal.
+
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\sffamily\scriptsize, >={Stealth[length=4pt]},
+  box/.style={rounded corners=2pt, minimum height=6mm, minimum width=29mm, inner sep=2pt, align=center},
+  f/.style={box, draw=modelbar, fill=modelbg},
+  b/.style={box, draw=enginebar, fill=enginebg, very thick},
+  g/.style={box, draw=rawbar, fill=rawbg, very thick, dashed},
+  e/.style={->, semithick, black!75},
+  el/.style={font=\sffamily\scriptsize, fill=white, inner sep=1pt},
+  ttl/.style={font=\sffamily\small\bfseries, anchor=west}]
+  % ---------------- (a) admitted team
+  \node[ttl] at (-1.5,1.05) {(a) Admitted team: the obligation is anchored};
+  \node[g] (ex)   at (0,0)      {Example.call / expected};
+  \node[f] (doc)  at (0,-1.1)   {Method.docstring};
+  \node[b] (tc)   at (4.2,0)    {TestCase.code};
+  \node[f] (con)  at (4.2,-1.1) {MethodDesign.contract};
+  \node[b] (body) at (8.4,-0.55){MethodImpl.body};
+  \draw[e] (ex)  -- node[el, above] {p, c} (tc);
+  \draw[e] ([yshift=-1mm]doc.east) -- ([yshift=-1mm]con.west);
+  \draw[e] ([yshift=1.5mm]doc.east) -- ([xshift=5mm]tc.south west);
+  \draw[e] (tc.east)  -- node[el, above, sloped] {p, c} ([yshift=1mm]body.west);
+  \draw[e] (con.east) -- ([yshift=-1mm]body.west);
+  % ---------------- (b) first proposal
+  \begin{scope}[yshift=-3.4cm]
+  \node[ttl] at (-1.5,1.05) {(b) First proposal: \W{4} fails};
+  \node[g] (ex2)   at (0,0)      {Example.call / expected};
+  \node[font=\sffamily\scriptsize\itshape, text=red!65!black, anchor=west] at ([xshift=3mm]ex2.east) {no edge leaves the goal data};
+  \node[f] (sig2)  at (0,-1.1)   {Method.signature};
+  \node[f] (con2)  at (4.2,-1.1) {MethodDesign.contract};
+  \node[f] (body2) at (8.4,-1.1) {MethodImpl.body};
+  \node[b] (ver2)  at (8.4,0)    {TestRun.verdict};
+  \draw[e] (sig2)  -- (con2);
+  \draw[e] (con2)  -- (body2);
+  \draw[e] (body2) -- (ver2);
+  \end{scope}
+\end{tikzpicture}
+\caption{Feature-level data flow for \W{4}. Dashed yellow boxes: anchor
+features of the obligation $(\cls{Example},\mathit{all},\mathit{checked},\{\mathit{call},\mathit{expected}\})$.
+Thick green boxes: behaviour-checked features ($\mathcal{B}$). Arrows are
+production edges; ``p, c'' marks an edge that exists both as a production and
+as a check edge. (a)~The obligation is anchored. (b)~Nothing reads an
+\cls{Example}, so \W{4} fails although the team does test \emph{something}.}
+\label{fig:w4}
+\end{figure}
+
+
+
+\paragraph{The six conditions} Each condition below names the defect it
+targets, states what it requires, and, where useful, notes its limits. \D{2}
+is split between two conditions: \W{1} rules out its formal part (types and
+paths) and \W{3} its content part (what a target must contain).
+
+\paragraph{\W{1} Hand-offs are well typed and stratified (against the formal part of \D{2})}
+Every rule reads only its source views and writes only features that its target
+class declares; every guard, binding and footprint path type-checks; every
+stochastic binding targets a primitive attribute and uses a library validator
+with correctly typed arguments; and the team is stratified
+(Section~\ref{sec:app-handoffs}).
+
+\paragraph{\W{2} Every artefact has one writer (against \D{3})} The write
+rights $\omega(a)$ are pairwise disjoint and together cover
+$V\setminus\{\MM_0\}$, so $\mathit{owner}(T)$ is a single agent; and every
+class is created by at most one rule, so no object has two producers. This is
+stronger than ATL's requirement that each source tuple be matched by at most
+one rule. The condition is conservative: rules with provably disjoint guards
+could safely share a target class.
+
+\paragraph{\W{3} Targets are complete (against the content part of \D{2})}
+Every mandatory feature of a created class is bound exactly once. Every
+reference binding whose type lies in the target view is \emph{resolvable}: some
+rule creates an object of the expected class from the class of the source
+object that the binding yields. Every reference binding whose type lies in a
+source view yields objects of that type.
+
+\paragraph{\W{4} Every goal is anchored (against \D{1})} \W{4} has four parts.
+\begin{enumerate}[label=(\alph*), leftmargin=2em, itemsep=1pt, topsep=2pt]
+\item Every obligation of mode \emph{checked} is anchored at some feature of
+$\mathcal{B}$ (Definition~\ref{def:anchor}).
+\item Every source-pattern class of a rule on an anchoring path is
+\emph{total}: it is a goal class, or it is created by a rule whose guard is
+implied by the obligation's scope. Totality ensures that the rule's other source
+variables can be filled for every in-scope goal object.
+\item Every obligation of mode \emph{delivered} reaches the deliverable feature
+$\delta$ along production edges.
+\item Every view is reachable from $\MM_0$ in the hand-off graph and reaches a
+view that contains a feature of $\mathcal{B}$, so no agent is idle and no
+agent's work goes unverified.
+\end{enumerate}
+
+\paragraph{\W{5} The engine decides completion (against \D{4})} $\varphi$
+contains all four engine clauses of Definition~\ref{def:accept} and, apart from
+them, only library clauses; every clause is evaluated by the engine, and no
+clause may be an agent's claim. In addition, the hand-off graph is acyclic, so
+that hand-offs can be executed in topological order
+(Definition~\ref{def:hsem}).
+
+\paragraph{\W{6} Work goes to agents that can do it (against \D{5})} For every
+stochastic binding $b$, $\tau(b)\subseteq\kappa(a)$ for its owner $a$. Because
+validators run with exactly the owner's tools, an agent without \code{exec}
+cannot run the oracle that decides whether its value is accepted, just as a
+Gaia role cannot act outside its permissions~\cite{wooldridge2000gaia}. When
+\W{2} fails and a view has several writers, \W{6} is evaluated for each of
+them.
+
+\begin{algorithm}[t]
+\caption{\textsc{Admit}: deciding whether a typed team $\Team$ may run}\label{alg:admit}
+\begin{algorithmic}[1]
+\Require typed team $\Team=(A,V,\mathbf{T},\omega,\kappa,G,\delta,\varphi)$; validator library
+\State $\mathit{diag}\gets\textsc{TypeCheck}(\mathbf{T},V)\cup\textsc{Stratification}(\mathbf{T})$ \Comment{\W{1}}
+\State $\mathit{diag}\gets\mathit{diag}\cup\textsc{Writers}(\omega,\mathbf{T})\cup\textsc{Completeness}(\mathbf{T})$ \Comment{\W{2}, \W{3}}
+\State build $\mathcal{F}_\Team$ with production and check edges; $\mathcal{B}\gets$ behaviour-checked features
+\For{each $(C,s,\mu,F_C)\in G$ that is not anchored with total source classes (or, if delivered, does not reach $\delta$)}
+  \State $\mathit{diag}\gets\mathit{diag}\cup\{(\W{4},(C,s,\mu,F_C))\}$ \Comment{\W{4}(a)--(c)}
+\EndFor
+\State $\mathit{diag}\gets\mathit{diag}\cup\{(\W{4},V')\mid V'\text{ unreachable from }\MM_0\text{ or not reaching }\mathcal{B}\}$ \Comment{\W{4}(d)}
+\State $\mathit{diag}\gets\mathit{diag}\cup\textsc{EngineClauses}(\varphi)\cup\textsc{Cycles}(\mathbf{T})$ \Comment{\W{5}}
+\State $\mathit{diag}\gets\mathit{diag}\cup\{(\W{6},b)\mid\tau(b)\not\subseteq\kappa(a),\ a\text{ writes }\mathit{tgt}(b)\}$ \Comment{\W{6}; all writers if \W{2} fails}
+\State \Return $\mathit{diag}$ \Comment{empty iff $\Team$ is admitted}
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:admit} returns diagnostics that name the violated condition,
+the offending element (a rule, a path, a write right or a clause) and a hint. Unlike
+an LLM critic's comments, the diagnostics report \emph{every} violation of the
+checked conditions, not only the first, and they point to a concrete element
+rather than advising the builder to ``improve coordination''.
+
+In the running example, Listing~\ref{lst:diag} shows the output of our checker
+on the first proposal (Listing~\ref{lst:proposal}): one violation per seeded
+defect and no other.
+
+\begin{lstlisting}[float=tb, style=engine, caption={Checker output on Listing~\ref{lst:proposal}.}, label={lst:diag}]
+W1  Design2Impl.body: footprint path 'd.returnType':
+        Design!MethodDesign has no feature 'returnType'
+W2  view Test written by ['Developer', 'Tester']; needs exactly one writer
+W4  goal (Example, all, checked): anchor features {call, expected}
+        reach no behaviour-checked value
+W5  done-clause Tester.says('ALL TESTS PASS') is not an engine clause
+W6  Impl2Run.verdict needs ['exec']; writer Tester has []
+REJECTED: 5 violation(s)
+\end{lstlisting}
+
+\paragraph{Properties} The checker runs on every candidate inside the builder's
+loop (Section~\ref{sec:app-build}), so its cost matters.
+
+\begin{proposition}[Cost]\label{prop:cost}
+\W{1}--\W{6} are decidable on $\Team$ in time polynomial in $|\Team|$
+(classes, features, rules, bindings and path segments).
+\end{proposition}
+\begin{proof}[Sketch]
+\W{1} navigates each path once; \W{2}, \W{3} and \W{6} compare finite sets.
+\W{4}(a) and (c) are reachability problems over $\mathcal{F}_\Team$, whose size
+is bounded by path segments times bindings, extended by one check edge;
+implication between guards and scopes is tested on the restricted guard
+language. \W{4}(d) and the cycle test of \W{5} are searches on the hand-off
+graph.
+\end{proof}
+
+A second property explains why admission makes failures easier to locate. We
+would like a failed $\mathit{cover}(G)$ clause never to stem from missing
+structure, so that it always points at a value an LLM was asked to produce.
+The property needs one more notion. A guard that equates two structural
+references to the same goal object is a \emph{join}; in the running example,
+\code{t.method = d.method} in \code{Design2Impl} is a join.
+
+\begin{proposition}[Structural coverage]\label{prop:struct}
+Let $\Team$ be admitted, and let every guard of the rules on the paths that
+anchor an obligation $(C,s,\mathit{checked},F_C)$ either be implied by $s$ or
+be a join. Then, for every object $o$ of class $C$ that satisfies $s$, the
+skeletons $T^{\mathrm{str}}$ create a chain of descendants of $o$ that ends in
+a target object $t$ with a behaviour-checked feature, whose footprint and validator
+reads both contain data derived from $o$. Consequently, if
+$\mathit{cover}(G)$ fails for $o$ at the end of a run, some stochastic binding
+on that chain is escalated or invalid.
+\end{proposition}
+\begin{proof}[Sketch]
+By \W{1} (stratification), skeletons do not depend on LLM-written values, so
+matches depend only on goal data and on objects created by earlier skeletons.
+We proceed by induction along an anchoring path of
+Definition~\ref{def:anchor}. \emph{Hypothesis:} after the skeletons of the
+first $i$ rules on the path have run, the object that owns the $i$-th node
+exists and is a descendant of $o$. \emph{Step:} the $(i{+}1)$-th edge stems
+from a rule whose source pattern contains that object, or an object from which
+the rule's footprint navigates to it. (1)~This source variable is filled by the
+hypothesis. (2)~The other source variables are filled because their classes are
+total (\W{4}(b)). (3)~The rule's guard holds, either because $s$ implies it or
+because it is a join whose two sides were linked to the same goal object by
+structural bindings. (4)~The rule therefore fires and, by \W{3}, creates its
+target with all mandatory features. Hence every object on the chain exists, and
+only stochastic values can be missing. By Algorithm~\ref{alg:handoff}, a
+missing or rejected value is escalated, or reported by $\mathit{valid}$.
+\end{proof}
+
+Proposition~\ref{prop:struct} turns locating the symptom of a coverage failure
+into a lookup: such a failure is never a silent structural gap but points at a
+named binding.
+
+\paragraph{Limits} Whether a guard excludes in-scope objects is undecidable in
+general. The checker accepts guards that are implied by the obligation's scope,
+warns about all others, and $\mathit{cover}(G)$ enforces coverage at run time.
+Coverage is also relative to what is declared: an obligation that the builder
+does not declare is not checked (Section~\ref{sec:res-rq2} shows the
+consequence for deliverables). Admission does \emph{not} guarantee that the
+views capture what the task needs, that validators are strong enough, or that
+agents reason well.
+
+% =========================================================================
+\subsection{Building a team under the checker}\label{sec:app-build}
+
+A builder that simply proposes a team and revises it as a whole tends to
+repeat its own mistakes: in our first design, a small builder repeated an
+earlier diagnostic in almost every revision round (Section~\ref{sec:res-rq2}).
+\textsc{Build} (Algorithm~\ref{alg:build}) avoids this while keeping the
+division of labour: the LLM proposes and revises, and only
+Algorithm~\ref{alg:admit} admits.
+
+\begin{algorithm}[t]
+\caption{\textsc{Build}: proposing and revising a typed team under the checker (steps A--C)}\label{alg:build}
+\begin{algorithmic}[1]
+\Require task $x$; goal model $M_0$; budgets $k_{\mathit{prop}}$ (proposals), $k_{\mathit{rev}}$ (revisions per round), $k_{\mathit{adm}}$ (rounds)
+\State $\mathcal{C}\gets\emptyset$
+\For{$i=1$ \textbf{to} $k_{\mathit{prop}}$} \Comment{Step A, constrained to the typed-team format}
+  \State $\Team_i\gets\textsc{Propose}(x,M_0)$;\ \ $\mathcal{C}\gets\mathcal{C}\cup\{(\Team_i,\textsc{Admit}(\Team_i))\}$ \Comment{Step B, Alg.~\ref{alg:admit}}
+  \If{$\textsc{Admit}(\Team_i)=\emptyset$} \textbf{break} \EndIf
+\EndFor
+\State $(\Team,\mathit{diag})\gets\arg\min_{(\Team',d)\in\mathcal{C}}|d|$ \Comment{the checker ranks the candidates}
+\For{$r=1$ \textbf{to} $k_{\mathit{adm}}$} \Comment{Step C}
+  \If{$\mathit{diag}=\emptyset$} \textbf{break} \EndIf
+  \State $\mathcal{P}\gets\textsc{Fragments}(\Team,\mathit{diag})$;\ \ $\Pi\gets\textsc{Paths}(\Team,\mathcal{P})$ \Comment{typed paths}
+  \State $\mathcal{R}\gets\{\Team\lhd\textsc{RepairFragments}(\Team,\mathit{diag},\mathcal{P},\Pi)\mid 1..k_{\mathit{rev}}\}$ \Comment{$\lhd$: replace fragments only}
+  \If{$\min_{\Team'\in\mathcal{R}}|\textsc{Admit}(\Team')|\ge|\mathit{diag}|$}
+    \State $\mathcal{R}\gets\mathcal{R}\cup\{\textsc{Revise}(\Team,\mathit{diag})\}$ \Comment{fallback: whole-team revision}
+  \EndIf
+  \State $\Team'\gets\arg\min_{\Team''\in\mathcal{R}}|\textsc{Admit}(\Team'')|$
+  \If{$|\textsc{Admit}(\Team')|\le|\mathit{diag}|$} $\Team\gets\Team'$;\ \ $\mathit{diag}\gets\textsc{Admit}(\Team')$ \EndIf
+\EndFor
+\State \Return $(\Team,\mathit{diag})$ \Comment{$\mathit{diag}=\emptyset$ iff $\Team$ is admitted}
+\end{algorithmic}
+\end{algorithm}
+
+The builder relies on the typed-team format and on the checker in three ways.
+First, every proposal and revision is constrained to the typed-team format, so
+a candidate always has the \emph{shape} of a typed team; whether it is well
+typed, complete and anchored remains the checker's decision. Second, because a
+check is cheap (Section~\ref{sec:res-rq2}), the builder samples up to
+$k_{\mathit{prop}}$ proposals and lets the checker rank them by their number of
+diagnostics. Third, the reviser does not regenerate the team. \textsc{Fragments}
+maps each diagnostic to the parts of the team it concerns: a rule together with
+the classes it creates and reads and the sources of its hand-off, a view, the
+write rights $\omega$, the agents' tools $\kappa$, the obligations $G$ and the
+deliverable $\delta$, or $\varphi$. For an unanchored goal, the fragments also
+include the rules and views that should carry it. \textsc{Paths} lists, for
+each diagnosed rule, short navigation paths that type-check from its source
+variables. The reviser rewrites only these fragments, and the operator $\lhd$
+puts them back into $\Team$ deterministically. A part that was not diagnosed is
+therefore never regenerated, and a fix cannot be undone by rewriting the whole
+team. A whole-team revision is tried only when no localised revision reduces
+the number of violations.
+
+% =========================================================================
+\subsection{Attribution and checked repair}\label{sec:app-attr}
+
+Transcript-based methods identify the responsible agent of a failure in about
+half of the cases and the decisive step in about one in seven
+(Section~\ref{sec:introduction}). \auto{} separates two questions. \emph{Where}
+does a failure show? This is the \emph{symptom} binding, and the trace answers
+it by lookup. \emph{Why} did it fail? This is the \emph{cause}, which may lie
+in another binding, and a bounded replay answers it.
+
+\paragraph{Locate} If $\varphi$ fails, the engine knows which clauses fail
+and, through the trace models, where. A failed $\mathit{valid}$ clause or an
+escalation names one pair $(t,b)$: a target object and a stochastic binding,
+and with them its rule, hand-off and owner, and the stamped footprint its LLM
+saw. A failed $\mathit{cover}(G)$ clause names, by
+Proposition~\ref{prop:struct}, a binding on the anchoring chain. Locating the
+symptom is therefore a lookup, not an inference over a transcript. Attribution
+needs the input of each step~\cite{chen2026traceelephant}; in \tool{}, that
+input is a declared, bounded footprint.
+
+\paragraph{Classify} The symptom binding is not always the cause. We
+distinguish five fault classes, each with its remedy:
+\begin{itemize}[leftmargin=1.3em, itemsep=1pt, topsep=2pt]
+\item \textsc{Validator}: the check itself is unreliable. Remedy: replace the
+validator (builder).
+\item \textsc{Sampling}: the composition is adequate, but the owner's LLM was
+unlucky or too weak. Remedy: retry, or use a stronger model.
+\item \textsc{Footprint}$(j)$: the LLM did not see information it needed, an
+instance of \D{2}. Remedy: widen the footprint by the paths, of at most $j$
+references, that make replays pass.
+\item \textsc{Upstream}$(b')$: an input of the binding, produced by another
+stochastic binding $b'$, is wrong. Remedy: re-sample $b'$, after attributing
+it in turn.
+\item \textsc{Specification}: no value that the footprint supports satisfies
+the prompt and the validator. Remedy: a builder delta.
+\end{itemize}
+Algorithm~\ref{alg:attr} tests these classes in a fixed order. The validator's
+stability is tested first, because it needs no LLM call;
+\textsc{Specification} is the default when no other test succeeds.
+
+\begin{algorithm}[t]
+\caption{\textsc{Attribute}: classifying a failed stochastic binding $(t,b)$}\label{alg:attr}
+\begin{algorithmic}[1]
+\Require failed value $v$ of $b$; recorded footprint $\phi$; replay cap $n_{\mathit{rep}}$; hop limit $h$
+\If{$\chk_b(v,\mathit{vr}_b)$ is unstable over reruns} \Return \textsc{Validator} \EndIf
+\If{\textsc{Replays}$(b,\phi)$ pass sometimes} \Return \textsc{Sampling} \EndIf
+\For{$j=1$ \textbf{to} $h$}
+  \If{\textsc{Replays}$(b,\phi\cup\textsc{Widen}_j(\phi))$ pass sometimes} \Return \textsc{Footprint}$(j)$ \EndIf
+\EndFor
+\For{each value $u\in\phi$ written upstream by a stochastic binding $b'$}
+  \If{re-sampled $u$ makes \textsc{Replays}$(b,\phi)$ pass} \Return \textsc{Upstream}$(b')$ \EndIf
+\EndFor
+\State \Return \textsc{Specification} \Comment{no supported value satisfies $\chk_b$}
+\end{algorithmic}
+\end{algorithm}
+
+The algorithm uses two operations. \textsc{Replays}$(b,\phi)$ re-samples $b$ on
+footprint $\phi$ up to $n_{\mathit{rep}}$ times, one sample at a time, and
+``passes sometimes'' if at least one sample passes $\chk_b$; under the
+\emph{adaptive} replay budget it stops at the first pass.
+\textsc{Widen}$_j(\phi)$ adds to $\phi$ every path from the rule's source
+variables that follows at most $j$ references and ends in an attribute; a
+footprint repair keeps only those added paths without which no replay passes.
+The stability test of line~1 reruns the validator on the failed value, which
+costs no LLM call. An \textsc{Upstream}$(b')$ result is followed by attributing
+$b'$, with its accepted value treated as failed; in that recursive call, a
+replay of $b'$ counts as passing only if the downstream binding $b$ then passes
+its validator.
+% TODO(author): confirm this pass criterion for the recursive call; the end-to-end example relies on it.
+Section~\ref{sec:impl} gives the values of $n_{\mathit{rep}}$
+and $h$ used in our evaluation.
+
+\begin{remark}[Cost of attribution]\label{rem:attrcost}
+For one binding $b$, Algorithm~\ref{alg:attr} makes at most $n_{\mathit{rep}}$
+replays for the sampling test, $h\cdot n_{\mathit{rep}}$ for the footprint
+tests, and $|\mathit{up}(b)|$ re-samples plus $|\mathit{up}(b)|\cdot
+n_{\mathit{rep}}$ replays for the upstream tests, where $\mathit{up}(b)$ is the
+set of upstream stochastic values in its footprint: in total at most
+$(h+1+|\mathit{up}(b)|)\,n_{\mathit{rep}}+|\mathit{up}(b)|$ LLM calls, plus the
+replays that minimise a footprint repair. Recursion visits at most as many
+bindings as the longest path in the hand-off graph.
+\end{remark}
+
+\paragraph{Checked repair} A fault report becomes a team delta $\Delta$.
+Sampling, footprint and upstream faults are repaired mechanically (retry, widen
+the footprint, re-sample $b'$); validator and specification faults require a
+delta proposed by the builder's LLM. $\Team\oplus\Delta$ denotes the typed team
+with $\Delta$'s edits applied. The checker evaluates it with
+Algorithm~\ref{alg:admit}, and \textsc{Apply} installs it in the running team
+only if it is admitted. As with consistency-preserving
+operators~\cite{horcas2023consistency,alomar2021preserving}, deltas differ in
+what they preserve, and \textsc{Apply} uses one of three modes:
+\begin{itemize}[leftmargin=1.3em, itemsep=1pt, topsep=2pt]
+\item \emph{in place}, for a delta that changes only rules, prompts, footprints
+or validators: the affected values lose their stamps and become stale, and all
+other accepted values are kept;
+\item \emph{by extension}, for a delta that only adds views, agents or
+hand-offs: the compiler generates the new rule modules, so that new agents
+receive work for everything already built;
+\item \emph{rebuild}, for any other delta, as a free-form builder must always do.
+\end{itemize}
+Changes flow only from the team model to the runtime, never back: the runtime
+is regenerated from the team model.
+
+\paragraph{The running example, end to end} We follow \code{TaskBoard} from
+the first proposal to an accepted deliverable.
+\begin{enumerate}[label=\arabic*., leftmargin=1.6em, itemsep=2pt, topsep=2pt]
+\item \emph{Admission.} The first proposal (Listing~\ref{lst:proposal}) is
+rejected with five diagnostics (Listing~\ref{lst:diag}). The reviser rewrites
+only the named fragments: the hand-offs and views for \W{1} and \W{4}
+(including the rules that should carry the unanchored goal), the write rights
+for \W{2}, $\varphi$ for \W{5}, and the agents' tools for \W{6}. Its revision
+replaces \code{Impl2Run} by \code{Method2Test} (Listing~\ref{lst:rules}), gives
+the Tester \code{exec}, removes the Developer's write right on Test, adds
+\code{m.docstring} to the footprint of \code{Method2Design}, replaces
+\code{d.returnType} by \code{d.method.signature}, lets \code{Design2Impl} read
+the Test view (joined on the method) with the tests in its footprint and a
+\code{passes\_tests} validator, and drops the Tester's claim from $\varphi$.
+The revised team is admitted.
+\item \emph{Run.} The implementation of \code{mark\_done} escalates after
+three samples fail \code{passes\_tests}.
+\item \emph{Locate.} Lookup names the pair
+$(\mathit{impl}_{\code{mark\_done}},\code{body})$, owned by the Developer.
+\item \emph{Classify the implementation.} Replays on the same footprint fail,
+and widening the footprint does not help. Re-sampling the upstream test code,
+however, makes the replays pass. The reason is that the Tester's first test
+called \code{mark\_done(1)} on a fresh board, without the \code{add\_task}
+that E2.1 relies on, so every correct implementation failed it.
+\code{test\_valid} had accepted that test because it runs, fails on a stub and
+asserts every example. The fault is \textsc{Upstream}, in
+$(\mathit{test}_{\code{mark\_done}},\code{code})$, owned by the Tester.
+\item \emph{Classify the test.} Algorithm~\ref{alg:attr} recurses on the test.
+No replay of the test on its own footprint adds the missing setup. Widening the
+footprint by two references adds \code{m.task.examples.*}, which contains E1.1,
+and the replays then pass: a \textsc{Footprint}$(2)$ fault of
+\code{Method2Test}.
+\item \emph{Repair.} The mechanical delta widens that footprint, is admitted,
+and is applied in place. Only the test and the implementation of
+\code{mark\_done} become stale and are re-sampled, after which $\varphi$ holds.
+\end{enumerate}
+A stronger \code{test\_valid} that also checked the order of examples would
+have rejected the first test.
+
+\subsection{Scope and limitations}\label{sec:app-scope}
+
+\auto{} checks that a team fits \emph{together}, not that its views capture the
+task or that its validators are strong. Hand-off graphs are acyclic, LLMs fill
+in attributes but do not create structure, and teams whose value lies in
+open-ended dialogue do not decompose naturally into views and rules.
+
+\section{Related Work}\label{sec:related}
+
+We organise related work into seven lines. For each, we state what it
+contributes and where \auto{} differs; Table~\ref{tab:rw} summarises the
+comparison on the properties that matter for composition.
+
+\subsection{Hand-designed LLM multi-agent teams for software engineering}\label{sec:rw-teams}
+
+Role-based teams emulate human development processes. MetaGPT gives roles
+structured output documents~\cite{hong2024metagpt}; ChatDev chains role pairs
+through development phases~\cite{qian2024chatdev}; Self-Collaboration and
+MapCoder split analysis, coding, testing and
+debugging~\cite{dong2024selfcollab,islam2024mapcoder}; and AutoGen and
+AgentVerse let developers wire arbitrary
+topologies~\cite{wu2024autogen,chen2024agentverse}. Two surveys list
+coordination and verification among the open
+problems~\cite{he2025lma,liu2024agents4se}. These teams have a human architect.
+Beyond the document types of MetaGPT, nothing checks before execution that
+every requirement reaches a test, that each artefact has one writer, or that
+the system rather than an agent decides completion. \auto{} provides these
+properties for teams that no human reviews.
+
+\subsection{Automatic team builders and learned orchestration}\label{sec:rw-builders}
+
+\emph{Per-task builders} design a team for each task. CaptainAgent~\cite{song2024captain},
+AutoAgents~\cite{chen2024autoagents} and MAS-Zero~\cite{ke2025maszero} rely on
+reflector, observer or meta-feedback LLMs; EvoAgent evolves
+agents~\cite{yuan2025evoagent}; DyLAN selects them~\cite{liu2024dylan}; and
+MetaAgent represents the team as a finite state machine that makes control
+explicit~\cite{zhang2025metaagent}. \emph{Offline builders} search for agentic
+workflows as code or graphs: ADAS~\cite{hu2025adas}, AFlow~\cite{zhang2025aflow},
+GPTSwarm~\cite{zhuge2024gptswarm}, MaAS~\cite{zhang2025maas} and the GNN-based
+G-Designer~\cite{zhang2025gdesigner}. \emph{Learned orchestrators} are trained
+with reinforcement learning to pick the next agent
+(Puppeteer~\cite{dang2025puppeteer}), to write natural-language workflows
+(Conductor~\cite{nielsen2026conductor}) or to emit whole teams
+(MAS-Orchestra~\cite{ke2026masorchestra}); other work evolves agent graphs or
+refines teams from textual feedback~\cite{yang2025agentnet,ma2026ann,he2026tpgo}.
+
+All of these approaches optimise \emph{which} team to build against an
+end-to-end score or another LLM's judgement. Code-based workflows are parsed
+and executed, and MetaAgent checks its state machine for reachability. None,
+however, states as a checkable interface what is handed over between each pair
+of agents, and none checks data-flow coverage or the ownership of hand-offs
+before the team runs. \auto{} is complementary: it proposes no new search
+strategy but a target representation that any builder can emit, and a check
+that a builder can run inside its loop in milliseconds, with diagnostics that
+name a rule, path or write right.
+
+\subsection{Failure analysis and attribution for multi-agent systems}\label{sec:rw-failures}
+
+MAST derives 14 failure modes from more than 1{,}600 annotated
+traces~\cite{cemri2025mast}, and AgentAsk locates errors on hand-off
+edges~\cite{lin2026agentask}. Further studies analyse why agent frameworks
+fail, how team structure must fit the task, and why communication does not
+imply
+coordination~\cite{lu2025exploring,kim2025scaling,pappu2026experts,zhang2026silobench,zhu2025multiagentbench,lamalfa2025miss}.
+Who\&When and
+TraceElephant attribute failures to agents and steps from
+transcripts~\cite{zhang2025whowhen,chen2026traceelephant}. These works
+characterise failures after the fact and from prose. \auto{} prevents a class
+of them before execution and, when a typed team fails, locates the symptom by
+lookup and classifies it by bounded replay. RQ1 builds on their taxonomies and
+data, and RQ4 uses their attribution methods as baselines.
+
+\subsection{Structured communication and typed LLM programming}\label{sec:rw-structured}
+
+Agent communication languages gave messages explicit performatives and shared
+ontologies long before LLMs~\cite{finin1994kqml}. For LLM agents, MCP and A2A
+standardise the transport between agents and tools~\cite{mcp2024,a2a2025};
+Agora lets agents negotiate protocol documents~\cite{marro2024agora}; and
+PatchBoard grounds collaboration in schema-validated patches to a shared
+state~\cite{zhang2026patchboard}. Constrained decoding guarantees that outputs
+conform to a grammar or JSON schema~\cite{willard2023outlines}. Practitioner
+frameworks type hand-offs too: LangGraph declares a typed state schema for a
+graph of agents~\cite{langgraph2025}, CrewAI validates a task's output against
+a Pydantic model~\cite{crewai2025}, and AgentSpec enforces user-written rules on
+agent actions at run time~\cite{wang2026agentspec}.
+
+These approaches make an individual \emph{message} or action well formed,
+reliably transported or permitted. They do not check properties of the
+\emph{assembled team}: that every obligation reaches a check that reads it,
+that every artefact has one writer, that completion is decided by the system,
+or that work goes to an agent with the needed tools. A single shared schema
+also removes heterogeneity by decree, whereas \auto{} keeps one view per agent,
+sized to its job, and records correspondences in trace models. We use a
+PatchBoard-style shared schema as a baseline (Section~\ref{sec:design}).
+
+Closest to the \tool{} runtime are LLM programming systems that interleave
+deterministic control with generated parts: LMQL constrains and scripts
+generation inside a query language~\cite{beurerkellner2023lmql}, SGLang
+executes structured LM programs efficiently~\cite{zheng2024sglang}, and DSPy
+composes LM modules whose inputs and outputs are typed by
+signatures~\cite{khattab2024dspy}. These systems control \emph{how} one program
+calls an LLM. \tool{} instead fixes \emph{which} values exist by
+model-transformation rules. It gives each value a declared footprint, accepts
+it only behind a validator, stamps it for incremental re-sampling, and lets the
+engine decide completion; the checker and attribution rely on exactly these
+properties.
+
+\subsection{Static analysis, verification and testing of model transformations}\label{sec:rw-mt}
+
+MDE has a mature body of work on checking individual transformations. Static
+analysers for ATL detect typing errors, unresolved bindings, rule conflicts and
+missing mandatory features~\cite{cuadrado2017static}; invariant-based and
+model-finding approaches verify declarative transformations against
+contracts~\cite{cabot2010invariants,rahim2015survey}; mutation analysis
+assesses transformation test suites~\cite{mottu2006mutation}; and a survey
+covers testing and debugging~\cite{troya2022survey}. Fault localisation ranks
+suspicious rules statically or from test
+spectra~\cite{burgueno2015static,troya2018sbfl}, and anATLyzer proposes
+speculatively checked quick fixes~\cite{cuadrado2018quickfix}. Transformation
+intents make the properties a transformation must satisfy
+explicit~\cite{lucio2016intents}. \W{1}--\W{3} are deliberately close to
+established static checks~\cite{cuadrado2017static}. Our diagnostics play the
+role of anATLyzer's quick-fix hints, but the fixes are proposed by an LLM and
+re-checked; and unlike spectrum-based localisation~\cite{troya2018sbfl}, which
+ranks rules by test outcomes, attribution in \auto{} replays one binding on its
+recorded footprint. We adopt mutation analysis~\cite{mottu2006mutation} to
+evaluate the checker itself.
+
+Closer to the \emph{team} level, transformation chains have been typed and
+checked for the compatibility of their connected
+metamodels~\cite{vanhooff2007uniti}, and chains between incompatible metamodels
+have been assembled automatically~\cite{basciani2014chaining}; footprinting
+estimates which parts of a model an operation reads~\cite{jeanneret2011footprints}.
+This work assumes that a person writes the transformations and that their
+execution is deterministic. Our footprints are \emph{declared} rather than
+estimated. Chain typing asks whether a chain's metamodels are compatible;
+anchored coverage (\W{4}) asks a finer question, namely whether specific
+\emph{goal features} flow into both the production and the check of a value.
+This question matters most when values are produced by a stochastic author and
+accepted by validators, because then a value can pass its check without its
+producer ever having seen the goal. Engine-decided completion (\W{5}) and
+capability fit (\W{6}) concern the team rather than any single transformation.
+
+\subsection{Large language models in model-driven engineering}\label{sec:rw-llm-mde}
+
+LLMs have been evaluated for domain modelling~\cite{chen2023domainmodeling},
+model completion~\cite{chaaben2023fewshot} and UML modelling
+tasks~\cite{camara2023chatgptuml}, with useful but imperfect accuracy; an
+evaluation of LLM-based domain-modelling assistance reaches a similar
+conclusion~\cite{benchaaben2026utility}. Prompting itself can be model
+driven~\cite{clariso2023mdpe}, LLMs have completed software model evolution
+from edit histories~\cite{tinnes2025evolution}, and mapping studies chart LLM
+use across MDE activities and identify LLM-written metamodels and
+transformations as an open setting~\cite{dirocco2025llmmde,zhang2027llmmde}.
+Recent studies ask LLMs to write transformations in model transformation
+languages and report that syntactic and semantic errors remain
+frequent~\cite{jiang2026llm4mtls,kazai2025mtllm}. This line evaluates
+\emph{individual} LLM-generated models or transformations. \auto{} accepts that
+a proposal will be imperfect and checks how the generated views and
+transformations fit together; RQ2 measures how often an LLM reaches an
+admissible team. Where an LLM performs a model transformation, it replaces the
+transformation as a whole~\cite{kazai2025mtllm}; we are not aware of MDE work
+in which rules delegate individual bindings to an LLM behind validators, as
+\tool{} does.
+
+\subsection{Software architecture and agent-oriented software engineering}\label{sec:rw-arch}
+
+Architectural mismatch, design by contract and specified connectors make the
+assumptions between components explicit and
+checkable~\cite{garlan1995mismatch,garlan2009mismatch,meyer1992dbc,allen1997connection},
+and Gaia gave every agent role responsibilities, permissions and
+protocols~\cite{wooldridge2000gaia}. \auto{} transfers these remedies to
+systems that an LLM composes without review: write rights play the role of
+Gaia's permissions, hand-offs that of connectors, and $\varphi$ that of a
+system-level postcondition.
+
+\begin{table}[t]
+\centering\small
+\caption{Guarantees before execution and support for attribution (our reading
+of each approach; \cmark\ provided, \pmark\ partly or by convention, \xmark\ not
+provided, -- not applicable). \emph{LLM-built}: the team is composed by an LLM.
+\emph{Msg.\ form}: individual hand-offs are schema-checked. \D{1}--\D{5}: the
+defect is ruled out before the team runs. \emph{Attrib.}: a failure can be
+traced to a responsible component without reading a transcript. \emph{Dial.}:
+agents may converse freely, which \auto{} gives up. For \auto{}: \D{1} only
+relative to the declared obligations; \D{5} only for tools in the declared
+vocabulary.}
+\label{tab:rw}
+\scriptsize\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{@{}l c c c c c c c c c@{}}
+\toprule
+Approach & LLM-built & Msg.\ form & \D{1} & \D{2} & \D{3} & \D{4} & \D{5} & Attrib. & Dial. \\
+\midrule
+Hand-designed teams~\cite{hong2024metagpt,qian2024chatdev} & \xmark & \pmark & \xmark & \pmark & \pmark & \xmark & \xmark & \xmark & \cmark \\
+Typed agent frameworks~\cite{langgraph2025,crewai2025} & \xmark & \cmark & \xmark & \pmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Per-task builders~\cite{song2024captain,ke2025maszero} & \cmark & \xmark & \xmark & \xmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
+FSM builder (MetaAgent)~\cite{zhang2025metaagent} & \cmark & \xmark & \xmark & \xmark & \pmark & \pmark & \xmark & \xmark & \cmark \\
+Workflow search~\cite{hu2025adas,zhang2025aflow} & \cmark & \pmark & \xmark & \xmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Learned orchestration~\cite{nielsen2026conductor} & \cmark & \pmark & \xmark & \xmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Structured messages~\cite{khattab2024dspy,zhang2026patchboard} & \xmark & \cmark & \xmark & \pmark & \xmark & \xmark & \xmark & \pmark & \pmark \\
+LLM programming~\cite{beurerkellner2023lmql,zheng2024sglang,khattab2024dspy} & \xmark & \cmark & \xmark & \pmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
+MT static analysis~\cite{cuadrado2017static,burgueno2015static} & \xmark & -- & \xmark & \cmark & \pmark & -- & -- & \pmark & -- \\
+Typed MT chains~\cite{vanhooff2007uniti} & \xmark & \cmark & \xmark & \pmark & -- & -- & -- & \xmark & -- \\
+\textbf{\auto{}} (this paper) & \cmark & \cmark & \pmark & \cmark & \cmark & \cmark & \pmark & \cmark & \xmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Evaluation}\label{sec:eval}
+
+\SyntheticNotice
+
+\subsection{Objectives and research questions}\label{sec:rqs}
+
+The evaluation tests the three claims of Section~\ref{sec:introduction}:
+composition defects matter, they can be prevented, and they can be attributed.
+It also measures what prevention costs. The decision rules below were written
+down before the main runs; the protocol is in the replication package but was
+not registered.
+
+\begin{description}[leftmargin=1.1em, style=nextline, itemsep=2pt]
+\item[\RQ{1} (Diagnosis): How often is the decisive cause of a failure of an
+automatically assembled team a composition defect, and which one?]
+A cause is \emph{decisive} if, in the coder's judgement, the run would have
+succeeded had that cause alone been absent. \emph{Decision rule:} we consider
+composition defects a relevant cause if the lower bound of the 95\% interval of
+their share exceeds 20\% for LLM-assembled teams. The threshold is a relevance
+judgement, not a comparison with MAST, whose shares count failure-mode
+\emph{occurrences} rather than decisive causes.
+\item[\RQ{2} (Prevention): Does the checker detect composition defects, and can
+LLM builders produce admissible typed teams?] \emph{Decision rule:} the checker
+is useful only if, on independently seeded defects, its detection rate is
+higher and its false-alarm rate lower than those of the best LLM critic given
+the same JSON specification and defect definitions.
+\item[\RQ{3} (Effect): What do typing and checking do to task success,
+composition-caused failures, the reliability of ``done'', and cost?]
+We test three hypotheses.
+\emph{H3a:} \auto{} has fewer composition-caused failures per 100 runs than
+Free, Critic and Schema.
+\emph{H3b:} \auto{}'s success is not inferior to Free's. We set the
+non-inferiority margin at an odds ratio of 0.80, about 4 percentage points at
+ClassEval's base rate of 25\%, the smallest loss we would consider practically
+relevant.
+\emph{H3c:} \auto{}'s completion signal is more precise than \code{TERMINATE}.
+\emph{Interpretation:} if H3a fails, the conditions miss the defects that
+matter; if H3a holds and H3b fails, typing costs more than it saves.
+\item[\RQ{4} (Attribution and repair): Does trace-based attribution locate and
+classify faults better than transcript-based methods, and does checked repair
+beat rebuilding?] \emph{Decision rule:} fault-class accuracy must exceed the
+best baseline's accuracy on the same closed label set. The comparison of repair
+with rebuilding is exploratory; we set no decision rule for it.
+\end{description}
+
+\subsection{Implementation}\label{sec:impl}
+
+This section describes how the concepts of Section~\ref{sec:approach} are
+realised in the implementation that we evaluate.
+
+\paragraph{Representation} The compiler and runtime are written in Python. Models are JSON object graphs, validated
+against a JSON Schema that is generated from each view. Compiled rule modules
+are data that the engine interprets. Guards, bindings and footprints use an
+OCL fragment of navigation paths, literals, comparisons and conjunction.
+
+\paragraph{Builder} A typed team is exchanged as JSON. The JSON Schema of this
+format plays the role of the typed-team metamodel, and every proposal and
+revision is decoded under it (steps A and C). The builder's prompt library
+contains this schema, the validator library, three worked examples (Section~\ref{sec:design})
+and, for revisions, the navigation paths produced by \textsc{Paths}, which
+follow at most two references. The anchor features of an obligation default to
+all attributes of its goal class.
+
+\paragraph{Runtime} The prompt of a stochastic binding consists of the owner's
+role prompt, $\pi_b$, and the footprint serialised as a list of
+\emph{object.feature = value} lines. Validators run in a sandbox that grants
+exactly the owner's tools $\kappa(a)$. The deliverable $\delta=(D,g)$ names a
+target class and feature, here \code{MethodImpl.body}; the runtime assembles
+the deliverable by inserting every value of $g$ into the class outline given by
+the goal model $M_0$ (for function-level tasks, into the function signature).
+Behaviour validators run on this assembled artefact. Methods without an
+accepted value yet are replaced by stubs, and examples run in docstring order
+on one object, as doctest does, so that E2.1 can rely on the task that E1.1
+added.
+
+\paragraph{Attribution} We use a replay cap of $n_{\mathit{rep}}=3$ with the
+adaptive budget (stop at the first passing replay), a hop limit of $h=2$, and
+three reruns of the validator for the stability test.
+
+\subsection{Experimental design}\label{sec:design}
+
+We follow guidelines for experiments in software
+engineering~\cite{wohlin2012experimentation} and for empirical studies involving
+LLMs~\cite{wagner2025guidelines,sallou2024breaking}: local open-weight models,
+fixed versions and decoding parameters, several seeds, all prompts and logs
+released, and cost reported alongside quality.
+
+\paragraph{Subjects} \emph{ClassEval}~\cite{du2024classeval} contains 100
+manually crafted Python class-level tasks with 412 methods and, on average, 33.1
+hidden tests per class; a task succeeds only if \emph{all} hidden tests of the
+class pass. Class-level tasks are where a team can plausibly help, because
+methods interact and must be designed, implemented and tested consistently.
+\emph{HumanEval+}~\cite{liu2023evalplus} contains the 164 HumanEval
+problems~\cite{chen2021codex} with tests extended by EvalPlus. It represents
+small, self-contained tasks for which a team should add little. Teams see only
+the prompt, signatures, docstrings and public examples; hidden tests are used
+only for scoring. For RQ1 we also use the 184 annotated failures of
+\emph{Who\&When}~\cite{zhang2025whowhen}: 126 runs of teams generated by
+CaptainAgent on the general-assistant benchmarks GAIA and AssistantBench, and 58
+runs of the hand-crafted Magentic-One.
+
+\paragraph{Models} We use seven instruction-tuned models from six families, all
+run locally through Ollama with 4-bit weights (tags in the package):
+Qwen2.5-Coder 7B and 32B~\cite{hui2024qwen25coder}, the agentic
+Devstral 24B~\cite{rastogi2025devstral}, the mixture-of-experts
+DeepSeek-Coder-V2 16B~\cite{deepseek2024coderv2}, Granite-Code
+20B~\cite{mishra2024granitecode}, Code Llama 13B~\cite{roziere2023codellama} and
+the completion-oriented StarCoder2 15B~\cite{lozhkov2024starcoder2}. We chose
+them to vary the ability to emit a long, schema-conforming specification, and
+all of them run on one workstation. In every configuration, the builder, all
+agents and the repair builder use the same model. We call the four models with
+the highest Single success on ClassEval (Qwen2.5-Coder 7B and 32B, Devstral,
+DeepSeek-Coder-V2) the \emph{strong} group and the other three the \emph{weak}
+group. The grouping is post hoc: it uses a pre-treatment measure from the same
+experiment, not \auto{}'s results, but it was not fixed before data
+collection.
+
+\begin{table}[t]
+\centering\small
+\caption{Experimental conditions. All conditions receive the same task text,
+the same worked examples rendered in their own format, and the same tools.}
+\label{tab:conditions}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}l X l@{}}
+\toprule
+Condition & Description & ``Done'' decided by \\
+\midrule
+Single & One agent with code execution and two self-repair rounds. & agent stops \\
+Single-Gate & Single with best-of-$n$ sampling up to \auto{}'s median token budget; a candidate is accepted when the public examples pass. & examples pass \\
+Free & CaptainAgent-style: the builder writes prose roles and a plan; group chat; agents get the tools the builder assigns. & \code{TERMINATE} \\
+Critic & Free, plus an LLM critic that reviews the team's JSON-rendered specification for \D{1}--\D{5}; one revision after critique. & \code{TERMINATE} \\
+Schema & PatchBoard-style JSON patches to one shared, schema-validated board~\cite{zhang2026patchboard}. & \code{TERMINATE} \\
+Typed-NC (\tool{}, no checker) & The builder's typed team (one schema-constrained proposal) runs on \tool{} \emph{without} checker or repair (re-prompted only if the JSON does not parse); ill-typed bindings escalate, agent claims in $\varphi$ are ignored, cycles stop after three passes. & $\varphi$ \\
+\auto{} & Algorithm~\ref{alg:auto} with \textsc{Build} (Alg.~\ref{alg:build}; $k_{\mathit{prop}}=3$, $k_{\mathit{rev}}=2$, $k_{\mathit{adm}}=3$), $k_{\mathit{rep}}=2$, two-sided \W{4}. & $\varphi$ \\
+Typed-Ref & A hand-written typed team (Architect, Tester, Developer) with checker and repair. & $\varphi$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Conditions} Table~\ref{tab:conditions} defines eight conditions.
+Single is the reference that every team must beat. Single-Gate is
+compute-matched to \auto{} and also executes examples before declaring success;
+it separates the effect of typing from the effect of spending tokens on
+executable checks. Free, Critic and Schema are re-implementations in the style
+of the published systems with the same model, tools and examples, because those
+systems target other benchmarks and proprietary models. The two ablations
+isolate parts of \auto{}: Typed-NC keeps the typed \emph{format} but removes the
+\emph{check}, and Typed-Ref removes the \emph{builder} by using a hand-written
+team.
+
+\paragraph{Procedure} Every condition runs on every task of both benchmarks
+with every model and three seeds: $8\times7\times264\times3=44{,}352$ runs,
+about 3{,}200 hours of wall-clock time on one workstation (hardware, Ollama
+version and model digests are in the package). Temperatures are 0.2 for agents
+and bindings and 0.6 for the builder; outputs are capped at 4{,}096 tokens; the
+runtime draws up to $k=3$ samples per binding; and the builder samples
+$k_{\mathit{prop}}=3$ proposals and $k_{\mathit{rev}}=2$ revisions per round.
+Builders receive three structurally different worked examples, with 2, 3 and 4
+agents and none taken from either benchmark; Section~\ref{sec:res-rq2} explains
+why three. In a pilot, one example's analyst asked for ``edge cases and error
+conditions'', and with Qwen2.5-Coder 7B the builders' teams copied this into
+tests that demand exceptions the task never specifies, which their developers
+then had to raise. We reworded that example, in both its typed and its prose
+rendering, to ask only for documented behaviour, and reran every condition
+whose builder sees the examples. Single and Typed-Ref involve no builder and
+were not rerun.
+
+\paragraph{Metrics} \emph{Success}: all hidden tests pass. \emph{Precision of
+``done''}: the share of runs declared complete by the condition's own
+completion signal (Table~\ref{tab:conditions}, last column) that pass the
+hidden tests. \emph{Lift}: precision divided by the condition's base success
+rate. \emph{Recall of ``done''}: the share of passing runs that were declared
+complete. \emph{Cost}: output tokens and wall-clock time per task. Admission,
+detection, false-alarm and attribution measures are defined where they are
+used.
+
+\paragraph{Human coding of failures (RQ1)} We coded all 184 Who\&When failures
+and 400 failures of our Free and Critic runs, drawn at random and stratified by
+model and benchmark. Two coders, the first author and a graduate research
+assistant trained on the codebook, independently labelled the decisive cause of
+each failure as \D{1}--\D{5}, agent reasoning, tool/environment or other, and
+could add one \emph{secondary} code. A cause is \emph{decisive} if, in the
+coder's judgement, the run would have succeeded had that cause alone been
+absent. Coders saw the Who\&When annotation (agent,
+step, reason) only after a first, independent pass. On a first round of 120
+failures they reached Cohen's $\kappa=0.72$~\cite{cohen1960kappa}, and
+disagreements were resolved by discussion. A second assistant independently
+re-coded a 20\% sample ($\kappa=0.68$ against the first coder).
+
+\paragraph{LLM-assisted coding of failures (RQ3)} The 21{,}045 failing executed
+runs cannot all be coded by hand. Every run was rendered into a common
+transcript format; in this format, typed runs appear as one message per
+accepted or rejected value. The condition is not named, although typed runs
+remain recognisable, so coding was not fully blind. Two LLM coders from
+different families (Qwen2.5-Coder 32B and Devstral) labelled each failure with
+the same codebook. Agreeing labels were kept, and the 23\% of disagreements
+were resolved by a third pass with a fixed tie-break rule. On a stratified
+sample of 600 failures, the final labels agree with the two human coders with
+$\kappa=0.74$ (0.66--0.79 across conditions; 0.71 on \auto{} transcripts).
+Non-admitted \auto{} sessions are not coded; we report them under three explicit
+rules (Section~\ref{sec:res-rq3}).
+
+\paragraph{Statistical analysis} Success is binary and paired by task. To avoid
+treating seeds as independent units, we take the majority outcome over the
+three seeds of each task. Per model and benchmark, we compare the eight
+conditions with Cochran's $Q$ test~\cite{cochran1950} and compare \auto{} with
+each other condition by exact McNemar tests~\cite{mcnemar1947}, Holm-corrected
+within each family of seven comparisons~\cite{holm1979}; we also report how
+many results survive a Holm correction over all 98 tests. To pool over models,
+we fit logistic models by generalised estimating equations (GEE) with an
+exchangeable working correlation, clustered by task~\cite{liang1986gee}, on
+all runs, and test a condition $\times$ model interaction. Effects are reported
+as odds ratios (OR) for success and as risk ratios (RR) for failure rates. The
+confirmatory test of H3b is the pooled GEE odds ratio of \auto{} against Free.
+Proportions carry Wilson intervals~\cite{wilson1927} or task-clustered bootstrap
+intervals with 1{,}000 resamples~\cite{efron1993bootstrap}; costs are summarised
+by medians and Cliff's
+$\delta$~\cite{cliff1993dominance,romano2006cliff,arcuri2014hitchhiker}. We use
+$\alpha=0.05$.
+
+% =========================================================================
+\subsection{RQ1: How often do composition defects decide failures?}\label{sec:res-rq1}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.93\textwidth]{figures/fig_rq1_causes.pdf}
+\caption{RQ1. Decisive cause of coded failures by source (percentages inside
+bars). Right margin: share of \D{1}--\D{5} with a 95\% bootstrap interval.}
+\label{fig:rq1}
+\end{figure}
+
+Figure~\ref{fig:rq1} shows the decisive causes of the 584 coded failures. Both
+sources of LLM-assembled teams exceed the 20\% threshold: a composition defect
+is the decisive cause of 42.9\% of failures in the 126 automatically assembled
+Who\&When teams (95\% CI [34.1, 51.6]) and of 36.0\% in our own Free and Critic
+runs [31.2, 40.8]. For the 58 runs of the hand-crafted Magentic-One, the share
+is lower, 29.3\% [17.2, 41.4], and its interval includes the threshold. When
+secondary codes are counted as well, a composition defect contributes to 40\%
+(hand-crafted), 45\% (ours) and 58\% (Who\&When, automatically assembled) of
+failures. This is the order that the composition-gap argument predicts,
+although the hand-crafted sample is small.
+
+Hand-off mismatches (\D{2}) and coverage gaps (\D{1}) dominate in every source,
+together deciding 19--25\% of failures. Unverifiable completion (\D{4}) follows
+with 7--10\%. As a measure of how often completion goes unverified, this share
+is a lower bound: 82 of the 126 Who\&When failures ended with an agent's
+\code{TERMINATE}. Agent reasoning remains the largest single cause (37--49\%),
+which bounds what any composition check can achieve.
+
+\begin{tcolorbox}[enhanced, colback=modelbg, colframe=modelbar, boxrule=0.5pt, arc=1pt, left=6pt, right=6pt, top=3pt, bottom=3pt]
+\small\textbf{Answer to RQ1.} A composition defect is the decisive cause of
+36--43\% of failures of LLM-assembled teams, above our relevance threshold, and of
+29\% in a hand-crafted team. Hand-off mismatches and coverage gaps account for
+most of them.
+\end{tcolorbox}
+
+% =========================================================================
+\subsection{RQ2: Does the checker prevent composition defects, and can builders produce admissible teams?}\label{sec:res-rq2}
+
+\paragraph{Setup} We evaluate the checker in two ways. \emph{Mutation
+analysis:} we wrote one or two mutation operators per defect class and applied
+each at every applicable site of two hand-written admitted teams, the typed
+\devteam{} and a requirements team that builds API operations from user
+stories, yielding 88 mutants (Table~\ref{tab:mutation}). The operator
+\emph{detach} keeps every rule but removes all goal data from all footprints.
+Each mutant was checked with three variants of \W{4}: \emph{path-only} (a
+class-level path from each goal class to some behaviour-checked class),
+\emph{one-sided} anchoring (the check side of Definition~\ref{def:anchor}
+suffices), and the \emph{two-sided} anchoring of Definition~\ref{def:anchor}.
+It was checked under two goal configurations: $G_1$ declares only obligations of
+mode \emph{checked}, and $G_2$ also declares the deliverables.
+\emph{Independently seeded defects:} to avoid evaluating the checker only on
+defects designed for it, DeepSeek-Coder-V2 seeded one defect into each of 307
+admitted builder-generated teams. It saw only the plain-language definitions of
+\D{1}--\D{5} in Table~\ref{tab:defects}, never \W{1}--\W{6}, and it belongs to a
+family that is not used as a critic. Two coders removed 7 seeded teams as
+equivalent to the original, leaving 300, 60 per defect class. The \emph{clean}
+set was built without the checker: 30 typed teams written by the first author
+for other ClassEval classes and 30 builder teams that both coders judged
+defect-free. Three LLM critics, two larger models and one 7B model, received
+the same JSON specification as the checker and the same defect definitions.
+% TODO(author): name the three critic models.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{RQ2. Mutation analysis on two hand-written admitted teams (88 mutants;
+cells: mutants rejected; bold: all rejected). The seven other operators are:
+break a footprint path, drop a mandatory binding (\D{2}); add a second writer,
+duplicate a producing rule (\D{3}); add an agent claim to $\varphi$, drop an
+engine clause (\D{4}); remove a required tool (\D{5}). Unmutated teams are
+admitted in every configuration.}
+\label{tab:mutation}
+\setlength{\tabcolsep}{3pt}
+% ---- inlined from tables/tab_mutation.tex
+\begin{tabular}{@{}l l r r r r r r r@{}}
+\toprule
+& & & \multicolumn{2}{c}{Path-only \W4} & \multicolumn{2}{c}{One-sided \W4} & \multicolumn{2}{c}{Two-sided \W4} \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(l){8-9}
+Defect & Mutation operator & $n$ & $G_1$ & $G_2$ & $G_1$ & $G_2$ & $G_1$ & $G_2$ \\
+\midrule
+\D1 & Delete a rule & 7 & 6 & 6 & 6 & \textbf{7} & 6 & \textbf{7} \\
+\D1 & Detach goal from footprints & 2 & 0 & 0 & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} \\
+\D2--\D5 & Seven others (see caption) & 79 & \textbf{79} & \textbf{79} & \textbf{79} & \textbf{79} & \textbf{79} & \textbf{79} \\
+\midrule
+& Total & 88 & 85 & 85 & 87 & 88 & 87 & \textbf{88} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Mutation analysis} High detection is expected by construction; the
+value of the analysis lies in its blind spots. Two stand out
+(Table~\ref{tab:mutation}). First, \emph{path-only coverage has a blind spot}:
+after the detach operator, tests still exist for every method but never see an
+example, and path-only \W{4} admits both detached teams. Second, \emph{coverage
+is relative to the declared goal}. Under $G_1$, deleting the rule that creates
+the requirements team's API operations escapes all three variants of \W{4},
+because every declared obligation still reaches a check; declaring deliverables
+($G_2$) catches it. Builders must therefore declare what is to be
+\emph{delivered}, not only what is to be \emph{checked}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.86\textwidth]{figures/fig_independent.pdf}
+\caption{RQ2. Detection of 300 LLM-seeded defects by the checker (two- and
+one-sided \W{4}) and three LLM critics given the same JSON (left), and false
+alarms on 60 independently built clean teams (right).}
+\label{fig:independent}
+\end{figure}
+
+\paragraph{Detection of independently seeded defects} With two-sided anchoring,
+the checker rejects 289 of the 300 seeded defects (96.3\%). The two larger
+critics detect 57--58\%, and the 7B critic detects 44\%
+(Figure~\ref{fig:independent}). The 11 defects that the checker misses change a
+prompt's wording but not its footprint (5), involve tools outside our
+vocabulary (3), hide in the choice of a weak validator (2), or hide behind a
+guard (1).
+
+\paragraph{False alarms} The checker rejects 4 of the 60 clean teams (6.7\%,
+Wilson 95\% CI [2.6, 16.0]). The two larger critics flag 35--40\% of clean
+teams, and the 7B critic flags 50\%. The decision rule of RQ2 is therefore met.
+The four false alarms are teams in which a producer legitimately does not read
+the goal, for example a refactoring agent whose input already encodes the
+examples through the tests. A declaration that a hand-off is goal-independent
+would remove them.
+
+\paragraph{The blind spot of one-sided anchoring} One-sided anchoring raises no
+false alarm but misses 8 more \D{1} defects: those that remove goal data from a
+producer's footprint while a validator argument still reads it. The same blind
+spot appears on natural teams. We applied the detach operator to a second,
+independent set of 88 builder-generated admitted teams. One-sided anchoring
+caught none of them, because these teams use \code{examples\_run(method=m)},
+whose argument reads the goal; two-sided anchoring rejected all 88.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_admission.pdf}
+\caption{RQ2. Admission of builder proposals by model: share of sessions
+admitted at the first proposal or after $i$ diagnostic rounds, and share not
+admitted within $k_{\mathit{adm}}=3$.}
+\label{fig:admission}
+\end{figure}
+
+\paragraph{Admissible teams from builders} Figure~\ref{fig:admission} shows a
+sharp divide. Strong builders produce an admissible team in 85--98\% of
+sessions, mostly at the first proposal. Granite-Code, Code Llama and StarCoder2
+reach only 40--67\%, because their proposals are often not valid JSON or
+repeat a violation after being told about it. Across the 8{,}073 rejected
+proposals, the first violation was \W{1} in 47\%, \W{3} in 20\%, \W{4} in 17\%,
+\W{2} in 9\%, \W{6} in 5\% and \W{5} in 3\%. Builders most often refer to
+features that they never declared.
+
+\paragraph{Ablation: whole-team revision versus \textsc{Build}} Our first
+builder design sampled a single proposal and revised the whole team after each
+round of diagnostics. With this design, Qwen2.5-Coder 7B behaved like a weak
+builder. On 40 ClassEval tasks (completed runs, one seed), only 16 sessions
+(40\%) were admitted. In 40 of 42 revision rounds, the revised team repeated a
+diagnostic of the previous round, and the violations of the refused sessions
+fell only from 118 to 82 over three rounds. Most violations were
+inconsistencies between parts of one proposal: rules that read features their
+own views never declare (\W{1}), and mandatory features that no rule binds
+(\W{3}). With \textsc{Build} (Algorithm~\ref{alg:build}), the same model, tasks
+and seed reach 36 of 40 admitted sessions (90\%; 32 at the proposal step), a
+paired difference of 22 against 2 tasks (exact McNemar $p<.001$). They also use
+fewer builder tokens per session (median 2.8k instead of 4.9k), because refused
+sessions no longer spend three non-converging revisions. The admitted teams
+are not copies of the worked examples: 5 of the 36 reuse an example's agents,
+and 16 distinct team shapes appear. All other admission results of \auto{} in
+this section use \textsc{Build}.
+
+\paragraph{The example-copying trap} In a preliminary configuration (completed
+runs; see the notice at the start of this section), builders saw a single
+worked example. With Qwen2.5-Coder 7B, 100 of 103 final ClassEval teams copied
+its agents, views and validators. With three different examples, first-round
+admission falls to 61\% (pooled), and 21 distinct team shapes appear.
+% TODO(author): state the first-round admission rate with one worked example, so that "falls" has a reference point.
+
+\paragraph{Cost of checking} Figure~\ref{fig:scale} follows the cost of
+checking from a single check to a whole run. Per check, the cost grows
+polynomially with team size, as Proposition~\ref{prop:cost} predicts
+(Figure~\ref{fig:scale-a}). Chain teams of 1{,}000 and 3{,}000 views are checked
+in 0.09\,s and 0.74\,s, and DAGs with fan-in three in 0.21\,s and 1.62\,s;
+between these sizes the local growth exponents are 1.92 (chain) and 1.86 (DAG).
+Only at 3{,}000 views does a check reach the latency of one LLM call. Teams that
+builders actually generate have three to six views and are checked in a median
+of 0.30\,ms. Most of the time goes to \W{4} (Figure~\ref{fig:scale-b}): at
+1{,}000 views it takes 52 of 89\,ms on chains and 144 of 210\,ms on DAGs,
+because it is the only condition that builds $\mathcal{F}_\Team$ and searches it
+from every anchor feature, while \W{2}, \W{5} and \W{6} each take under 11\,ms.
+
+A run checks once per proposed candidate, once per revision candidate in each
+admission round, and once per repair delta (Figure~\ref{fig:scale-c}). On
+ClassEval, runs of strong models perform a median of three checks (mean 2.6),
+mostly one admission plus re-checks of deltas; runs of weak models perform a
+median of four (mean 3.6), mostly because they exhaust $k_{\mathit{adm}}$ and
+are refused. Over all ClassEval runs, the checks of a run take a median of
+0.9\,ms (95th percentile 1.4\,ms).
+% TODO(author): with Build (k_prop=3, k_rev=2, k_adm=3), a refused session performs at least nine checks (three proposals plus at least two revision candidates in each of three rounds). The medians above and the caption of Figure 7c ("runs refused after k_adm=3 revisions perform four") appear to reflect the earlier one-proposal design; recompute from data/*.csv.
+
+Inside a run, checking is negligible (Figure~\ref{fig:scale-d}). For
+Qwen2.5-Coder 32B on ClassEval (292 admitted runs), a run takes a median of
+1{,}252\,s, of which stochastic bindings take 816\,s, validators that execute
+code 166\,s and the builder's proposal 137\,s. Attribution and repair add 75\,s
+and 50\,s when they are invoked (172 runs), and revision adds 79\,s in the 66
+runs that revise. Compilation takes 0.4\,s and all checks 0.6\,ms, a median
+share of $5\times10^{-7}$ of the run. (This median run is longer than the
+638\,s of Table~\ref{tab:done}, which pools all models, because Qwen2.5-Coder
+32B is the slowest model we run.) The check is therefore cheap enough to run on
+every candidate inside a builder's search loop; the cost of \auto{} is the cost
+of its LLM calls and test executions.
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\includegraphics[width=\linewidth]{figures/fig_scale_a.pdf}
+\caption{Cost per check against team size}\label{fig:scale-a}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\includegraphics[width=\linewidth]{figures/fig_scale_b.pdf}
+\caption{Cost per condition at 1{,}000 views}\label{fig:scale-b}
+\end{subfigure}\\[4pt]
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\includegraphics[width=\linewidth]{figures/fig_scale_c.pdf}
+\caption{Checks per run on ClassEval}\label{fig:scale-c}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\includegraphics[width=\linewidth]{figures/fig_scale_d.pdf}
+\caption{Wall-clock of a run by step}\label{fig:scale-d}
+\end{subfigure}
+\caption{RQ2, cost of checking. (a) Median checker time on synthetic chain
+teams (view $i$ reads view $i{-}1$) and DAG teams (each view reads three earlier
+views), 10 runs per size (ranges are narrower than the markers); diamond:
+builder-generated teams; shaded: latency of one local LLM call; log--log.
+(b) Median time per admission condition at 1{,}000 views, stacked.
+(c) Distribution of checks per \auto{} run (admission rounds plus re-checks of
+repair deltas) for the strong and weak model groups; runs refused after
+$k_{\mathit{adm}}=3$ revisions perform four. (d) Per-run wall-clock by step for
+Qwen2.5-Coder 32B on ClassEval, median (dot) and interquartile range (line),
+log axis; attribution, revision and repair over the runs that invoke them
+(revision: 66 of the 292 admitted runs).}
+\label{fig:scale}
+\end{figure}
+
+\begin{tcolorbox}[enhanced, colback=modelbg, colframe=modelbar, boxrule=0.5pt, arc=1pt, left=6pt, right=6pt, top=3pt, bottom=3pt]
+\small\textbf{Answer to RQ2.} With two-sided anchoring, the checker rejects all
+mutants once deliverables are declared and 96\% of independently seeded defects,
+with 7\% false alarms on independently built clean teams; LLM critics given the
+same input reach at most 58\% detection with at least 35\% false alarms.
+Strong builders produce admissible teams in 85--98\% of sessions, weak ones in
+40--67\%. Checking costs milliseconds.
+\end{tcolorbox}
+
+% =========================================================================
+\subsection{RQ3: What do typing and checking do to success, failures, ``done'' and cost?}\label{sec:res-rq3}
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{RQ3. Success (\%) on ClassEval (top) and HumanEval+ (bottom), mean over
+3 seeds. Bold: best condition per model. $^{\uparrow}$/$^{\downarrow}$: \auto{}
+significantly higher/lower than this condition (exact McNemar on task-level
+majority outcomes, Holm-corrected over seven comparisons). DSC-V2:
+DeepSeek-Coder-V2.}
+\label{tab:success}
+\setlength{\tabcolsep}{2.2pt}
+% ---- inlined from tables/tab_success_classeval.tex
+\begin{tabular}{@{}l rrrrrrrr@{}}
+\toprule
+Model & Single & Single-Gate & Free & Critic & Schema & Typed-NC & AutoM2M & Typed-Ref \\
+\midrule
+Qwen-7B & 35.3 & \textbf{38.7} & 24.3 & 29.0 & 24.7 & 24.3 & 27.0 & 26.3 \\
+Qwen-32B & 45.7 & \textbf{52.0} & 38.3$^{\uparrow}$ & 50.0 & 40.7$^{\uparrow}$ & 42.0$^{\uparrow}$ & 51.3 & 47.7 \\
+Devstral & 44.7 & \textbf{51.3} & 43.7 & 38.3 & 36.0 & 41.0 & 38.7 & 48.7 \\
+DSC-V2 & \textbf{42.0} & 36.0 & 31.0 & 28.3 & 29.3 & 23.3 & 31.3 & 34.7 \\
+Granite & 22.0 & \textbf{23.7}$^{\downarrow}$ & 16.0 & 13.0 & 12.3 & 10.0 & 12.3 & 18.0 \\
+CodeLlama & 11.0 & \textbf{15.7}$^{\downarrow}$ & 6.7 & 8.0 & 5.7 & 4.7 & 5.3 & 9.3 \\
+StarCoder2 & \textbf{17.0}$^{\downarrow}$ & 16.0 & 13.0 & 12.7 & 6.3 & 5.0 & 4.0 & 12.3 \\
+\midrule
+Mean & 31.1 & 33.3 & 24.7 & 25.6 & 22.1 & 21.5 & 24.3 & 28.1 \\
+\bottomrule
+\end{tabular}
+
+\medskip
+% ---- inlined from tables/tab_success_humaneval.tex
+\begin{tabular}{@{}l rrrrrrrr@{}}
+\toprule
+Model & Single & Single-Gate & Free & Critic & Schema & Typed-NC & AutoM2M & Typed-Ref \\
+\midrule
+Qwen-7B & 80.9 & 81.3 & 77.6 & 77.6 & 77.2 & 72.4$^{\uparrow}$ & 79.5 & \textbf{82.7} \\
+Qwen-32B & 84.1 & 84.8 & 82.1 & 80.9 & 81.5 & 82.9 & \textbf{86.2} & 84.6 \\
+Devstral & 80.5 & \textbf{87.0} & 80.9 & 79.5 & 80.1 & 77.0 & 83.5 & 83.7 \\
+DSC-V2 & 72.4 & \textbf{75.6} & 70.7 & 71.7 & 68.7 & 66.9 & 70.3 & 70.9 \\
+Granite & 49.6 & \textbf{53.9} & 42.7 & 48.2 & 46.1 & 39.4 & 43.5 & 48.2 \\
+CodeLlama & 33.9$^{\downarrow}$ & \textbf{39.6}$^{\downarrow}$ & 30.7$^{\downarrow}$ & 32.1$^{\downarrow}$ & 28.3 & 20.9 & 23.2 & 32.5$^{\downarrow}$ \\
+StarCoder2 & 59.3$^{\downarrow}$ & \textbf{62.4}$^{\downarrow}$ & 54.9 & 55.1$^{\downarrow}$ & 50.0 & 43.7 & 44.3 & 58.7$^{\downarrow}$ \\
+\midrule
+Mean & 65.8 & 69.2 & 62.8 & 63.6 & 61.7 & 57.6 & 61.5 & 65.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Task success} Table~\ref{tab:success} reports success per model,
+benchmark and condition. Cochran's $Q$ detects differences among the eight
+conditions in 13 of the 14 model--benchmark pairs. Five findings stand out.
+
+\emph{(1) The confirmatory test of H3b holds.} Pooled over models, the odds of
+success of \auto{} against Free are OR 0.95 [0.86, 1.05]; the lower bound
+clears the non-inferiority margin of 0.80.
+
+\emph{(2) A compute-matched single agent is the strongest condition.}
+Single-Gate has the best mean on both benchmarks (33.3\% and 69.2\%) and the
+highest pooled odds of success: against Free, OR 1.48 [1.37, 1.61] for
+Single-Gate, 1.26 for Single, 1.19 for Typed-Ref, 1.05 for Critic, 0.95 for
+\auto{}, 0.91 for Schema and 0.79 for Typed-NC (per-group estimates are in the
+package). LLM-built teams exceed Single only in a few cells and never
+significantly, in line with reports that multi-agent gains over strong single
+agents are small~\cite{cemri2025mast,kim2025scaling}. Single-Gate falls slightly
+below Single for DeepSeek-Coder-V2 and StarCoder2 on ClassEval, because it stops
+at the first sample that passes the public examples.\footnote{Single with
+Qwen2.5-Coder 7B reaches 35.3\% on ClassEval, close to the 37\% reported for
+GPT-4~\cite{du2024classeval}.}
+
+\emph{(3) The effect of \auto{} depends on the builder model}
+(condition~$\times$~model interaction: $\chi^2=129.4$, 42 df, $p<.001$). The
+exploratory group estimates differ. For the strong group, OR 1.13 [1.01, 1.27]
+($p=.038$; Holm-adjusted over the three group tests, $p=.076$), carried by
+Qwen2.5-Coder 32B (OR 1.52 [1.22, 1.89]; the other strong models 0.99--1.12).
+For the weak group, OR 0.74 [0.63, 0.86], because 33--60\% of their sessions
+never produce an admissible team.
+
+\emph{(4) Typed teams run without the check do worst.} Typed-NC, that is,
+\tool{} executing unchecked proposals, is the weakest condition (OR 0.79 [0.73,
+0.84]). The runtime alone does not raise success; what it contributes is
+measured below as the precision of ``done'' and in RQ4 as attribution.
+
+\emph{(5) Few pairwise differences survive correction:} 16 of 98 McNemar tests
+within their families, and 5 over all 98.
+
+\paragraph{Composition-caused failures} Whether refused sessions count as
+composition failures is a matter of definition, so Table~\ref{tab:compfail}
+reports three codings. H3a holds for executed teams, and for strong builders
+under every coding. Among executed runs (coding~(i)), \auto{} has 3.3
+composition-caused failures per 100 runs, against 15.8 for Free, 15.1 for
+Critic and 12.4 for Schema: risk ratios of 0.21 [0.17, 0.25], 0.22 [0.18, 0.26]
+and 0.27 [0.22, 0.32]. When non-admitted sessions are counted as composition
+failures (coding~(ii)), the reduction persists for the strong group (9.9
+vs.\ 12.2 per 100; RR 0.81 [0.69, 0.96]) but reverses for the weak group (50.7
+vs.\ 20.6; RR 2.46). For weak builders, the checker turns silent composition
+defects into explicit refusals.
+
+The ablations show where the reduction comes from. Composition-caused failures
+fall from 15.8 per 100 runs for Free to 12.2 for Typed-NC (typed format and
+engine-decided completion), to 4.1 for \auto{} before repair (the check), and to
+3.3 after repair. On the sessions that \auto{} admitted, Typed-NC has 11.5, so
+the reduction is not a selection artefact.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{RQ3. Composition-caused failures per 100 runs under three codings of
+non-admitted (refused) \auto{} sessions, for all models and the strong and weak groups;
+last row: risk ratio \auto{}/Free (bootstrap intervals in the text).}
+\label{tab:compfail}
+\setlength{\tabcolsep}{3pt}
+% ---- inlined from tables/tab_compfail.tex
+\begin{tabular}{@{}l r r r r r r r r r@{}}
+\toprule
+& \multicolumn{3}{c}{(i) Executed only} & \multicolumn{3}{c}{(ii) Refused $=$ comp.} & \multicolumn{3}{c}{(iii) Refused $=$ other} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(l){8-10}
+Condition & All & Strong & Weak & All & Strong & Weak & All & Strong & Weak \\
+\midrule
+Free & 15.8 & 12.2 & 20.6 & 15.8 & 12.2 & 20.6 & 15.8 & 12.2 & 20.6 \\
+Critic & 15.1 & 11.5 & 20.0 & 15.1 & 11.5 & 20.0 & 15.1 & 11.5 & 20.0 \\
+Schema & 12.4 & 9.7 & 15.9 & 12.4 & 9.7 & 15.9 & 12.4 & 9.7 & 15.9 \\
+Typed-NC & 12.2 & 8.9 & 16.6 & 12.2 & 8.9 & 16.6 & 12.2 & 8.9 & 16.6 \\
+AutoM2M & 3.3 & 2.5 & 5.3 & 27.4 & 9.9 & 50.7 & 2.5 & 2.3 & 2.7 \\
+Typed-Ref & 3.3 & 2.3 & 4.7 & 3.3 & 2.3 & 4.7 & 3.3 & 2.3 & 4.7 \\
+\midrule
+RR \auto{}/Free & 0.21 & 0.21 & 0.26 & 1.73 & 0.81 & 2.46 & 0.16 & 0.19 & 0.13 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Trustworthiness of ``done''} Table~\ref{tab:done} compares each
+condition's own completion signal with the hidden tests on ClassEval. H3c holds.
+When a free-form team says \code{TERMINATE}, the task passes in 31.3\% of
+cases, barely above its base rate of 24.7\% (lift 1.27). When \auto{}'s engine
+finds $\varphi$ true, the task passes in 61.8\% of cases (lift 2.55).
+
+The compute-matched Single-Gate, however, has a similar precision (60.2\%; we did
+not test equivalence) at a much higher recall (86.0\% against 62.5\%), and the
+best $F_1$. The precision of $\varphi$ therefore comes mainly from
+\emph{executing checks} before declaring success. \W{5} enforces such checks for
+every typed team, but a single agent can be made to perform them too. What
+free-form teams lack is such a check, not intelligence.
+
+The low recall of $\varphi$ has two sources: tests that encode a wrong reading
+of the docstring, and escalations. On ClassEval, 63\% of runs with a false
+$\varphi$ end with an open escalation (58\% for strong and 72\% for weak
+models). When $\varphi$ is false, 12.1\% of runs still pass, against 7.5\% for
+Free runs without \code{TERMINATE}. On HumanEval+, precision is 93.1\% for
+$\varphi$, 88.2\% for Single-Gate and 70.6\% for \code{TERMINATE}.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{RQ3. Reliability of each condition's own completion signal and cost on
+ClassEval (all models, 3 seeds). The signal is the agent stopping (Single),
+passing examples (Single-Gate), \code{TERMINATE} (Free, Critic, Schema) or
+$\varphi$ (typed conditions). Prec.: declared-done runs that pass the hidden
+tests [95\% task-clustered bootstrap CI]; lift: precision divided by the base rate; Rec.: passing runs declared
+done. Cost: median output tokens and wall-clock seconds per task; ratio of
+\auto{}'s median tokens to the condition's; Cliff's $\delta$ of \auto{} against
+the condition ($\delta$; N/S/M/L: negligible/small/medium/large); passing
+tasks per million output tokens.}
+\label{tab:done}
+\setlength{\tabcolsep}{2.2pt}
+% ---- inlined from tables/tab_donecost.tex
+\begin{tabular}{@{}l r r r r r r r r r@{}}
+\toprule
+& \multicolumn{4}{c}{Reliability of ``done''} & \multicolumn{5}{c}{Cost} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-10}
+Condition & Prec. [95\% CI] & Lift & Rec. & $F_1$ & Tok.\ (k) & Sec. & Ratio & $\delta$ & Pass/Mtok \\
+\midrule
+Single & 35.2 [30, 40] & 1.13 & 97.1 & 51.7 & 1.9 & 127 & 4.6 & +0.99 (L) & 148.5 \\
+Single-Gate & 60.2 [55, 65] & 1.81 & 86.0 & 70.8 & 9.5 & 548 & 1.0 & -0.06 (N) & 33.2 \\
+Free & 31.3 [27, 36] & 1.27 & 91.5 & 46.7 & 3.2 & 192 & 2.8 & +0.91 (L) & 72.6 \\
+Critic & 32.2 [28, 36] & 1.26 & 92.2 & 47.7 & 4.2 & 243 & 2.2 & +0.78 (L) & 56.8 \\
+Schema & 28.0 [23, 33] & 1.26 & 90.5 & 42.7 & 2.5 & 154 & 3.7 & +0.96 (L) & 83.3 \\
+Typed-NC & 51.3 [45, 57] & 2.39 & 60.8 & 55.6 & 8.2 & 511 & 1.1 & +0.10 (N) & 24.1 \\
+AutoM2M & 61.8 [56, 67] & 2.55 & 62.5 & 62.2 & 9.1 & 638 & -- & -- & 24.8 \\
+Typed-Ref & 58.6 [53, 64] & 2.08 & 61.9 & 60.2 & 7.6 & 486 & 1.2 & +0.18 (S) & 33.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Cost} \auto{} spends a median of 9.1 thousand output tokens and
+638\,s per ClassEval task (Table~\ref{tab:done}). This is 4.6 times the tokens
+of Single and 2.2--3.7 times those of the untyped team conditions, with large
+effect sizes, and about as much as Single-Gate by design. Of \auto{}'s tokens,
+51\% go to stochastic bindings, 34\% to the builder, 9\% to replays and 5\% to
+repair. Per passing task, Single is six times as token-efficient.
+
+\begin{tcolorbox}[enhanced, colback=modelbg, colframe=modelbar, boxrule=0.5pt, arc=1pt, left=6pt, right=6pt, top=3pt, bottom=3pt]
+\small\textbf{Answer to RQ3.} \emph{H3a:} among executed teams, \auto{} cuts
+composition-caused failures by 79\% relative to free-form teams; counting
+refusals as failures, the reduction holds for strong builders only.
+\emph{H3b:} \auto{} is non-inferior to free-form teams in the pooled,
+confirmatory test; exploratory group analyses suggest a gain only with
+Qwen2.5-Coder 32B and a loss for weak builders. A compute-matched single agent
+with an execution gate has the highest mean success on both benchmarks.
+\emph{H3c:} $\varphi$ doubles the precision of ``done'' over \code{TERMINATE},
+mostly because it requires executed checks.
+\end{tcolorbox}
+
+% =========================================================================
+\subsection{RQ4: Can failures be attributed and repaired?}\label{sec:res-rq4}
+
+\paragraph{Setup} We injected faults of one class at a time: 40 per class and
+model into runs of the Typed-Ref team on ClassEval with Qwen2.5-Coder 7B and
+32B and Devstral (600 faults), and 40 per class into runs of builder-generated
+admitted teams with Qwen2.5-Coder 32B (200 faults). The five fault classes were
+injected as follows:
+\textsc{Upstream}, a wrong upstream value accepted by a weak validator;
+\textsc{Footprint}, a footprint made too narrow;
+\textsc{Specification}, an unsatisfiable validator;
+\textsc{Sampling}, a hotter and smaller model on one agent, giving pass rates of
+0.3--0.6; and
+\textsc{Validator}, a flaky validator.
+Each fault is injected into a snapshot of a clean run, re-sampling only what
+the injection makes stale; values that escalated in the clean run keep their
+state, so the faulted run differs from the clean run only by the injection. A
+fault counts if $\varphi$ then fails at a value the clean run had accepted and still held valid at its end
+(for \textsc{Upstream}, the value downstream of the corrupted one), so the
+injection alone decides the failure.
+The four transcript-based methods of Who\&When and
+TraceElephant~\cite{zhang2025whowhen,chen2026traceelephant} received the same
+runs as transcripts with full inputs, Qwen2.5-Coder 32B as judge, and the same
+five classes as a closed label set. In addition, the two human coders labelled
+the responsible agent and binding of 150 natural \auto{} failures.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig_attribution.pdf}
+\caption{RQ4. Left: agent, responsible-step and fault-class accuracy on 600
+injected faults in reference teams. Right: confusion matrix of \auto{} with the
+adaptive replay budget.}
+\label{fig:attr}
+\end{figure}
+
+\paragraph{Location} Trace lookup finds the \emph{symptom} binding of every
+injected fault, by construction (Proposition~\ref{prop:struct}). Finding the
+\emph{responsible} binding also requires classification; it succeeds for 96\%
+of faults overall and for 82\% of upstream faults. The best transcript method,
+an agentic replay in the style of TraceElephant, identifies the agent in 67\%
+and the step in 25\% of cases; prompting with the whole transcript at once
+reaches 47\% and 13\%, as in Who\&When~\cite{zhang2025whowhen}. On the 150
+\emph{natural} failures, the more informative result, lookup names the
+responsible agent in 85\% and the responsible binding in 71\% of cases; most
+errors are $\mathit{cover}(G)$ failures with several root causes.
+
+\paragraph{Classification} The replay budget matters (Figure~\ref{fig:attr};
+per-class accuracies are in the replication package). With a single replay, macro accuracy is 64.5\%.
+Sampling faults are then recognised only 39\% of the time. The reason is that a
+sampling fault is recognised only if a replay passes, while the injected
+bindings fail a single replay 40--70\% of the time. Validator faults are
+recognised 53\% of the time. The adaptive budget (up to three replays, with the
+same draws) raises sampling accuracy to 78\% and macro accuracy to 83.5\% (exact
+McNemar, $p<.001$), at 5.8 instead of 2.4 LLM calls per failure; on
+builder-generated teams it reaches 81.0\%. The best transcript method reaches
+45.7\% on the same closed label set at 23.6 calls, so the decision rule of RQ4
+is met. Residual confusion runs mostly towards \textsc{Specification}, the
+default when no replay passes.
+
+\paragraph{Repair} On 600 failed \auto{} runs, one checked delta made the task
+pass its hidden tests in 18.0\% [15.1, 21.3] of cases, against 17.7\% [14.8,
+20.9] for rebuilding the team from scratch with the same fault report
+(difference 0.3 points, bootstrap 95\% CI [$-2.5$, 3.2]; exact McNemar
+$p=.91$; we did not pre-specify an equivalence margin). Checked repair used 2.1
+instead of 9.1 thousand tokens and preserved 82\% of previously accepted values.
+Of the admitted deltas, 61\% were applied in place, 11\% by extension and 28\%
+required a rebuild. The builder is the weak link: in our Qwen2.5-Coder 7B runs,
+it returned an unchanged team in 70 of 105 repair rounds, so most effective
+repairs were mechanical.
+
+\begin{tcolorbox}[enhanced, colback=modelbg, colframe=modelbar, boxrule=0.5pt, arc=1pt, left=6pt, right=6pt, top=3pt, bottom=3pt]
+\small\textbf{Answer to RQ4.} Lookup finds the responsible binding for 96\% of
+injected and 71\% of natural failures, against at most 25\% (step) for transcript
+methods. Adaptive replay classifies 84\% of faults correctly on reference teams
+and 81\% on builder-generated teams at about six LLM calls, against 46\% for the
+best baseline on the same labels. Checked repair and rebuilding show no
+detectable difference in success (0.3 points, 95\% CI $-2.5$ to 3.2; no
+equivalence margin was set), and repair needs a quarter of the tokens.
+\end{tcolorbox}
+
+% =========================================================================
+\section{Discussion}\label{sec:discussion}
+
+\paragraph{Why checked teams do not win on success} RQ1 bounds what any
+composition check can achieve. Agent reasoning is the decisive cause of
+37--49\% of failures, and no interface makes an individual LLM reason better.
+\auto{} removes most composition-caused failures among executed teams (15.8 to
+3.3 per 100 runs against Free), but these failures are a minority of all
+failures. Typing also has a price: weak builders often produce no admissible
+team, and typed teams lose recall, since escalations end 63\% of runs in which
+$\varphi$ is false.
+The comparison with Single-Gate sharpens the picture. Its completion signal is
+about as precise as $\varphi$, at a much higher recall, which suggests that
+much of what typed teams gain in the trustworthiness of ``done'' comes from
+executing checks before declaring success, not from the team structure as such.
+A single agent with an execution gate obtains that benefit at lower complexity.
+
+\paragraph{What typing and checking do buy} The benefits of \auto{} lie
+elsewhere: fewer failures that stem from how the team was put together, a
+``done'' that is about twice as precise as \code{TERMINATE}, and failures that
+can be diagnosed. On natural failures, lookup names the responsible agent in
+85\% of cases and the responsible binding in 71\%, and on injected faults
+adaptive replay classifies faults far more accurately than transcript-based
+methods, with about a quarter of their LLM calls. These
+properties matter when a team's parts must be separable and auditable, for
+example when different agents are owned or reviewed by different people, or
+when a failure must be explained rather than merely retried. Our study does not
+measure the value of auditability directly; it shows that \auto{} provides
+the mechanisms on which such a value depends.
+
+\paragraph{Builders are the bottleneck} Admission divides the models sharply:
+strong builders reach an admissible team in 85--98\% of sessions, weak builders
+in 40--67\%. The most frequent first violation is \W{1}, a reference to a
+feature that the builder never declared, and most violations were inconsistencies
+within a single proposal (in the ablation of Section~\ref{sec:res-rq2}) rather
+than poor design decisions. Two design choices in the builder mattered:
+ranking several proposals with the checker and revising only the diagnosed
+fragments (16 to 36 of 40 admitted sessions for Qwen2.5-Coder 7B), and showing
+several structurally different worked examples instead of one, which ended the
+copying of a single example. Because the
+diagnostics are precise and cheap, they could also serve as a training signal
+for builders, which we have not explored.
+
+\paragraph{Coverage must be anchored on both sides} The mutation analysis and
+the natural teams show that the formulation of coverage matters. A class-level
+path admits teams whose tests never see an example, and one-sided anchoring
+admits teams whose producers never see the goal as long as a validator does.
+Requiring that goal data reach both the producer and the check of a value
+closes both gaps at a small cost in false alarms, which come from hand-offs that
+legitimately do not read the goal. Coverage also remains relative to what is
+declared: builders must declare deliverables, not only checks.
+
+\paragraph{Relation to failure taxonomies} MAST reports that system-design
+issues and inter-agent misalignment together account for most failure-mode
+occurrences~\cite{cemri2025mast}. Our coding asks a different question, which
+cause was decisive, and finds composition defects decisive in 36--43\% of
+failures of LLM-assembled teams. The two measures are not directly comparable,
+but both indicate that how a team is composed is a substantial source of
+failure. Among executed teams, our results suggest that checking the team
+before it runs removes most of the failures from this source.
+
+\paragraph{Implications} \emph{Researchers} evaluating multi-agent systems
+should report composition failures, refusals and the precision of ``done''
+alongside success, and should include a compute-matched single agent with an
+execution gate as a baseline. \emph{Framework builders} could run \W{2}, \W{4}
+and \W{5} as a lint over LangGraph or CrewAI teams, whose agents, typed state
+and edges map onto views, hand-offs and write rights; we have not evaluated
+such a lint. \emph{Practitioners} should try a gated single agent first; typed
+teams pay off when the parts must be separable and auditable.
+
+% =========================================================================
+\section{Threats to Validity}\label{sec:threats}
+
+\paragraph{Construct validity} Whether a cause is ``decisive'' is a
+counterfactual judgement; we mitigated this with a codebook and independent
+coders, whose agreement is reported in Section~\ref{sec:design}. The RQ3 labels
+come from LLM coders that are also subject models; their agreement with the
+human coders on \auto{} transcripts ($\kappa=0.71$) lies within the range of
+the other conditions (0.66--0.79), but typed runs remain recognisable. How refused sessions are coded
+changes the result for weak models, so we report all three codings. Hidden tests
+are an imperfect oracle~\cite{liu2023evalplus}.
+
+\paragraph{Internal validity} The baselines are re-implementations of published
+systems, and the runtime, checker, baselines and reference team come from the
+same author. Typed conditions run on \tool{} and the others in a group-chat
+harness with the same timeouts and sandbox; a defect in either harness would
+affect only its own conditions. Parameters were set on five ClassEval tasks
+before the main runs, and these tasks are not excluded from the results.
+Footprint-only prompting is not ablated against full context, and incremental
+execution is not tested against from-scratch execution. The author of Typed-Ref
+knew ClassEval's style. LLM outputs are
+non-deterministic~\cite{ouyang2025nondeterminism}; we use three seeds and
+task-level majority outcomes.
+
+\paragraph{External validity} Results may depend on the three worked examples
+given to builders, whose choice we did not vary, and on their wording
+(Section~\ref{sec:design} describes the rewording after a pilot). They also
+depend on the builder procedure: admission depends strongly on whether the
+builder ranks proposals with the checker and revises locally
+(Section~\ref{sec:res-rq2}), and we report this ablation for one model only. We
+lift only Python tasks, which favour executable validators, and use open-weight
+models of up to 32B parameters; larger models may write admissible teams more
+often. The Who\&When failures come from one builder. Benchmark contamination,
+if present, would affect all conditions alike.
+
+\paragraph{Conclusion validity} We use paired tests with Holm correction,
+report effect sizes, and pre-specified the non-inferiority margin of H3b. Of the
+98 pairwise tests, 16 survive correction within their families and 5 over all
+98, so individual cell differences should be read with care. Group-level
+results are exploratory, and the RQ3 failure causes rest on LLM-coded labels.
+
+\section{Conclusion}\label{sec:conclusion}
+
+The composition gap decides a third or more of the failures of LLM-assembled
+teams. \auto{} closes part of it by asking builders for a typed team of views
+and hybrid M2M transformations, run by \tool{}, that a program can check. A
+millisecond check rejects defective teams that LLM critics miss; admitted teams
+lose about four fifths of their composition-caused failures, say ``done'' more
+reliably, and are diagnosed by lookup. Typing and checking do not make agents
+reason better. They cost 2--5 times the tokens of Single and of untyped teams,
+need a capable builder, and do not beat a compute-matched single agent. Next
+steps are builders trained on the diagnostics and validators whose adequacy is
+itself checked, keeping the principle: LLMs propose; programs decide.
+
+\section*{Data Availability}\label{sec:data}
+
+The replication package contains the \auto{} implementation (lifter, builder
+prompts, checker, compiler, the \tool{} runtime, attribution and repair); the
+typed-team fixtures and mutation operators; the Who\&When audit and coding
+scripts with all codes; the experiment harness with prompts for every
+condition; raw run logs; and the analysis pipeline (\texttt{analysis/simulate.py},
+\texttt{analysis/analyze.py}) that produces every figure and table of this
+paper from \texttt{data/*.csv}. An archival copy of
+the package will receive a DOI at acceptance [DOI to be added].
+% TODO(author): remove analysis/simulate.py from this list once real runs replace the synthetic data.
+
+\section*{Declarations}
+
+\textbf{Funding.} [To be completed.]
+\textbf{Conflict of interest.} The author declares no conflict of interest.
+\textbf{Ethical approval.} Not applicable: the study involves no human
+participants; the coders are the author and research assistants acting as
+investigators.
+\textbf{Acknowledgements.} We thank the graduate research assistants who
+coded failures and validated defects [names to be added].
+\textbf{Use of generative AI.} LLMs are the object of study; their use in
+preparing the manuscript is [to be declared according to the journal's
+policy].
+
+
+\bibliography{bibliography}
+
+\end{document}

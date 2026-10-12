@@ -1,0 +1,15 @@
+-- T2 (Architect -> Developer). Reads the operation's signature AND the criteria T1
+-- copied onto it, so a tightened criterion obliges the code edit directly.
+module Arch2Code;
+create OUT : Code from IN : Arch;
+uses 'helpers.py';
+
+rule Operation2CodeEdit {
+  from op : Arch!Operation
+  to  ce : Code!CodeEdit (
+    name      <- op.name,
+    operation <- op,
+    body      <- @llm('Implement this operation as one self-contained Python function: first the signature, then the acceptance criteria it must satisfy. Answer with Python code only.',
+                       op.implFootprint()),  -- signature + the story's criteria
+    @check body.compiles() )
+}

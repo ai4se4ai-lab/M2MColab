@@ -1,0 +1,18 @@
+-- T4 (Analyst -> Tester), direct hand-off bypassing Arch/Code (Fig. 1's
+-- bent edge): "A second hand-off T4 (Criterion2TestCase) maps each
+-- acceptance criterion to a test case whose oracle body is a stochastic
+-- binding with footprint c.text; its validator requires that the oracle
+-- compiles and fails on a stub." (Sec III-B)
+module Req2Test;
+create OUT : Test from IN : Req;
+uses 'helpers.py';
+
+rule Criterion2TestCase {
+  from c : Req!Criterion
+  to  tc : Test!TestCase (
+    name      <- c.text,
+    criterion <- c,
+    oracle    <- @llm('Write a test oracle for this acceptance criterion: define a function test_oracle() that calls implementation() and asserts the criterion holds.',
+                       c.text),
+    @check oracle.failsOnStub() )
+}

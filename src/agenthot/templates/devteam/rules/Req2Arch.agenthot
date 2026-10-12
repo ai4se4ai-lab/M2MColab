@@ -1,0 +1,22 @@
+-- T1 (Analyst -> Architect): the paper's Listing 2.
+module Req2Arch;
+create OUT : Arch from IN : Req;
+uses 'helpers.py';
+
+rule Epic2Component {
+  from e : Req!Epic
+  to  c : Arch!Component ( name <- e.name )
+}
+
+rule Story2Operation {
+  from s : Req!UserStory
+           (s.status = #accepted)  -- guard: drafts are not handed off
+  to  op : Arch!Operation (
+    name      <- s.id.toOpName(),  -- structural
+    component <- s.epic,           -- resolved via trace (Epic -> Component)
+    criteria  <- s.criteria.criteriaText(),  -- structural copy: T2's footprint reads it (paper Sec. V)
+    signature <- @llm('Derive an API signature for this user story. Answer with exactly one line of the form name(param: Type, ...) -> ReturnType and nothing else.',
+                       s.criteria),  -- footprint
+    @check signature.parses()
+           and signature.params()->notEmpty() )
+}

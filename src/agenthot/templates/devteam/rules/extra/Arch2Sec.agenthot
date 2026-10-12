@@ -1,0 +1,18 @@
+-- T5 (Architect -> Security Reviewer), added at runtime by a HOT
+-- (paper Sec. III-D). Not in team.yaml: use `/autom2m:evolve` with the
+-- view spec in rules/extra/SecurityReviewer.view.yaml.
+module Arch2Sec;
+create OUT : Sec from IN : Arch;
+uses '../helpers.py';
+
+rule Operation2Review {
+  from op : Arch!Operation
+  to  sr : Sec!SecurityReview (
+    name      <- op.name,
+    operation <- op,
+    notes     <- @llm('Summarize any authentication or authorization concerns for this operation signature in at most three sentences.',
+                       op.signature),
+    risk      <- @llm('Rate the security risk of this operation as low, medium, or high. Respond with exactly one of those three words.',
+                       op.signature),
+    @check risk.parsesRisk() )
+}
