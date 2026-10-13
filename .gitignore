@@ -54,3 +54,4 @@ docs/*.synctex.gz
 docs/*.toc
 docs/*.vrb
 docs/*.xdv
+docs/use-hpc-eval/*
