@@ -1,0 +1,6 @@
+# run logs and collected results (large; kept on /project, not in git)
+logs/
+results/
+# local caches if WORK is pointed inside the repo
+data/
+__pycache__/

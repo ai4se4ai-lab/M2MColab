@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -355,9 +356,11 @@ def rq2_scale(runs: pd.DataFrame) -> None:
         _save(fig, "fig_scale_c.pdf")
         cs = am.check_seconds.dropna() * 1000
         out["check_ms_per_run"] = {"median": float(cs.median()), "p95": float(cs.quantile(0.95))} if len(cs) else {}
-    # (d) wall-clock of a run by step (the largest model run on ClassEval)
+    # (d) wall-clock of a run by step: Qwen2.5-Coder 32B as in the paper, else the largest model run on ClassEval
     if not am.empty:
-        m = sorted(am.model.unique())[-1]
+        size = {t: float(s.group(1)) if (s := re.search(r":(\d+(?:\.\d+)?)b", t)) else 0.0 for t in am.model.unique()}
+        m = "qwen2.5-coder:32b" if "qwen2.5-coder:32b" in size else max(size, key=size.get)
+        out["scale_d_model"] = m
         sub = am[(am.model == m) & (am.admitted == 1)]
         steps = {"builder proposal": sub.t_propose, "revision": sub.t_revise[sub.t_revise.fillna(0) > 0],
                  "compilation": sub.t_compile, "checks": sub.check_seconds,
@@ -688,6 +691,18 @@ def rq4() -> None:
                          "repair_tokens_median": float(rep.repair_tokens.median()), "rebuild_tokens_median": float(rep.rebuild_tokens.median()),
                          "preserved_mean": float(rep.preserved.dropna().mean()) if rep.preserved.notna().any() else float("nan"),
                          "modes": {k: v / n for k, v in Counter(rep["mode"].fillna("none")).items()}}
+    # per subject model, next to the pooled numbers above
+    if not inj.empty and "model" in inj:
+        by = {}
+        for (team, mdl), sub in inj[inj.manifested == 1].groupby(["team", "model"]):
+            acc = {f: float((sub[sub.fault == f].pred_class_n3 == f).mean()) for f in classes if (sub.fault == f).any()}
+            by[f"{team}|{mdl}"] = {"n": int(len(sub)), "macro_n3": statistics.mean(acc.values()) if acc else float("nan"),
+                                  "agent_ok": float(sub.agent_ok.mean()), "responsible_found": float(sub.responsible_ok.mean())}
+        out["inject_by_model"] = by
+    if not rep.empty and "model" in rep:
+        out["repair_by_model"] = {mdl: {"n": int(len(sub)), "repair_success": float(sub.repair_success.mean()),
+                                        "rebuild_success": float(sub.rebuild_success.mean())}
+                                  for mdl, sub in rep.groupby("model")}
     S["rq4"] = out
     if out.get("ref") or out.get("transcript_methods"):
         fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.6), gridspec_kw={"width_ratios": [1.3, 1]})

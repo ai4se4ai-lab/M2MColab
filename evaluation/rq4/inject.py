@@ -42,6 +42,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 FAULTS = ["upstream", "footprint", "specification", "sampling", "validator"]
 BROKEN = "```python\ndef {name}(*args, **kwargs):\n    return None\n```"
 
@@ -205,7 +206,7 @@ def load_builder_team(task_id: str, model: str) -> dict | None:
     from evaluation.run_matrix import _safe
 
     for seed in (1, 2, 3):
-        f = ROOT / "results" / "runs" / "classeval" / _safe(model) / "autom2m" / f"{_safe(task_id)}__s{seed}.json"
+        f = RESULTS / "runs" / "classeval" / _safe(model) / "autom2m" / f"{_safe(task_id)}__s{seed}.json"
         if f.exists():
             det = json.loads(f.read_text()).get("detail") or {}
             if det.get("admitted_round") is not None and det.get("final_team"):
@@ -442,7 +443,7 @@ def main(argv=None) -> int:
     from evaluation.benchmarks import tasks as T
 
     ids = [t.task_id for t in T.load("classeval")][: a.max_tasks]
-    out = ROOT / "results" / "rq4" / f"inject_{a.team}__{a.model.replace(':', '_')}.jsonl"
+    out = RESULTS / "rq4" / f"inject_{a.team}__{a.model.replace(':', '_')}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done, counts = set(), {f: 0 for f in FAULTS}
     if out.exists():

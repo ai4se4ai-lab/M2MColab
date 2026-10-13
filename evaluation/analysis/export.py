@@ -120,7 +120,8 @@ def main() -> int:
     rq1 = []
     for src in ("whowhen", "ours"):
         for x in _jsonl(RES / "rq1" / f"codes_{src}.jsonl"):
-            rq1.append({"id": x["id"], "source": x["source"], "condition": x.get("condition"),
+            rq1.append({"id": x["id"], "source": x["source"], "model": x.get("model"), "bench": x.get("bench"),
+                        "condition": x.get("condition"),
                         "coder_a": x["coder_a"]["code"], "coder_b": x["coder_b"]["code"],
                         "coder_a_annot": (x.get("coder_a_annot") or {}).get("code"),
                         "coder_b_annot": (x.get("coder_b_annot") or {}).get("code"),
@@ -182,7 +183,8 @@ def main() -> int:
     tr = []
     for f in sorted((RES / "rq4").glob("transcript_*.jsonl")):
         for x in _jsonl(f):
-            row = {"team": x.get("team"), "task": x["task"], "fault": x["fault"], "n_steps": x["n_steps"]}
+            row = {"team": x.get("team"), "model": x.get("model") or f.stem.split("__", 1)[-1], "task": x["task"],
+                   "fault": x["fault"], "n_steps": x["n_steps"]}
             for m in ("all_at_once", "step_by_step", "binary_search", "agentic_replay"):
                 if m in x:
                     row.update({f"{m}_agent": int(x[m]["agent_ok"]), f"{m}_step": int(x[m]["step_ok"]),
@@ -190,7 +192,7 @@ def main() -> int:
                                 f"{m}_pred": x[m].get("pred_class")})
             tr.append(row)
     print("rq4_transcript.csv", len(tr), _write("rq4_transcript.csv", tr))
-    nat = [{"run": x["run"], "bench": x["bench"], "fault_class": x["fault_class"], "agent_ok": int(x["agent_ok"]),
+    nat = [{"run": x["run"], "bench": x["bench"], "model": x.get("model"), "fault_class": x["fault_class"], "agent_ok": int(x["agent_ok"]),
             "binding_ok": int(x["binding_ok"]), "coders_agree": int(x["coders_agree"])}
            for x in _jsonl(RES / "rq4" / "natural.jsonl")]
     print("rq4_natural.csv", len(nat), _write("rq4_natural.csv", nat))
@@ -200,7 +202,8 @@ def main() -> int:
             if "repair" not in x or "rebuild" not in x:
                 continue
             info = x["repair"].get("info") or {}
-            rep.append({"bench": x["bench"], "task": x["task"], "seed": x["seed"],
+            rep.append({"bench": x["bench"], "model": x.get("model") or f.stem.split("__", 1)[-1], "task": x["task"],
+                        "seed": x["seed"],
                         "repair_success": int(bool(x["repair"].get("success"))), "repair_phi": int(bool(x["repair"].get("phi"))),
                         "repair_tokens": x["repair"].get("out_tokens"), "preserved": x["repair"].get("preserved"),
                         "mode": info.get("mode"), "source": info.get("source"), "admitted": int(bool(info.get("checked"))),

@@ -14,6 +14,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 
 def run_one(task_id: str, builder: str, model: str, seed: int) -> dict:
@@ -47,7 +48,7 @@ def main(argv=None) -> int:
     ap.add_argument("--builders", default="v1,v2")
     ap.add_argument("--workers", type=int, default=12)
     a = ap.parse_args(argv)
-    out = ROOT / "results" / "rq2" / f"builder_ablation__{a.model.replace(':', '_')}.jsonl"
+    out = RESULTS / "rq2" / f"builder_ablation__{a.model.replace(':', '_')}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = set()
     if out.exists():

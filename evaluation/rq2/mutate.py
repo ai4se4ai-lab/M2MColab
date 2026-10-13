@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -24,6 +25,7 @@ from autom2m.typed_team import DONE_VOCABULARY, parse_team, rule_env, type_path
 from autom2m.vlib import VLIB
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 DEFAULT_TEAMS = [ROOT / "teams" / "devteam_admitted.json", ROOT / "teams" / "reqteam_admitted.json"]
 G2_EXTRA = {"devteam": {"class": "Method", "scope": "all", "mode": "delivered"},
             "reqteam": {"class": "UserStory", "scope": "s.status = 'accepted'", "mode": "delivered"}}
@@ -190,7 +192,7 @@ def summarize(rows: list[dict]) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("teams", nargs="*")
-    ap.add_argument("--out", type=Path, default=ROOT / "results" / "rq2" / "mutants.jsonl")
+    ap.add_argument("--out", type=Path, default=RESULTS / "rq2" / "mutants.jsonl")
     a = ap.parse_args(argv)
     rows = run(a.teams or DEFAULT_TEAMS, a.out)
     s = summarize(rows)

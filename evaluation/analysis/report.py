@@ -186,6 +186,7 @@ def main() -> int:
                  f"vs {n(v['rebuild_tokens_median'], 0)}; preserved values {p(v['preserved_mean'])}; modes {v['modes']}.\n")
     if not r4:
         L.append("Pending.\n")
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(L) + "\n")
     print("wrote", OUT)
     return 0

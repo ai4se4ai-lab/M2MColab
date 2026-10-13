@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 import random
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -25,8 +26,8 @@ from evaluation import llms
 from evaluation.coding import _clip, code_item, render_run
 
 ROOT = Path(__file__).resolve().parents[2]
-WW = ROOT / "data" / "Agents_Failure_Attribution" / "Who&When"
-RESULTS = ROOT / "results"
+WW = Path(os.environ.get("AM2M_DATA", ROOT / "data")) / "Agents_Failure_Attribution" / "Who&When"
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 
 def whowhen_items() -> list[dict]:

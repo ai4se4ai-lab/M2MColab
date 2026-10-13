@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -27,6 +28,7 @@ from pathlib import Path
 from evaluation import llms
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 CLASSES = """Fault classes (choose one):
 - sampling: the agent's model produced a bad answer by chance; the same input could give a correct one
 - footprint: the agent did not receive information it needed (its input lacks something)
@@ -205,10 +207,10 @@ def main(argv=None) -> int:
     ap.add_argument("--model", default="qwen2.5-coder:7b")
     ap.add_argument("--workers", type=int, default=8)
     a = ap.parse_args(argv)
-    src = ROOT / "results" / "rq4" / f"inject_{a.source}__{a.model.replace(':', '_')}.jsonl"
+    src = RESULTS / "rq4" / f"inject_{a.source}__{a.model.replace(':', '_')}.jsonl"
     rows = [json.loads(l) for l in src.read_text().splitlines() if l.strip()]
     rows = [r for r in rows if r.get("manifested") and r.get("transcript")]
-    out = ROOT / "results" / "rq4" / f"transcript_{a.source}__{a.model.replace(':', '_')}.jsonl"
+    out = RESULTS / "rq4" / f"transcript_{a.source}__{a.model.replace(':', '_')}.jsonl"
     done = set()
     if out.exists():
         done = {(json.loads(l)["task"], json.loads(l)["fault"]) for l in out.read_text().splitlines() if l.strip()}

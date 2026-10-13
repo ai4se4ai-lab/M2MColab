@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -22,12 +23,13 @@ from evaluation import llms
 from evaluation.coding import code_item, render_run
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 CONDS = ("single", "single_gate", "free", "critic", "schema", "typed_nc", "autom2m", "typed_ref")
 
 
 def items(limit_per_cell: int | None = None) -> list[dict]:
     out = []
-    for f in sorted(glob.glob(str(ROOT / "results" / "runs" / "*" / "*" / "*" / "*.json"))):
+    for f in sorted(glob.glob(str(RESULTS / "runs" / "*" / "*" / "*" / "*.json"))):
         p = Path(f)
         cond, model, bench = p.parent.name, p.parent.parent.name, p.parent.parent.parent.name
         if cond not in CONDS:
@@ -52,7 +54,7 @@ def main(argv=None) -> int:
     ap.add_argument("--workers", type=int, default=12)
     ap.add_argument("--limit-per-cell", type=int, default=None)
     a = ap.parse_args(argv)
-    out = ROOT / "results" / "rq3" / "codes_runs.jsonl"
+    out = RESULTS / "rq3" / "codes_runs.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = set()
     if out.exists():

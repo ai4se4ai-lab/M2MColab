@@ -8,6 +8,7 @@ footprints, keep every rule), checked with one- and two-sided W4.
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from evaluation.rq2.independent import builder_teams
 from evaluation.rq2.mutate import OPERATORS, mutants
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 
 def main() -> int:
@@ -36,7 +38,7 @@ def main() -> int:
             a["targeted"] += OPERATORS[op][1] in check(m).conds()
     out = {"teams": len(teams), "readmission_failures": readmission_failures,
            "operators": {op: dict(v) for op, v in agg.items()}}
-    p = ROOT / "results" / "rq2" / "natural_mutants.json"
+    p = RESULTS / "rq2" / "natural_mutants.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(out, indent=1))
     print(json.dumps(out, indent=1))

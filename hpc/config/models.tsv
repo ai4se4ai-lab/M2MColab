@@ -1,0 +1,10 @@
+# tag                  num_parallel  workers  job_time    (Ollama OLLAMA_NUM_PARALLEL; run_matrix --workers; 10_matrix --time)
+# KV cache per slot is 16k tokens (run_matrix num_ctx=16384); sized to fit one 80 GB H100 at 100% GPU.
+# CodeLlama 13B has no grouped-query attention, so its KV cache is ~14x larger per slot.
+qwen2.5-coder:7b       16  16  24:00:00
+qwen2.5-coder:32b      8   8   24:00:00
+devstral:24b           12  12  24:00:00
+deepseek-coder-v2:16b  8   8   24:00:00
+granite-code:20b       12  12  24:00:00
+codellama:13b          4   6   24:00:00
+starcoder2:15b         12  12  24:00:00

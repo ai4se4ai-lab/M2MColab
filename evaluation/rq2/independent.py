@@ -19,6 +19,7 @@ import argparse
 import copy
 import glob
 import json
+import os
 import random
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -28,7 +29,8 @@ from autom2m.lift import normalize
 from evaluation import llms
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "results" / "rq2"
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
+OUT = RESULTS / "rq2"
 DEFECTS = {
     "D1": "coverage gap: part of the task is owned by no agent, or a goal is never checked against anything that read it",
     "D2": "hand-off mismatch: what a producer emits is not what its consumer needs, in content, reference or form",
@@ -52,7 +54,7 @@ def _key(t: dict) -> str:
 def builder_teams(admitted_only: bool = True, condition: str = "autom2m") -> list[dict]:
     """Distinct builder-generated teams from the runs (final teams)."""
     out, seen = [], set()
-    for f in sorted(glob.glob(str(ROOT / "results" / "runs" / "*" / "*" / condition / "*.json"))):
+    for f in sorted(glob.glob(str(RESULTS / "runs" / "*" / "*" / condition / "*.json"))):
         d = json.loads(Path(f).read_text())
         det = d.get("detail") or {}
         t = det.get("final_team")

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 import random
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -17,6 +18,7 @@ from evaluation import llms
 from evaluation.coding import render_run
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 PROMPT = """A typed team of LLM agents failed its task. Every value an agent produced is one message below, with the
 check verdict. Decide which agent and which value (the binding, written Rule.feature) is RESPONSIBLE for the failure:
@@ -29,7 +31,7 @@ Answer JSON {{"agent": str, "binding": "Rule.feature"}}."""
 
 def items(n: int, seed: int = 0) -> list[dict]:
     out = []
-    for f in sorted(glob.glob(str(ROOT / "results" / "runs" / "*" / "*" / "autom2m" / "*.json"))):
+    for f in sorted(glob.glob(str(RESULTS / "runs" / "*" / "*" / "autom2m" / "*.json"))):
         d = json.loads(Path(f).read_text())
         det = d.get("detail") or {}
         reps = det.get("fault_reports") or []
@@ -49,7 +51,7 @@ def main(argv=None) -> int:
     ap.add_argument("--workers", type=int, default=8)
     a = ap.parse_args(argv)
     specs = llms.coders()
-    out = ROOT / "results" / "rq4" / "natural.jsonl"
+    out = RESULTS / "rq4" / "natural.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
 
     def work(item):
@@ -66,7 +68,7 @@ def main(argv=None) -> int:
             labels.append({"agent": str(r.get("agent", "")).strip(), "binding": str(r.get("binding", "")).strip()})
         agree = labels[0] == labels[1]
         final = labels[0]
-        return {"run": Path(f).stem, "bench": d["bench"], "fault_class": rep.fault_class,
+        return {"run": Path(f).stem, "bench": d["bench"], "model": d.get("model"), "fault_class": rep.fault_class,
                 "lookup": {"agent": resp.get("agent"), "binding": f"{resp.get('rule')}.{resp.get('binding')}"},
                 "coders": labels, "coders_agree": agree, "final": final,
                 "agent_ok": final["agent"] == resp.get("agent"),

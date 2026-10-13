@@ -11,6 +11,7 @@ step (Fig. 7c, 7d) come from the run logs (analysis).
 from __future__ import annotations
 
 import json
+import os
 import statistics
 import sys
 import time
@@ -20,6 +21,7 @@ from autom2m.checker import Checker
 from autom2m.typed_team import parse_team
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 SIZES = (10, 30, 100, 300, 1000, 2000, 3000)
 DONE = ["cover(G)", "valid", "fresh", "noEsc"]
 
@@ -67,7 +69,7 @@ def main(argv=None) -> int:
             rows.append(row)
             print(f"{topo:5} n={n:5d} median {row['median_s']*1000:9.2f} ms admitted={admitted} "
                   + " ".join(f"{c}={v*1000:.1f}" for c, v in row["cond_median_s"].items()), flush=True)
-    out = ROOT / "results" / "rq2" / "scale.json"
+    out = RESULTS / "rq2" / "scale.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(rows, indent=1))
     return 0

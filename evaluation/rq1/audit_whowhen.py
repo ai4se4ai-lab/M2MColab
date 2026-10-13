@@ -124,11 +124,11 @@ def audit_hand_crafted(folder: str) -> dict:
 
 
 def main(argv=None) -> int:
-    root = (argv or sys.argv[1:] or ["data/Agents_Failure_Attribution/Who&When"])[0]
+    root = (argv or sys.argv[1:] or [os.path.join(os.environ.get("AM2M_DATA", "data"), "Agents_Failure_Attribution", "Who&When")])[0]
     matches: list = []
     ag = audit_algorithm_generated(os.path.join(root, "Algorithm-Generated"), matches)
     hc = audit_hand_crafted(os.path.join(root, "Hand-Crafted"))
-    out = Path("results/rq1")
+    out = Path(os.environ.get("AM2M_RESULTS", "results")) / "rq1"
     out.mkdir(parents=True, exist_ok=True)
     (out / "audit_whowhen.json").write_text(json.dumps({"algorithm_generated": ag, "hand_crafted": hc}, indent=1))
     with (out / "audit_matches.jsonl").open("w") as fh:

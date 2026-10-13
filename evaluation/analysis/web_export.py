@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
-OUT = ROOT / "web" / "src" / "data" / "results.json"
+OUT = Path(os.environ.get("AM2M_WEB_OUT", ROOT / "web" / "src" / "data" / "results.json"))
 CONDS = ["single", "single_gate", "free", "critic", "schema", "typed_nc", "autom2m", "typed_ref"]
 
 

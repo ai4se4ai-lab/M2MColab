@@ -24,6 +24,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 
 def candidates(model: str, n: int, seed: int = 0) -> list[tuple[str, str, int]]:
@@ -31,7 +32,7 @@ def candidates(model: str, n: int, seed: int = 0) -> list[tuple[str, str, int]]:
 
     out = []
     for bench in ("classeval", "humanevalplus"):
-        for f in sorted(glob.glob(str(ROOT / "results" / "runs" / bench / _safe(model) / "autom2m" / "*.json"))):
+        for f in sorted(glob.glob(str(RESULTS / "runs" / bench / _safe(model) / "autom2m" / "*.json"))):
             d = json.loads(Path(f).read_text())
             if d.get("status") == "failed" and (d.get("detail") or {}).get("final_team"):
                 out.append((bench, d["task"], d["seed"]))
@@ -52,7 +53,7 @@ def run_one(bench: str, task_id: str, seed: int, model: str) -> dict:
     from evaluation.run_matrix import _safe, make_llm
 
     task = {t.task_id: t for t in T.load(bench)}[task_id]
-    d = json.loads((ROOT / "results" / "runs" / bench / _safe(model) / "autom2m" / f"{_safe(task_id)}__s{seed}.json").read_text())
+    d = json.loads((RESULTS / "runs" / bench / _safe(model) / "autom2m" / f"{_safe(task_id)}__s{seed}.json").read_text())
     team_json = d["detail"]["final_team"]
     workdir = Path(os.environ.get("TMPDIR", "/tmp")) / f"rq4rep_{bench}_{_safe(task_id)}_{seed}"
     llm = make_llm(model, seed + 100, budget=None)
@@ -109,7 +110,7 @@ def main(argv=None) -> int:
     ap.add_argument("--n", type=int, default=100)
     ap.add_argument("--workers", type=int, default=8)
     a = ap.parse_args(argv)
-    out = ROOT / "results" / "rq4" / f"repair__{a.model.replace(':', '_')}.jsonl"
+    out = RESULTS / "rq4" / f"repair__{a.model.replace(':', '_')}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = set()
     if out.exists():
