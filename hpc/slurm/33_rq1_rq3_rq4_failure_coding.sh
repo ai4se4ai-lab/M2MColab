@@ -17,4 +17,4 @@
 set -o pipefail
 # shellcheck disable=SC1091
 source "$HPC_DIR/slurm/common.sh"
-run_gpu_stage "$AUX_NUM_PARALLEL" 2 coding
+run_gpu_stage "${AUX_PAR_CODING:-$AUX_NUM_PARALLEL}" 2 coding

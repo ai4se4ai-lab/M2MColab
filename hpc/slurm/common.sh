@@ -28,6 +28,13 @@ else
 fi
 set +a
 
+# SLURM_RESTART_COUNT is not reliably set after `scontrol requeue` on this cluster (tested: it stayed 0 while Slurm
+# counted 5 restarts), which would disable MAX_REQUEUES. Ask Slurm for the real count once, at job start.
+if [ -n "${SLURM_JOB_ID:-}" ]; then
+    _restarts=$(scontrol show job "$SLURM_JOB_ID" 2>/dev/null | grep -o 'Restarts=[0-9]*' | head -1 | cut -d= -f2)
+    [ -n "$_restarts" ] && export SLURM_RESTART_COUNT="$_restarts"
+fi
+
 RUN_DIR="$WORK/runs/$RUN_ID"
 JOB_TAG="${SLURM_JOB_NAME:-local}_${SLURM_JOB_ID:-0}"
 OLLAMA_PID=""

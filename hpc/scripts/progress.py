@@ -74,6 +74,17 @@ def main() -> int:
             print(f"{m:24s} {b:14s} {len(ok):>5d}/{exp:<6d} {err:>6d} {(succ / len(ok) if ok else 0):>8.1%}   "
                   + " ".join(f"{k}={per.get(k, 0)}" for k in conds))
     print(f"\nmatrix total: {tot_done}/{tot_exp} ({tot_done / max(tot_exp, 1):.1%})")
+    for p in sorted((res / "raw").glob("*.jsonl")) if (res / "raw").is_dir() else []:
+        bad = 0
+        for line in p.read_text(errors="replace").splitlines():
+            if line.strip():
+                try:
+                    json.loads(line)
+                except json.JSONDecodeError:
+                    bad += 1
+        if bad:
+            print(f"WARNING: {bad} unparseable line(s) in raw/{p.name} (results lost to a concurrent write; "
+                  f"the matrix passes rerun the missing runs)")
 
     print("\nRQ outputs:")
     for sub in ("rq1", "rq2", "rq3", "rq4", "data"):

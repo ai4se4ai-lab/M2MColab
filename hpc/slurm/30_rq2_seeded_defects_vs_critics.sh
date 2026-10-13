@@ -16,4 +16,4 @@
 set -o pipefail
 # shellcheck disable=SC1091
 source "$HPC_DIR/slurm/common.sh"
-run_gpu_stage "$AUX_NUM_PARALLEL" "$AUX_MAX_LOADED" rq2_llm
+run_gpu_stage "${AUX_PAR_RQ2LLM:-$AUX_NUM_PARALLEL}" "$AUX_MAX_LOADED" rq2_llm

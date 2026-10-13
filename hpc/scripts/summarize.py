@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -46,6 +47,8 @@ def load_raw(res: Path) -> pd.DataFrame:
             try:
                 r = json.loads(line)
             except json.JSONDecodeError:
+                if line.strip():
+                    print(f"WARNING: unparseable line in raw/{f.name} skipped", file=sys.stderr)
                 continue
             for k in ("total", "tokens"):
                 v = r.pop(k, None)

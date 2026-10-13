@@ -14,6 +14,8 @@
 #   --only LIST        comma list of stages: setup,matrix,rq2_builder,rq4_ref,rq2_llm,rq4_builder,rq4_repair,coding,analysis
 #   --analysis-only    same as --skip-setup --only analysis
 #   --dry-run          show what would be submitted
+#   --smoke            tiny end-to-end test of EVERY stage: 2 tasks, 1 seed, a few items per RQ, only the cached
+#                      qwen2.5-coder:7b model (also for coders/critics/judge), 1 h limits; run id am2m-smoke-*
 #   --watch [SEC]      after submitting, stay in a live status table (refresh every SEC s, default 60, minimum 60);
 #                      Ctrl-C leaves the view only, the jobs keep running
 #
@@ -27,7 +29,7 @@ HPC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 source "$HPC_DIR/config/pipeline.env"
 
-RUN_ID=""; ONLY=""; SKIP_SETUP=false; DRY=false; MODELS_ARG=""; WATCH=0
+RUN_ID=""; ONLY=""; SKIP_SETUP=false; DRY=false; MODELS_ARG=""; WATCH=0; SMOKE=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --run-id)        RUN_ID="$2"; shift 2 ;;
@@ -37,12 +39,25 @@ while [[ $# -gt 0 ]]; do
         --only)          ONLY="$2"; shift 2 ;;
         --analysis-only) SKIP_SETUP=true; ONLY="analysis"; shift ;;
         --dry-run)       DRY=true; shift ;;
+        --smoke)         SMOKE=true; shift ;;
         --watch)         if [[ "${2:-}" =~ ^[0-9]+$ ]]; then WATCH="$2"; shift 2; else WATCH=60; shift; fi ;;
         -h|--help)       sed -n '2,24p' "$0"; exit 0 ;;
         *) echo "unknown option: $1 (see --help)" >&2; exit 1 ;;
     esac
 done
 [ -n "$MODELS_ARG" ] && MODELS="$MODELS_ARG"
+# --smoke: shrink every study size so each stage runs end to end in minutes. Only qwen2.5-coder:7b is used (it is
+# normally already cached), also for the coder/critic/seeder/judge roles. Applied here (job graph) and frozen into
+# the run's config (jobs).
+SMOKE_ENV='MODELS="qwen2.5-coder:7b"; TASKS="first:2"; SEEDS="1"; MATRIX_PASSES=1
+AM2M_CODERS="qwen2.5-coder:7b@11,qwen2.5-coder:7b@23"
+AM2M_CRITICS="qwen2.5-coder:7b@31,qwen2.5-coder:7b@33,qwen2.5-coder:7b@35"
+AM2M_SEEDER="qwen2.5-coder:7b@41"; AM2M_JUDGE="qwen2.5-coder:7b@51"
+RQ1_OURS_N=3; RQ2_PER_CLASS=2; RQ2_BUILDER_MODEL="qwen2.5-coder:7b"; RQ2_ABLATION_TASKS="first:2"
+RQ4_REF_MODELS="qwen2.5-coder:7b"; RQ4_BUILDER_MODEL="qwen2.5-coder:7b"; RQ4_PER_CLASS=2
+RQ4_REPAIR_MODELS="qwen2.5-coder:7b"; RQ4_REPAIR_N=3; RQ4_NATURAL_N=3; AUX_WORKERS=4'
+SMOKE_TIME="01:00:00"
+if $SMOKE; then eval "$SMOKE_ENV"; RUN_ID="${RUN_ID:-am2m-smoke-$(date +%Y%m%d-%H%M%S)}"; fi
 RUN_ID="${RUN_ID:-am2m-$(date +%Y%m%d-%H%M%S)}"
 LOG_ROOT="$HPC_DIR/logs/$RUN_ID"
 RUN_DIR="$WORK/runs/$RUN_ID"
@@ -61,6 +76,7 @@ if ! $DRY; then
     if [ ! -f "$LOG_ROOT/run_config.env" ]; then
         { cat "$HPC_DIR/config/pipeline.env"; echo; echo "# frozen by submit_pipeline.sh $(date)"
           echo "MODELS=\"$MODELS\""; echo "ACCOUNT=\"$ACCOUNT\""; } > "$LOG_ROOT/run_config.env"
+        $SMOKE && { echo; echo "# --smoke overrides"; echo "$SMOKE_ENV"; } >> "$LOG_ROOT/run_config.env"
         cp "$HPC_DIR/config/models.tsv" "$LOG_ROOT/models.tsv"
     fi
     python3 "$HPC_DIR/scripts/manifest.py" --run-id "$RUN_ID" --hpc "$HPC_DIR" --config "$LOG_ROOT/run_config.env" \
@@ -82,6 +98,7 @@ submit() {  # submit <name> <dependency or ""> <script> [extra sbatch args...] -
     local cmd=(sbatch --parsable --account="$ACCOUNT" --job-name="$name"
                --output="$LOG_ROOT/slurm/%x_%j.out" --error="$LOG_ROOT/slurm/%x_%j.err"
                --export="$exports" "${args[@]}")
+    $SMOKE && cmd+=(--time="$SMOKE_TIME")        # later --time wins over the script's and models.tsv value
     [ -n "$dep" ] && cmd+=(--dependency="$dep" --kill-on-invalid-dep=yes)
     cmd+=("$HPC_DIR/slurm/$script")
     local id

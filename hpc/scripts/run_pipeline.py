@@ -136,7 +136,10 @@ def stage_steps(stage: str, a: argparse.Namespace) -> list[Step]:
                                            "--workers", str(min(w, 12))), models=[B]),
             Step("rq2_autom2m_1ex", m("evaluation.run_matrix", "--bench", "classeval", "--model", B,
                                       "--conditions", "autom2m_1ex", "--seeds", "1", "--tasks", env("TASKS", ""),
-                                      "--workers", str(w)), models=[B]),
+                                      "--workers", str(w),
+                                      # own file: the 7B ClassEval matrix job appends to raw/classeval__<model>.jsonl from
+                                      # another node at the same time, and concurrent appends corrupt lines
+                                      "--tag", "__1ex"), models=[B]),
         ]
     if stage == "rq4_ref":
         judge = aux_models("AM2M_JUDGE")[0]
@@ -215,6 +218,23 @@ def has_model(tag: str, have: dict) -> bool:
     return tag in have or (":" not in tag and f"{tag}:latest" in have)
 
 
+def diagnose_pull(tag: str, log, reference: str = "qwen2.5-coder:7b") -> None:
+    """After a failed pull, record what this node sees from the registry (for `tag` and a model known to work)."""
+    proxies = {k: os.environ[k] for k in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "NO_PROXY")
+               if k in os.environ}
+    log(f"  diagnose: node {os.uname().nodename}, proxy env: {proxies or 'none'}")
+    for t in (tag, reference):
+        name, _, ver = t.partition(":")
+        url = f"https://registry.ollama.ai/v2/library/{name}/manifests/{ver or 'latest'}"
+        try:
+            r = requests.get(url, headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+                             timeout=30, allow_redirects=False)
+            log(f"  diagnose: {t}: GET manifest -> http {r.status_code}, {len(r.content)} B, "
+                f"{r.headers.get('content-type', '?')}, location={r.headers.get('location', '-')}")
+        except requests.RequestException as e:
+            log(f"  diagnose: {t}: GET manifest failed: {type(e).__name__}: {e}")
+
+
 def pull(tag: str, log, attempts: int = 3) -> bool:
     """Pull a model; a dropped registry connection (error EOF) is retried, and Ollama resumes partial blobs."""
     for attempt in range(1, attempts + 1):
@@ -243,6 +263,7 @@ def pull(tag: str, log, attempts: int = 3) -> bool:
                     return True
         except requests.RequestException as e:
             log(f"  ERROR {type(e).__name__}: {e}")
+    diagnose_pull(tag, log)
     return False
 
 
@@ -267,7 +288,25 @@ def load_models(models: list[str], num_ctx: int, log) -> None:
 # Built-in actions
 # ─────────────────────────────────────────────────────────────────────────────
 
+def clear_damaged_partials(log) -> None:
+    """A pull killed mid-write (scancel, time limit) can leave an empty <blob>-partial-N chunk-state file. Ollama then
+    fails the next pull of that model with a bare 'EOF'. Deleting only the empty file is NOT enough: Ollama removes each
+    chunk's state file when the chunk completes, so a missing one aborts the pull at the end ('remove ...-partial-N: no
+    such file'). The consistent repair is to drop every partial file of the affected blob and download it again."""
+    blobs = Path(os.environ.get("OLLAMA_MODELS", "")) / "blobs"
+    if not blobs.is_dir():
+        return
+    bad = {f.name.split("-partial")[0] for f in blobs.glob("sha256-*-partial-*") if f.is_file() and f.stat().st_size == 0}
+    for blob in sorted(bad):
+        files = list(blobs.glob(blob + "-partial*"))
+        for f in files:
+            f.unlink(missing_ok=True)
+        log(f"{blob[:19]}: damaged partial download (empty chunk-state file); removed its {len(files)} partial files, "
+            f"the blob is downloaded again")
+
+
 def act_pull_models(step: Step, log) -> int:
+    clear_damaged_partials(log)
     have = local_models()
     rc = 0
     for tag in step.models:

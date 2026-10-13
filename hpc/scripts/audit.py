@@ -259,8 +259,16 @@ def model_substeps(step: dict, logf: Path, step_status: str) -> list[dict]:
         line = next((x for x in reversed(text.splitlines()) if re.search(rf"\] {re.escape(tag)}:", x)), "")
         note = line.split(f"{tag}:", 1)[1].strip()[:90] if line else ""
         if not line:
-            st = "RUNNING" if step_status == "RUNNING" and not seen_running else "PENDING"
-            seen_running = seen_running or st == "RUNNING"
+            pulled = re.search(rf"pulling {re.escape(tag)} \.\.\.", text)     # logged as "pulling <tag> ..."
+            if pulled and step_status == "OK":
+                st, note = "OK", "pulled"
+            elif pulled and step_status == "RUNNING" and not seen_running:
+                st, note, seen_running = "RUNNING", "downloading", True
+            elif step_status == "OK":
+                st = "OK"
+            else:
+                st = "RUNNING" if step_status == "RUNNING" and not seen_running else "PENDING"
+                seen_running = seen_running or st == "RUNNING"
         elif re.search(r"MISSING|ok=False|fail|error", note, re.I):
             st = "FAILED"
         elif re.search(r"pulling|downloading|loading|verifying|%", note, re.I) and step_status == "RUNNING":
@@ -498,7 +506,6 @@ def render(a: dict, only: str, tree: bool = False) -> str:
         out.append("")
     if not shown:
         out.append(" (nothing to show)" if jobs else " no jobs recorded for this run yet")
-    done_matrix = [s for j in jobs for s in j["steps"] if s["name"].startswith("run_matrix_") and s["status"] == "OK"]
     if jobs:
         out.append(c("dim", f" next: bash hpc/status.sh {a['run_id']}   (one snapshot; or --watch 120). "
                             f"failed step logs: hpc/logs/{a['run_id']}/steps/<stage>/<step>.log"))
