@@ -45,7 +45,7 @@ def main() -> int:
         bad |= share < 0.999
         print(f"  RESIDENT {tag:24s} {size / 2**30:6.1f} GiB total, {vram / 2**30:6.1f} GiB on GPU = {100 * share:3.0f}%"
               f"   ctx={x.get('context_length', '?')}{flag}")
-    print(f"  GPU memory used by these models: {total:.1f} GiB of ~80")
+    print(f"  GPU memory used by these models: {total:.1f} GiB")
     return 1 if bad else 0
 
 

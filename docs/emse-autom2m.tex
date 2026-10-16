@@ -2051,15 +2051,21 @@ runs of the hand-crafted Magentic-One.
 \paragraph{Models} We use seven instruction-tuned models from six families, all
 run locally through Ollama with 4-bit weights (tags in the package):
 Qwen2.5-Coder 7B and 32B~\cite{hui2024qwen25coder}, the agentic
-Devstral 24B~\cite{rastogi2025devstral}, the mixture-of-experts
-DeepSeek-Coder-V2 16B~\cite{deepseek2024coderv2}, Granite-Code
+Devstral 24B~\cite{rastogi2025devstral}, the general-purpose
+Gemma~3 27B~\cite{gemmateam2025gemma3}, Granite-Code
 20B~\cite{mishra2024granitecode}, Code Llama 13B~\cite{roziere2023codellama} and
 the completion-oriented StarCoder2 15B~\cite{lozhkov2024starcoder2}. We chose
 them to vary the ability to emit a long, schema-conforming specification, and
-all of them run on one workstation. In every configuration, the builder, all
+all of them run on one workstation. 
+
+%Gemma~3 replaces DeepSeek-Coder-V2 16B~\cite{deepseek2024coderv2}, which we planned to use: under Ollama its generation stalled (requests timed out after 15 minutes with a single output token on both clusters we used), so it could not complete the matrix.
+% TODO(author): add to bibliography.bib:
+% @article{gemmateam2025gemma3, title={Gemma 3 Technical Report}, author={{Gemma Team}},
+%   journal={arXiv preprint arXiv:2503.19786}, year={2025}}
+In every configuration, the builder, all
 agents and the repair builder use the same model. We call the four models with
 the highest Single success on ClassEval (Qwen2.5-Coder 7B and 32B, Devstral,
-DeepSeek-Coder-V2) the \emph{strong} group and the other three the \emph{weak}
+Gemma~3) the \emph{strong} group and the other three the \emph{weak}
 group. The grouping is post hoc: it uses a pre-treatment measure from the same
 experiment, not \auto{}'s results, but it was not fixed before data
 collection.
@@ -2219,7 +2225,7 @@ suffices), and the \emph{two-sided} anchoring of Definition~\ref{def:anchor}.
 It was checked under two goal configurations: $G_1$ declares only obligations of
 mode \emph{checked}, and $G_2$ also declares the deliverables.
 \emph{Independently seeded defects:} to avoid evaluating the checker only on
-defects designed for it, DeepSeek-Coder-V2 seeded one defect into each of 307
+defects designed for it, Gemma~3 seeded one defect into each of 307
 admitted builder-generated teams. It saw only the plain-language definitions of
 \D{1}--\D{5} in Table~\ref{tab:defects}, never \W{1}--\W{6}, and it belongs to a
 family that is not used as a critic. Two coders removed 7 seeded teams as
@@ -2426,8 +2432,7 @@ Strong builders produce admissible teams in 85--98\% of sessions, weak ones in
 \caption{RQ3. Success (\%) on ClassEval (top) and HumanEval+ (bottom), mean over
 3 seeds. Bold: best condition per model. $^{\uparrow}$/$^{\downarrow}$: \auto{}
 significantly higher/lower than this condition (exact McNemar on task-level
-majority outcomes, Holm-corrected over seven comparisons). DSC-V2:
-DeepSeek-Coder-V2.}
+majority outcomes, Holm-corrected over seven comparisons).}
 \label{tab:success}
 \setlength{\tabcolsep}{2.2pt}
 % ---- inlined from tables/tab_success_classeval.tex
@@ -2438,7 +2443,7 @@ Model & Single & Single-Gate & Free & Critic & Schema & Typed-NC & AutoM2M & Typ
 Qwen-7B & 35.3 & \textbf{38.7} & 24.3 & 29.0 & 24.7 & 24.3 & 27.0 & 26.3 \\
 Qwen-32B & 45.7 & \textbf{52.0} & 38.3$^{\uparrow}$ & 50.0 & 40.7$^{\uparrow}$ & 42.0$^{\uparrow}$ & 51.3 & 47.7 \\
 Devstral & 44.7 & \textbf{51.3} & 43.7 & 38.3 & 36.0 & 41.0 & 38.7 & 48.7 \\
-DSC-V2 & \textbf{42.0} & 36.0 & 31.0 & 28.3 & 29.3 & 23.3 & 31.3 & 34.7 \\
+Gemma3 & -- & -- & -- & -- & -- & -- & -- & -- \\ % TODO(author): fill from hpc/logs/<RUN_ID>/results/tables/tab_success_classeval.tex
 Granite & 22.0 & \textbf{23.7}$^{\downarrow}$ & 16.0 & 13.0 & 12.3 & 10.0 & 12.3 & 18.0 \\
 CodeLlama & 11.0 & \textbf{15.7}$^{\downarrow}$ & 6.7 & 8.0 & 5.7 & 4.7 & 5.3 & 9.3 \\
 StarCoder2 & \textbf{17.0}$^{\downarrow}$ & 16.0 & 13.0 & 12.7 & 6.3 & 5.0 & 4.0 & 12.3 \\
@@ -2456,7 +2461,7 @@ Model & Single & Single-Gate & Free & Critic & Schema & Typed-NC & AutoM2M & Typ
 Qwen-7B & 80.9 & 81.3 & 77.6 & 77.6 & 77.2 & 72.4$^{\uparrow}$ & 79.5 & \textbf{82.7} \\
 Qwen-32B & 84.1 & 84.8 & 82.1 & 80.9 & 81.5 & 82.9 & \textbf{86.2} & 84.6 \\
 Devstral & 80.5 & \textbf{87.0} & 80.9 & 79.5 & 80.1 & 77.0 & 83.5 & 83.7 \\
-DSC-V2 & 72.4 & \textbf{75.6} & 70.7 & 71.7 & 68.7 & 66.9 & 70.3 & 70.9 \\
+Gemma3 & -- & -- & -- & -- & -- & -- & -- & -- \\ % TODO(author): fill from hpc/logs/<RUN_ID>/results/tables/tab_success_humaneval.tex
 Granite & 49.6 & \textbf{53.9} & 42.7 & 48.2 & 46.1 & 39.4 & 43.5 & 48.2 \\
 CodeLlama & 33.9$^{\downarrow}$ & \textbf{39.6}$^{\downarrow}$ & 30.7$^{\downarrow}$ & 32.1$^{\downarrow}$ & 28.3 & 20.9 & 23.2 & 32.5$^{\downarrow}$ \\
 StarCoder2 & 59.3$^{\downarrow}$ & \textbf{62.4}$^{\downarrow}$ & 54.9 & 55.1$^{\downarrow}$ & 50.0 & 43.7 & 44.3 & 58.7$^{\downarrow}$ \\
@@ -2482,10 +2487,12 @@ Single-Gate, 1.26 for Single, 1.19 for Typed-Ref, 1.05 for Critic, 0.95 for
 package). LLM-built teams exceed Single only in a few cells and never
 significantly, in line with reports that multi-agent gains over strong single
 agents are small~\cite{cemri2025mast,kim2025scaling}. Single-Gate falls slightly
-below Single for DeepSeek-Coder-V2 and StarCoder2 on ClassEval, because it stops
+below Single for StarCoder2 on ClassEval, because it stops
 at the first sample that passes the public examples.\footnote{Single with
 Qwen2.5-Coder 7B reaches 35.3\% on ClassEval, close to the 37\% reported for
 GPT-4~\cite{du2024classeval}.}
+% TODO(author): re-check this paragraph, the strong-group membership, the means and the pooled odds above
+% against the HPC run with Gemma 3 (they were computed with DeepSeek-Coder-V2).
 
 \emph{(3) The effect of \auto{} depends on the builder model}
 (condition~$\times$~model interaction: $\chi^2=129.4$, 42 df, $p<.001$). The

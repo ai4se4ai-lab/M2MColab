@@ -108,7 +108,7 @@ Environment variables of the runtime and service use the prefix `AGENTHOT_`.
   fault makes stale. The validator fault replays the clean run's accepted values, so a rejection comes
   only from the flaky check; the sampling fault degrades every value of the owning agent with
   probability 0.6.
-- **Auxiliary LLM roles.** The paper uses Qwen2.5-Coder 32B and Devstral as RQ3 coders, DeepSeek-Coder-V2
+- **Auxiliary LLM roles.** The paper uses Qwen2.5-Coder 32B and Devstral as RQ3 coders, Gemma 3 27B
   as defect seeder, three critics and Qwen2.5-Coder 32B as attribution judge, and human coders for RQ1.
   Here every role is configurable (`evaluation/llms.py`); the runs so far use Qwen2.5-Coder 7B for all
   of them (two coders = the same model with different seeds and prompt variants), which inflates

@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=am2m_31_rq4_builder
 #SBATCH --time=24:00:00
-#SBATCH --gpus=h100:1
+#SBATCH --nodes=1
+#SBATCH --gpus=a100:1
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=64G
 #SBATCH --requeue

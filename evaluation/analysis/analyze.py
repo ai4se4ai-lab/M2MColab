@@ -52,7 +52,7 @@ CONDS = ["single", "single_gate", "free", "critic", "schema", "typed_nc", "autom
 LAB = {"single": "Single", "single_gate": "Single-Gate", "free": "Free", "critic": "Critic", "schema": "Schema",
        "typed_nc": "Typed-NC", "autom2m": "AutoM2M", "typed_ref": "Typed-Ref", "autom2m_1ex": "AutoM2M (1 ex.)"}
 MODEL_LAB = {"qwen2.5-coder:7b": "Qwen-7B", "qwen2.5-coder:32b": "Qwen-32B", "devstral:24b": "Devstral",
-             "deepseek-coder-v2:16b": "DSC-V2", "granite-code:20b": "Granite", "codellama:13b": "CodeLlama",
+             "deepseek-coder-v2:16b": "DSC-V2", "gemma3:27b": "Gemma3", "granite-code:20b": "Granite", "codellama:13b": "CodeLlama",
              "starcoder2:15b": "StarCoder2"}
 BENCH_LAB = {"classeval": "ClassEval", "humanevalplus": "HumanEval+"}
 COMP = {"D1", "D2", "D3", "D4", "D5"}

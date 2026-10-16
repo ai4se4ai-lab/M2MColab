@@ -1,5 +1,5 @@
 #!/bin/bash
-# Submit the AutoM2M EMSE study (paper Sec. 5) as a graph of Slurm jobs on Nibi.
+# Submit the AutoM2M EMSE study (paper Sec. 5) as a graph of Slurm jobs (Narval A100; Nibi H100 via GPU_TYPE).
 #
 #   bash hpc/slurm/submit_pipeline.sh                      # full study, new RUN_ID
 #   bash hpc/slurm/submit_pipeline.sh --dry-run            # print the sbatch commands only
@@ -55,7 +55,8 @@ AM2M_CRITICS="qwen2.5-coder:7b@31,qwen2.5-coder:7b@33,qwen2.5-coder:7b@35"
 AM2M_SEEDER="qwen2.5-coder:7b@41"; AM2M_JUDGE="qwen2.5-coder:7b@51"
 RQ1_OURS_N=3; RQ2_PER_CLASS=2; RQ2_BUILDER_MODEL="qwen2.5-coder:7b"; RQ2_ABLATION_TASKS="first:2"
 RQ4_REF_MODELS="qwen2.5-coder:7b"; RQ4_BUILDER_MODEL="qwen2.5-coder:7b"; RQ4_PER_CLASS=2
-RQ4_REPAIR_MODELS="qwen2.5-coder:7b"; RQ4_REPAIR_N=3; RQ4_NATURAL_N=3; AUX_WORKERS=4'
+RQ4_REPAIR_MODELS="qwen2.5-coder:7b"; RQ4_REPAIR_N=3; RQ4_NATURAL_N=3; AUX_WORKERS=4
+GPUS_RQ4_REF=1; GPUS_RQ2_LLM=1; GPUS_RQ4_BUILDER=1; GPUS_CODING=1'
 SMOKE_TIME="01:00:00"
 if $SMOKE; then eval "$SMOKE_ENV"; RUN_ID="${RUN_ID:-am2m-smoke-$(date +%Y%m%d-%H%M%S)}"; fi
 RUN_ID="${RUN_ID:-am2m-$(date +%Y%m%d-%H%M%S)}"
@@ -109,6 +110,10 @@ submit() {  # submit <name> <dependency or ""> <script> [extra sbatch args...] -
     echo "$id"
 }
 join() { local IFS=:; echo "$*"; }
+# GPU request of a stage (overrides the scripts' #SBATCH defaults): N GPUs of GPU_TYPE with CPUS_PER_GPU cores and
+# MEM_PER_GPU_GB memory each (Narval: at most 12 cores per A100). --nodes=1: without it Slurm may place the GPUs of
+# one job on two nodes, and Ollama (on the first node) then sees only one GPU and offloads the model to the CPU.
+gres() { echo "--nodes=1 --gpus=$GPU_TYPE:$1 --cpus-per-task=$(( $1 * CPUS_PER_GPU )) --mem=$(( $1 * MEM_PER_GPU_GB ))G"; }
 
 say "============================================================"
 say "AutoM2M EMSE study — RUN_ID $RUN_ID   ($(date))"
@@ -118,7 +123,7 @@ say "============================================================"
 
 SETUP_DEP=""
 if ! $SKIP_SETUP && want setup; then
-    J=$(submit am2m_00_setup "" 00_setup_models_and_data.sh)
+    J=$(submit am2m_00_setup "" 00_setup_models_and_data.sh $(gres "$GPUS_SETUP"))
     SETUP_DEP="afterok:$J"
 fi
 
@@ -126,7 +131,7 @@ MATRIX=()
 if want matrix; then
     for m in $MODELS; do
         for b in $BENCHES; do
-            J=$(submit "am2m_10_matrix_$(safe "$m")_$b" "$SETUP_DEP" 10_rq3_condition_matrix.sh --time="$(model_field "$m" 4)" -- "MODEL=$m" "BENCH=$b")
+            J=$(submit "am2m_10_matrix_$(safe "$m")_$b" "$SETUP_DEP" 10_rq3_condition_matrix.sh --time="$(model_field "$m" 4)" $(gres "$(model_field "$m" 5)") -- "MODEL=$m" "BENCH=$b")
             MATRIX+=("$J")
         done
     done
@@ -138,18 +143,18 @@ AFTER_MATRIX=""
 [ -z "$AFTER_MATRIX" ] && AFTER_MATRIX="$SETUP_DEP"
 
 ALL=("${MATRIX[@]}")
-if want rq2_builder; then ALL+=("$(submit am2m_20_rq2_builder "$SETUP_DEP" 20_rq1_audit_rq2_checker_builder.sh)"); fi
+if want rq2_builder; then ALL+=("$(submit am2m_20_rq2_builder "$SETUP_DEP" 20_rq1_audit_rq2_checker_builder.sh $(gres "$GPUS_RQ2_BUILDER"))"); fi
 if want rq4_ref; then
-    for m in $RQ4_REF_MODELS; do ALL+=("$(submit "am2m_21_rq4_ref_$(safe "$m")" "$SETUP_DEP" 21_rq4_fault_injection_reference_team.sh -- "MODEL=$m")"); done
+    for m in $RQ4_REF_MODELS; do ALL+=("$(submit "am2m_21_rq4_ref_$(safe "$m")" "$SETUP_DEP" 21_rq4_fault_injection_reference_team.sh $(gres "$GPUS_RQ4_REF") -- "MODEL=$m")"); done
 fi
-if want rq2_llm; then ALL+=("$(submit am2m_30_rq2_llm "$AFTER_MATRIX" 30_rq2_seeded_defects_vs_critics.sh)"); fi
+if want rq2_llm; then ALL+=("$(submit am2m_30_rq2_llm "$AFTER_MATRIX" 30_rq2_seeded_defects_vs_critics.sh $(gres "$GPUS_RQ2_LLM"))"); fi
 if want rq4_builder; then
-    ALL+=("$(submit "am2m_31_rq4_builder_$(safe "$RQ4_BUILDER_MODEL")" "$AFTER_MATRIX" 31_rq4_fault_injection_builder_teams.sh -- "MODEL=$RQ4_BUILDER_MODEL")")
+    ALL+=("$(submit "am2m_31_rq4_builder_$(safe "$RQ4_BUILDER_MODEL")" "$AFTER_MATRIX" 31_rq4_fault_injection_builder_teams.sh $(gres "$GPUS_RQ4_BUILDER") -- "MODEL=$RQ4_BUILDER_MODEL")")
 fi
 if want rq4_repair; then
-    for m in $RQ4_REPAIR_MODELS; do ALL+=("$(submit "am2m_32_rq4_repair_$(safe "$m")" "$AFTER_MATRIX" 32_rq4_repair_vs_rebuild.sh -- "MODEL=$m")"); done
+    for m in $RQ4_REPAIR_MODELS; do ALL+=("$(submit "am2m_32_rq4_repair_$(safe "$m")" "$AFTER_MATRIX" 32_rq4_repair_vs_rebuild.sh $(gres "$(model_field "$m" 5)") -- "MODEL=$m")"); done
 fi
-if want coding; then ALL+=("$(submit am2m_33_coding "$AFTER_MATRIX" 33_rq1_rq3_rq4_failure_coding.sh)"); fi
+if want coding; then ALL+=("$(submit am2m_33_coding "$AFTER_MATRIX" 33_rq1_rq3_rq4_failure_coding.sh $(gres "$GPUS_CODING"))"); fi
 if want analysis; then
     DEP=""; [ ${#ALL[@]} -gt 0 ] && DEP="afterany:$(join "${ALL[@]}")"
     [ -n "$SETUP_DEP" ] && [ -n "$DEP" ] && DEP="$SETUP_DEP,$DEP"

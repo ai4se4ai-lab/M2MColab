@@ -1,6 +1,6 @@
 """The LLMs of the study's auxiliary roles (coders, critics, defect seeder,
 attribution judge), configurable by environment so that the full study can
-swap in the paper's models (Qwen2.5-Coder 32B, Devstral, DeepSeek-Coder-V2).
+swap in the paper's models (Qwen2.5-Coder 32B, Devstral, Gemma 3 27B).
 
   AM2M_CODERS   comma list of model[@seed] for the two (or more) coders
   AM2M_CRITICS  comma list of model[@seed] for the LLM critics (RQ2)

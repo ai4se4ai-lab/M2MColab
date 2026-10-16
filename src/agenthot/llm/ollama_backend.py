@@ -7,6 +7,7 @@ runnable with no API key: `ollama serve` + this backend is enough.
 from __future__ import annotations
 
 import json
+import time
 
 import requests
 
@@ -78,13 +79,23 @@ class OllamaBackend(LLMBackend):
             self._ensure_model_available()
 
     def _ensure_model_available(self) -> None:
-        try:
-            resp = requests.get(f"{self.base_url}/api/tags", timeout=5)
-            resp.raise_for_status()
-        except requests.RequestException as exc:
+        # A server busy with many parallel generations can take longer than a few
+        # seconds to answer /api/tags (observed on the HPC runs: 5 s read timeouts
+        # while 8 slots were generating), which turned healthy runs into errors.
+        # Retry with a generous timeout; a server that is really down still fails.
+        last: Exception | None = None
+        for attempt in range(3):
+            try:
+                resp = requests.get(f"{self.base_url}/api/tags", timeout=60)
+                resp.raise_for_status()
+                break
+            except requests.RequestException as exc:
+                last = exc
+                time.sleep(5 * (attempt + 1))
+        else:
             raise LLMError(
-                f"Could not reach Ollama at {self.base_url}. Is `ollama serve` running? ({exc})"
-            ) from exc
+                f"Could not reach Ollama at {self.base_url}. Is `ollama serve` running? ({last})"
+            ) from last
         tags = {m["name"] for m in resp.json().get("models", [])}
         if self.model in tags:
             return

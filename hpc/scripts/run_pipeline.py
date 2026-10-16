@@ -94,9 +94,11 @@ def stage_steps(stage: str, a: argparse.Namespace) -> list[Step]:
                             | set(aux_models("AM2M_SEEDER")) | set(aux_models("AM2M_JUDGE")))
         pf = env("PREFLIGHT_MODEL", "qwen2.5-coder:7b")
         pre_env = {"AM2M_RESULTS": str(RUN_DIR / "preflight")}
-        return [
+        # offline clusters (Narval): data and models were staged by hpc/slurm/stage_offline.sh on a login node
+        fetch = [] if env("SETUP_OFFLINE") else [
             Step("prefetch_data", [PY, str(HPC / "scripts" / "prefetch.py"), "download"], llm=False,
-                 env={"HF_DATASETS_OFFLINE": "0", "HF_HUB_OFFLINE": "0"}),
+                 env={"HF_DATASETS_OFFLINE": "0", "HF_HUB_OFFLINE": "0"})]
+        return fetch + [
             Step("verify_data", [PY, str(HPC / "scripts" / "prefetch.py"), "verify",
                                  "--min-classeval", env("CANONICAL_MIN_CLASSEVAL", "0.95"),
                                  "--min-humaneval", env("CANONICAL_MIN_HUMANEVAL", "0.98"),
@@ -312,6 +314,9 @@ def act_pull_models(step: Step, log) -> int:
     for tag in step.models:
         if has_model(tag, have):
             log(f"{tag}: cached ({have.get(tag, '')[:12]})")
+        elif env("SETUP_OFFLINE"):
+            log(f"{tag}: MISSING and this node has no internet; pull it with hpc/slurm/stage_offline.sh on a login node")
+            rc = 1
         elif not pull(tag, log):
             rc = 1
     return rc

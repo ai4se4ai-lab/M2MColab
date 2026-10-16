@@ -292,3 +292,22 @@ def test_v2_repair_delta_rewrites_only_the_faulty_rule(tmp_path):
     assert info["mode"] == "in-place" and not info.get("delta_full") and not info["delta_diagnostics"]
     assert info["kept"] >= tests_stamped
     assert s2.run().phi
+
+
+def test_engine_error_in_unchecked_team_is_a_failed_run_not_a_crash(tmp_path, monkeypatch):
+    """Typed-NC runs teams without the checker; a guard over an unbound variable then raises OCLEvalError in the
+    engine. That is the team failing at run time (status 'failed'), not a harness error (seen on the HPC run:
+    HumanEval/26, typed_nc, CodeLlama 13B, seed 2)."""
+    from agenthot.engine.expr import OCLEvalError
+    from autom2m.loop import AutoM2M
+
+    def boom(self, session):
+        raise OCLEvalError("unbound variable 'm'")
+
+    monkeypatch.setattr(AutoM2M, "_run", boom)
+    am = AutoM2M(Scripted([GOOD_CODE]), check_enabled=False, repair_enabled=False, workdir=tmp_path)
+    out = am.solve(TASK, TASK.prompt, TaskWorkbench(TASK), initial_team=json.loads(
+        (TEAMS / "classeval_reference.json").read_text()))
+    assert out.status == "failed"
+    assert "OCLEvalError" in out.error and "unbound variable" in out.error
+    assert not out.phi

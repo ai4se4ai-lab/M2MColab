@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=am2m_33_coding
 #SBATCH --time=24:00:00
-#SBATCH --gpus=h100:2
+#SBATCH --nodes=1
+#SBATCH --gpus=a100:2
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=96G
 #SBATCH --requeue

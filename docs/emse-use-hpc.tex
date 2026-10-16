@@ -966,7 +966,14 @@ operator can inspect the inference server's log for that job, which the
 pipeline keeps per job and per restart. The same telemetry gives the
 calibration for the next sizing: for example, the parallel slots of the 7B
 model could be raised.
-% TODO(author): add the diagnosed cause of the DeepSeek-Coder-V2 under-utilisation once investigated.
+The per-job server logs gave the cause when the study was moved to Narval
+(A100 40\,GB), where the same model showed the same pattern. DeepSeek-Coder-V2
+loaded fully onto the GPUs, but its generation requests stalled: they ended
+with HTTP 500 at the inference server's 15-minute timeout after one output
+token, and its server needed about 126--148\,GB of host memory, against
+7--14\,GB for the other models (its first launch was killed by the 120\,GB
+job memory limit). We could not make it complete the matrix and replaced it
+with Gemma~3 27B in the study.
 
 \paragraph{Overhead} Table~\ref{tab:micro} and Figure~\ref{fig:audit-scale}
 report micro-benchmarks of the released template. Scaffolding takes 0.18\,s

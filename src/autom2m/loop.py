@@ -31,6 +31,8 @@ from pathlib import Path
 from typing import Any
 
 from agenthot.compiler import CompileError, compile_team
+from agenthot.engine.expr import OCLEvalError
+from agenthot.engine.trace import TraceError
 from agenthot.session import Session
 
 from .attribution import FaultReport, attribute_all
@@ -256,6 +258,27 @@ class AutoM2M:
                           max_passes=4 if self.check_enabled else 3)
         self.session = session
         bench.bind(session.current_bodies)
+        try:
+            res = self._run_and_repair(session, task, out)
+            session = self.session  # the repair loop may have replaced the session
+        except (OCLEvalError, TraceError) as exc:
+            # A team that compiles but whose rules cannot be evaluated (e.g. a guard over an unbound variable, which
+            # only an unchecked Typed-NC team can reach) failed at run time; it is not a harness error.
+            out.status = "failed"
+            out.error = f"engine: {type(exc).__name__}: {exc}"[:500]
+            out.final_team = self.session.ct.typed.raw
+            out.seconds = time.time() - t0
+            return out
+        out.deliverables, out.accepted, out.phi, out.clauses = res.deliverables, res.accepted, res.phi, res.clauses
+        out.escalations = len(res.escalations)
+        out.accepted_values = res.accepted_values
+        out.final_team = session.ct.typed.raw
+        out.events = self._events(session)
+        out.status = "done" if res.phi else "failed"
+        out.seconds = time.time() - t0
+        return out
+
+    def _run_and_repair(self, session: Session, task, out: AutoOutcome):
         res = self._run(session)
         for j in range(self.k_rep if self.repair_enabled else 0):
             if res.phi:
@@ -276,14 +299,7 @@ class AutoM2M:
                 break
             self.session = session
             res = self._run(session)
-        out.deliverables, out.accepted, out.phi, out.clauses = res.deliverables, res.accepted, res.phi, res.clauses
-        out.escalations = len(res.escalations)
-        out.accepted_values = res.accepted_values
-        out.final_team = session.ct.typed.raw
-        out.events = self._events(session)
-        out.status = "done" if res.phi else "failed"
-        out.seconds = time.time() - t0
-        return out
+        return res
 
     # ---- the checked builder (v2) --------------------------------------
     def _assess(self, team_json: dict | None):

@@ -1,4 +1,4 @@
-# How the AutoM2M study runs on HPC (Nibi, Slurm)
+# How the AutoM2M study runs on HPC (Narval / Nibi, Slurm)
 
 This is the technical guide to `hpc/`. It covers how the study of `docs/emse-autom2m.tex` (the "Evaluation" section) is turned into Slurm jobs. It also covers how the source tree is used, how results are collected, how each phase is audited, and which Slurm techniques keep the run efficient and restartable.
 
@@ -25,7 +25,7 @@ This is the technical guide to `hpc/`. It covers how the study of `docs/emse-aut
 The study has four research questions (RQ1–RQ4), eight experimental conditions, seven open-weight models, two benchmarks and three seeds. Together that is 8 × 7 × 264 × 3 = **44,352 matrix runs**, plus the RQ1, RQ2 and RQ4 side studies. The paper estimates about 3,200 workstation-hours for this. No single job can hold it, so `hpc/` splits it into a **graph of 26 Slurm jobs**. Each job is resumable, and every step it runs is recorded.
 
 ```
-login node (no heavy work)             compute nodes (Nibi, H100 GPUs)
+login node (no heavy work)             compute nodes (Narval A100 40 GB; or Nibi H100)
 ──────────────────────────             ────────────────────────────────────────────────────────────
 submit_pipeline.sh                      00_setup ──afterok──┬─► 10_matrix ×14   (model × benchmark)
   ├ freeze config → logs/<RUN_ID>/      (1 GPU)             ├─► 20_rq2_builder
@@ -122,11 +122,11 @@ When these variables are unset, the modules fall back to the repository layout, 
 | Conditions | 8 (Single, Single-Gate, Free, Critic, Schema, Typed-NC, AutoM2M, Typed-Ref) | `CONDITIONS` |
 | Seeds | 3, with task-level majority outcome | `SEEDS="1,2,3"` |
 | Builder / agent / repair model | the same model within a configuration | `--model` of the matrix step |
-| Auxiliary roles | coders Qwen2.5-Coder 32B + Devstral; seeder DeepSeek-Coder-V2; judge Qwen2.5-Coder 32B; 3 critics (two larger, one 7B) | `AM2M_CODERS/SEEDER/JUDGE/CRITICS` (the paper leaves the critics as a TODO; `pipeline.env` picks Qwen-32B, Devstral and Qwen-7B) |
+| Auxiliary roles | coders Qwen2.5-Coder 32B + Devstral; seeder Gemma 3 27B; judge Qwen2.5-Coder 32B; 3 critics (two larger, one 7B) | `AM2M_CODERS/SEEDER/JUDGE/CRITICS` (the paper leaves the critics as a TODO; `pipeline.env` picks Qwen-32B, Devstral and Qwen-7B) |
 | Hyper-parameters (temperature 0.2/0.6, 4,096 output cap, k = 3, k_prop = 3, k_rev = 2, k_adm = 3, k_rep = 2, n_rep = 3, h = 2) | fixed | inside `evaluation/` and `src/`; the frozen run manifest records the content hash of both trees |
 | Sizes | 300 seeded defects (60 per class); 400 Free/Critic failures coded; 600 + 200 injected faults; 150 natural failures; 600 repair runs | `RQ2_PER_CLASS=60`, `RQ1_OURS_N=400`, `RQ4_PER_CLASS=40`, `RQ4_REF_MODELS` (3 × 200), `RQ4_BUILDER_MODEL`, `RQ4_NATURAL_N=150`, `RQ4_REPAIR_N=200` × 3 models |
 
-The 44,352 runs divide into **14 matrix jobs** (7 models × 2 benchmarks). Each job runs all 8 conditions × all tasks × 3 seeds for its (model, benchmark) cell: 2,400 runs for ClassEval, 3,936 for HumanEval+. A job holds only one model, so one H100 can keep that model fully resident.
+The 44,352 runs divide into **14 matrix jobs** (7 models × 2 benchmarks). Each job runs all 8 conditions × all tasks × 3 seeds for its (model, benchmark) cell: 2,400 runs for ClassEval, 3,936 for HumanEval+. A job holds only one model, so its 1–2 A100s (`gpus` column of `models.tsv`) keep that model fully resident.
 
 ### 3.2 Stage-by-stage mapping
 
@@ -155,7 +155,7 @@ The count is 1 + 14 + 1 + 3 + 1 + 1 + 3 + 1 + 1 = **26 jobs** and 122 steps. The
 - **Condition order inside a matrix job.** Single-Gate's token budget is AutoM2M's median output tokens for the same model and benchmark, so Single-Gate must run after AutoM2M. The default condition order does this (`CONDITIONS` ends with `typed_ref,single_gate`).
 - **Hidden tests are kept out of reach.** `benchmarks/tasks.py` only exposes `prompt`, signatures, docstrings and public examples to teams. `score()` is the only reader of `hidden_test`.
 - **The same model plays every role within a configuration**, as in the paper. Only the auxiliary roles (coders, critics, seeder, judge) differ. Their models are pinned in `pipeline.env`.
-- **The seeder is not a critic.** The paper requires that the defect seeder belongs to a model family not used as a critic. `AM2M_SEEDER` is DeepSeek-Coder-V2, and the critics are Qwen and Devstral.
+- **The seeder is not a critic.** The paper requires that the defect seeder belongs to a model family not used as a critic. `AM2M_SEEDER` is Gemma 3 27B (Google), and the critics are Qwen and Devstral.
 - **Two coders from different families** (Qwen2.5-Coder 32B and Devstral) code failures. Disagreements go to an adjudication pass. This is configured through `AM2M_CODERS`, and `evaluation/coding.py` implements the tie-break rule.
 - **An extra output file for the one-example configuration.** `rq2_autom2m_1ex` uses `--tag __1ex` so it never appends to the file that the 7B ClassEval matrix job writes at the same time. Concurrent appends from two nodes to one file would corrupt lines.
 - **Statistics** (Cochran's Q, exact McNemar with Holm correction, GEE, Wilson and bootstrap intervals, Cliff's δ) are computed in `evaluation/analysis/` during stage 40 on the pooled data. This matches the paper's analysis plan, because the plan needs all seeds and models at once.
@@ -229,7 +229,7 @@ This is the traceability table. For each claim or measurement in the Evaluation 
 Every job script is short. It sets `#SBATCH` options and then calls helpers from `hpc/slurm/common.sh`. For example, stage 10:
 
 ```bash
-#SBATCH --time=24:00:00 --gpus=h100:1 --cpus-per-task=12 --mem=64G
+#SBATCH --time=24:00:00 --gpus=a100:1 --cpus-per-task=12 --mem=64G   # submit_pipeline.sh overrides --gpus/--cpus/--mem per stage
 #SBATCH --requeue --open-mode=append --signal=B:USR1@900
 source "$HPC_DIR/slurm/common.sh"
 run_gpu_stage "$(model_field "$MODEL" 2)" 1 matrix --model "$MODEL" --bench "$BENCH"
@@ -268,20 +268,20 @@ The matrix stage runs `MATRIX_PASSES` (default 3) rounds of `run_matrix` for one
 | Technique | Where | What it buys |
 |---|---|---|
 | **Job graph with dependencies** (`--dependency=afterok / afterany`, `--kill-on-invalid-dep=yes`) | `submit_pipeline.sh` | Expresses data dependencies in the scheduler instead of polling. A failed gate cancels dependents. Partial matrix failures do not block analysis. |
-| **Right-sized GPU requests** (`--gpus=h100:1`, or `h100:2` only for stages that keep several large models resident; CPU-only for analysis) | `slurm/*.sh` | No GPUs are reserved for work that does not need them. Analysis (stage 40) asks only for 4 CPUs and 32 GB. |
+| **Right-sized GPU requests** (`--gpus=$GPU_TYPE:N` from `GPUS_*` in `pipeline.env` and the `gpus` column of `models.tsv`, with `CPUS_PER_GPU` cores and `MEM_PER_GPU_GB` each; CPU-only for analysis) | `slurm/*.sh` | No GPUs are reserved for work that does not need them. Analysis (stage 40) asks only for 4 CPUs and 32 GB. |
 | **Self-requeueing long jobs** (`--requeue`, `--signal=B:USR1@900`, `scontrol requeue`) | `common.sh::_on_timelimit` | 24 h jobs finish multi-day workloads. Slurm sends `USR1` 15 minutes before the limit. The job stops its children, logs it and requeues itself under the same job ID, so dependencies stay valid. |
 | **Requeue cap** (`MAX_REQUEUES=30`, restart count read via `scontrol show job … Restarts=`) | `common.sh` | `SLURM_RESTART_COUNT` was found not to be reliably set after requeue on this cluster. Reading the real count keeps the cap effective, so a broken job cannot loop forever. |
 | **Append-mode logs** (`--open-mode=append`) | stage scripts | A requeue does not overwrite the previous attempt's Slurm output. |
 | **Resumable, idempotent work** (raw JSONL skip-set, `.done` markers) | `run_matrix.py`, `run_pipeline.py` | A restart repeats nothing that finished. |
-| **One job per (model, benchmark)** | `10_rq3_condition_matrix.sh` ×14 | The 44,352 runs spread over up to 14 concurrent H100s. A job holds one model, so the weights stay resident. |
+| **One job per (model, benchmark)** | `10_rq3_condition_matrix.sh` ×14 | The 44,352 runs spread over up to 14 concurrent jobs (20 A100s on Narval). A job holds one model, so the weights stay resident. |
 | **Bundled tasks, long jobs** | stage design | No tiny jobs. Every job runs for hours, which respects the "bundle tasks under 15 minutes" guidance. Each stage runs several steps inside one allocation. |
-| **GPU memory sizing per model** (`models.tsv`, `AUX_PAR_*`, `90_check_gpu_sizing.sh`) | config, sizing job | `OLLAMA_NUM_PARALLEL` (KV-cache slots) and worker counts are matched to an 80 GB H100 so that every model is 100% on GPU. The run logs `WARNING` if one is not. The sizing job (not part of the graph) tests every stage's model set, context size and parallelism before a big submission. It showed, for example, that 6 slots made models evict each other in multi-model stages, so those use 2. |
+| **GPU memory sizing per model** (`models.tsv`, `AUX_PAR_*`, `90_check_gpu_sizing.sh`) | config, sizing job | `OLLAMA_NUM_PARALLEL` (KV-cache slots) and worker counts are matched to the stage's A100s (40 GB each) so that every model is 100% on GPU. The run logs `WARNING` if one is not. The sizing job (not part of the graph) tests every stage's model set, context size and parallelism before a big submission. It showed, for example, that 6 slots made models evict each other in multi-model stages, so those use 2. |
 | **Workers = Ollama slots** | `models.tsv` | `run_matrix --workers N` matches `OLLAMA_NUM_PARALLEL`. The GPU serves N requests at once and no request queue builds up. |
 | **Private Ollama per job, free port** | `common.sh::start_ollama` | Jobs sharing a node cannot collide. Nothing is exposed beyond `127.0.0.1`. |
 | **Node-local scratch for the environment** (`$SLURM_TMPDIR/venv`) | `setup_python` | Fast I/O. Nothing small-file-heavy lands on the shared filesystem. |
 | **Wheelhouse, no PyPI by default** (`--no-download`, `pip install --no-index`) | `setup_python` | Alliance policy. Only `pyecore` and `python-docx` (missing from the wheelhouse) are fetched once into `$WHEELS` during setup. |
 | **Environment modules** (`module purge; module load StdEnv/2023 python/3.11 arrow/24.0.0`) | `setup_python` | A defined, logged software stack (the module list is saved per job). |
-| **Internet-dependent work isolated to one job** (probe of GitHub, Ollama registry, Hugging Face, PyPI; downloads; model pulls) | `00_setup_models_and_data.sh` | All other jobs run offline (`HF_*_OFFLINE=1`). Compute nodes without internet are fine. If the probe fails, the job stops with a clear message. |
+| **Internet-dependent work isolated to one job** (probe of GitHub, Ollama registry, Hugging Face, PyPI; downloads; model pulls) | `00_setup_models_and_data.sh` | All other jobs run offline (`HF_*_OFFLINE=1`). If the probe fails (Narval: compute nodes have no internet by policy), the job checks the files staged by `hpc/slurm/stage_offline.sh` on a login node, skips all downloads (`SETUP_OFFLINE=1`) and only verifies them. |
 | **Persistent cache on scratch** (Ollama binary, models, wheels, datasets under `$WORK`, `$OLLAMA_MODELS`) | `pipeline.env` | Installed once, reused by every job and run. |
 | **No `sleep` in jobs, no tight polling** | `common.sh`, `audit.py` | Readiness uses `curl --retry`. The monitoring tools make one `squeue` and one `sacct` call per snapshot, with `--watch` at least 60 s. Only one watcher is meant to run. |
 | **Login node does only light work** | `submit_pipeline.sh`, `status.sh` | The login node writes configuration, calls `sbatch`, and reads small files. |
@@ -467,10 +467,11 @@ These are stated plainly so that nobody over-reads what the pipeline proves.
 1. **Paper data status.** `docs/emse-autom2m.tex` contains a `\SyntheticNotice` and still lists `analysis/simulate.py` in the data-availability text with a TODO to remove it once real runs replace synthetic data. The HPC study is what produces the real data. Until its results replace the manuscript's tables, the paper's numbers are not those of this pipeline.
 2. **Unit tests are not pipeline steps.** `pytest tests plugin/tests` (LLM-free tests of the checker, engine, harness, sandbox and the analysis on synthetic logs) is not run by the Slurm graph. The in-pipeline equivalents are the checker self-test, the pre-flight runs and `--smoke`. If a gate on the test suite is wanted, add it as a CPU-only `always` step in the setup stage.
 3. **"Every aspect is tested" means every research question and its decision rule has a producing step** (§4). It does not mean every code path is covered. Aspects the paper itself marks as untested, such as footprint-only prompting against full context and incremental against from-scratch execution, have no step either.
-4. **Sandbox is not network-isolated.** LLM-generated code runs in a resource-limited subprocess with network access.
-5. **Critics are a configuration choice.** The paper leaves the three critic models as a TODO. `pipeline.env` fixes them (Qwen2.5-Coder 32B, Devstral, Qwen2.5-Coder 7B). Change them there before the run if the paper settles on others.
-6. **Setup needs internet on a GPU node.** If the probe fails, the files must be staged into `$WORK` by hand (Ollama package, `wheels/`, `hf_cache/`, `data/`, `$SCRATCH/.ollama/models`).
-7. **Scratch retention.** Nibi scratch is purged and subject to a 1 TB soft limit after 60 days. Treat `hpc/logs/<RUN_ID>/results/` as the persistent copy and re-collect before any purge.
-8. **Heavy but unavoidable cost.** The paper estimates about 3,200 workstation-hours. Wall-clock time on the cluster depends on fairshare and on how many of the 14 matrix jobs run at the same time.
-9. **Per-step failure policy.** A failed step does not stop its stage (only setup gates and an unhealthy Ollama do). A stage can therefore end non-zero with most of its data present. Always read the audit and `completeness.csv` before treating a run as complete.
-10. **`--smoke` is a plumbing test**, not a scientific result. It uses 2 tasks, 1 seed and the 7B model in every role, so none of its numbers should be reported.
+4. **Subject-model change.** DeepSeek-Coder-V2 16B, the paper's original mixture-of-experts model and RQ2 seeder, was replaced by Gemma 3 27B: under Ollama its generation stalled (15-minute timeouts after one output token, on Nibi and Narval). The manuscript was updated; its result tables carry `TODO(author)` placeholders for the Gemma rows until this run's tables replace them.
+5. **Sandbox is not network-isolated.** LLM-generated code runs in a resource-limited subprocess with network access.
+6. **Critics are a configuration choice.** The paper leaves the three critic models as a TODO. `pipeline.env` fixes them (Qwen2.5-Coder 32B, Devstral, Qwen2.5-Coder 7B). Change them there before the run if the paper settles on others.
+7. **Downloads on Narval run on the login node.** Narval compute nodes have no internet, so `hpc/slurm/stage_offline.sh` (download-only) stages the Ollama package, `wheels/`, `hf_cache/`, `data/` and `$SCRATCH/.ollama/models` before the setup job.
+8. **Scratch retention.** Scratch is not backed up and old files are purged. Treat `hpc/logs/<RUN_ID>/results/` as the persistent copy and re-collect before any purge.
+9. **Heavy but unavoidable cost.** The paper estimates about 3,200 workstation-hours. Wall-clock time on the cluster depends on fairshare and on how many of the 14 matrix jobs run at the same time.
+10. **Per-step failure policy.** A failed step does not stop its stage (only setup gates and an unhealthy Ollama do). A stage can therefore end non-zero with most of its data present. Always read the audit and `completeness.csv` before treating a run as complete.
+11. **`--smoke` is a plumbing test**, not a scientific result. It uses 2 tasks, 1 seed and the 7B model in every role, so none of its numbers should be reported.

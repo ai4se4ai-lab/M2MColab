@@ -48,7 +48,15 @@ log_error() { echo "[$(date '+%F %T')] [ERROR] $*" >&2; }
 
 # ── Exit / requeue handling ──────────────────────────────────────────────────
 _cleanup() {
-    [ -n "$STAGE_PID" ] && kill -TERM "$STAGE_PID" 2>/dev/null
+    # The stage runs in its own process group (run_stage uses setsid): signal the whole group, so that run_matrix and
+    # its worker pool stop too. Signalling only run_pipeline.py left them running against the Ollama server stopped
+    # below, and each requeue wrote a burst of "Could not reach Ollama" error rows (observed: ~1,300 in one job).
+    if [ -n "$STAGE_PID" ]; then
+        kill -TERM -- "-$STAGE_PID" 2>/dev/null || kill -TERM "$STAGE_PID" 2>/dev/null
+        local _i
+        for _i in $(seq 1 30); do kill -0 -- "-$STAGE_PID" 2>/dev/null || break; sleep 1; done
+        kill -KILL -- "-$STAGE_PID" 2>/dev/null
+    fi
     [ -n "$GPU_MON_PID" ] && kill "$GPU_MON_PID" 2>/dev/null
     if [ -n "$OLLAMA_PID" ] && kill -0 "$OLLAMA_PID" 2>/dev/null; then
         log_info "Stopping Ollama (PID $OLLAMA_PID)"
@@ -195,7 +203,7 @@ start_gpu_monitor() {
 # ── Run one stage of hpc/scripts/run_pipeline.py in the background ───────────
 # (background + wait lets the USR1 time-limit trap fire immediately)
 run_stage() {
-    python "$HPC_DIR/scripts/run_pipeline.py" "$@" &
+    setsid python "$HPC_DIR/scripts/run_pipeline.py" "$@" &
     STAGE_PID=$!
     wait "$STAGE_PID"
     local rc=$?
