@@ -311,3 +311,79 @@ def test_engine_error_in_unchecked_team_is_a_failed_run_not_a_crash(tmp_path, mo
     assert out.status == "failed"
     assert "OCLEvalError" in out.error and "unbound variable" in out.error
     assert not out.phi
+
+
+@pytest.mark.parametrize("src", ["", "   \n", "# nothing here\n", "\"\"\"only a docstring\"\"\"\n", "x = 1\n"])
+def test_empty_or_non_function_method_source_becomes_a_failing_stub_not_a_crash(src):
+    """Generated method sources that parse to no function (empty, comment-only, a bare statement) are unusable code,
+    scored like a syntax error. Seen on the HPC run: StarCoder2 13B ClassEval, 11 runs crashed with IndexError."""
+    from autom2m.pywork import splice_class
+
+    code = splice_class("class A:\n    pass\n", [("f", [])], {"f": src})
+    ns: dict = {}
+    exec(code, ns)
+    with pytest.raises(SyntaxError, match="invalid generated code"):
+        ns["A"]().f()
+
+
+# ---- R1-R3 (2026-10 revision): deliverable specification, best effort, admission fallback ----------------------
+
+def _strip_spec(team: dict) -> dict:
+    """The reference team as it was before the revision: the coder sees no docstring/examples, no examples_run."""
+    t = copy.deepcopy(team)
+    for h in t["handoffs"]:
+        for r in h["rules"]:
+            for b in r.get("llm", []):
+                b["footprint"] = [p for p in b["footprint"] if not p.startswith("d.method.docstring")
+                                  and not p.startswith("d.method.examples")]
+                b["validator"] = [v for v in b.get("validator", []) if v["id"] != "examples_run"]
+    return t
+
+
+def test_spec_completion_gives_the_coder_the_specification_and_keeps_the_team_admitted():
+    from autom2m.specwire import complete_deliverable_spec
+
+    bare = _strip_spec(_team("classeval_reference"))
+    done = complete_deliverable_spec(bare)
+    impl = next(r for h in done["handoffs"] for r in h["rules"] if r["name"] == "Design2Impl")["llm"][0]
+    for p in ("d.method.docstring", "d.method.examples.call", "d.method.examples.expected"):
+        assert p in impl["footprint"]
+    ids = [v["id"] for v in impl["validator"]]
+    assert ids.index("examples_run") < ids.index("passes_tests")
+    assert check(parse_team(done)).admitted and check(parse_team(bare)).admitted
+    assert complete_deliverable_spec(done) == done                     # idempotent
+    no_exec = copy.deepcopy(bare)
+    for a in no_exec["agents"]:
+        if a["name"] == "Developer":
+            a["tools"] = []
+    impl2 = next(r for h in complete_deliverable_spec(no_exec)["handoffs"] for r in h["rules"]
+                 if r["name"] == "Design2Impl")["llm"][0]
+    assert "examples_run" not in [v["id"] for v in impl2["validator"]]  # never adds a check the writer cannot run
+    assert complete_deliverable_spec({"not": "a team"}) == {"not": "a team"}
+
+
+def test_escalated_method_submits_the_candidate_that_passes_its_examples_not_the_last_one():
+    # the tests are wrong (add(2, 2) == 5), so every implementation is rejected and the method escalates;
+    # the correct candidate (a + b) passes the documented example and must be the best effort
+    s = _session(Scripted([BAD_CODE, GOOD_CODE, BAD_CODE], test_answers=(WRONG_TESTS,)), k=3)
+    res = s.run()
+    assert not res.phi
+    assert "a + b" in res.deliverables["add"]
+
+
+def test_not_admitted_builder_team_falls_back_to_the_checked_library_team(tmp_path):
+    from autom2m.loop import AutoM2M
+
+    class Builder(Scripted):
+        def generate(self, prompt, *, temperature=0.2, **kw):
+            if "team builder" in prompt:
+                return "I cannot produce JSON."
+            return super().generate(prompt, temperature=temperature, **kw)
+
+    ref = json.loads((TEAMS / "classeval_reference.json").read_text())
+    without = AutoM2M(Builder([GOOD_CODE]), workdir=tmp_path / "a").solve(TASK, TASK.prompt, TaskWorkbench(TASK))
+    assert without.status == "not_admitted" and not without.fallback
+    out = AutoM2M(Builder([GOOD_CODE]), workdir=tmp_path / "b", fallback_team=ref).solve(TASK, TASK.prompt,
+                                                                                          TaskWorkbench(TASK))
+    assert out.fallback and out.admitted_round is None and out.status in ("done", "failed")
+    assert "a + b" in out.deliverables.get("add", "")

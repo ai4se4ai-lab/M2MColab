@@ -55,6 +55,12 @@ MODEL_LAB = {"qwen2.5-coder:7b": "Qwen-7B", "qwen2.5-coder:32b": "Qwen-32B", "de
              "deepseek-coder-v2:16b": "DSC-V2", "gemma3:27b": "Gemma3", "granite-code:20b": "Granite", "codellama:13b": "CodeLlama",
              "starcoder2:15b": "StarCoder2"}
 BENCH_LAB = {"classeval": "ClassEval", "humanevalplus": "HumanEval+"}
+
+
+def model_order(models) -> list:
+    """Models in the order of MODEL_LAB (the paper's: by family and size), unknown ones last, instead of alphabetical."""
+    rank = {m: i for i, m in enumerate(MODEL_LAB)}
+    return sorted(models, key=lambda m: (rank.get(m, len(rank)), str(m)))
 COMP = {"D1", "D2", "D3", "D4", "D5"}
 S: dict = {}
 # muted, colour-blind-safe palette (validated categorical order)
@@ -240,7 +246,7 @@ def rq2_admission(runs: pd.DataFrame) -> None:
     if typed.empty:
         return
     out = {}
-    models = sorted(typed.model.unique())
+    models = model_order(typed.model.unique())
     fig, ax = plt.subplots(figsize=(6.4, 0.5 + 0.45 * len(models)))
     for yi, m in enumerate(models):
         sub = typed[typed.model == m]
@@ -410,7 +416,7 @@ def rq3_success(runs: pd.DataFrame) -> None:
         means = defaultdict(list)
         n_tests, n_surv = 0, 0
         allp = {}
-        for m in sorted(b.model.unique()):
+        for m in model_order(b.model.unique()):
             sm = b[b.model == m]
             maj = {c: majority(sm[sm.condition == c]) for c in CONDS if not sm[sm.condition == c].empty}
             tasks = sorted(set.intersection(*[set(v) for v in maj.values()])) if maj else []
@@ -504,7 +510,23 @@ def rq3_compfail(runs: pd.DataFrame) -> None:
     runs["key"] = runs.bench + "/" + runs.model.str.replace(":", "_").str.replace("/", "_") + "/" + runs.condition + "/" + \
         runs.task.str.replace("/", "_").str.replace(":", "_") + "__s" + runs.seed.astype(str)
     comp = set(codes[codes.final.isin(COMP)].id)
-    runs["comp"] = runs.key.isin(comp).astype(int)
+    runs["comp"] = runs.key.isin(comp).astype(float)
+    # The coder may have labelled only a stratified random sample of the failing executed runs (code_runs
+    # --limit-per-cell). Each uncoded failing executed run then takes the composition share of its cell
+    # (benchmark x model x condition) among the coded ones, so a per-condition rate estimates the rate over all
+    # failures instead of counting uncoded failures as "not composition-caused". With every failure coded this changes
+    # nothing. Cells with no coded failure fall back to the condition's pooled share.
+    failing = (runs.success == 0) & ~runs.status.isin(["error", "not_admitted"])
+    runs["coded"] = runs.key.isin(set(codes.id))
+    cell = ["bench", "model", "condition"]
+    share = runs[failing & runs.coded].groupby(cell).comp.mean()
+    pooled = runs[failing & runs.coded].groupby("condition").comp.mean()
+    unc = runs[failing & ~runs.coded]
+    if len(unc):
+        imp = [share.get((r.bench, r.model, r.condition), pooled.get(r.condition, 0.0)) for r in unc.itertuples()]
+        runs.loc[unc.index, "comp"] = imp
+    sample = {"failing_executed": int(failing.sum()), "coded": int((failing & runs.coded).sum()),
+              "imputed_from_cell_share": int(len(unc))}
     runs["refused"] = ((runs.condition == "autom2m") & (runs.status == "not_admitted")).astype(int)
     runs["group"] = runs.model.map(groups)
 
@@ -567,7 +589,7 @@ def rq3_compfail(runs: pd.DataFrame) -> None:
     (TAB / "tab_compfail.tex").write_text("\n".join(lines) + "\n")
     kappa = cohen_kappa(list(codes.coder_a), list(codes.coder_b))
     S.setdefault("rq3", {})["compfail"] = {"per100": table, "rr": rr, **table_extra, "kappa_coders": kappa,
-                                           "disagreement": float(1 - codes.agree.mean()), "coded": int(len(codes)),
+                                           "disagreement": float(1 - codes.agree.mean()), "coded": int(len(codes)), "sample": sample,
                                            "h3a_executed": bool(rr and rr.get("i|all", 9) < 1)}
 
 

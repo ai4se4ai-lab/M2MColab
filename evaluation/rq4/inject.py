@@ -156,7 +156,9 @@ def _deliverable_rule(team: dict) -> tuple[int, int, int] | None:
     d = team.get("deliverable") or {}
     for hi, h in enumerate(team["handoffs"]):
         for ri, r in enumerate(h["rules"]):
-            tv, tc = r["to"]["type"].split("!")
+            from autom2m.typed_team import _split_type  # View!Class, View.Class or a bare class (builder teams)
+
+            tv, tc = _split_type(r["to"]["type"], str(h.get("target", "")))
             if tv == d.get("view") and tc == d.get("class"):
                 for bi, b in enumerate(r.get("llm", [])):
                     if b["feature"] == d.get("feature"):

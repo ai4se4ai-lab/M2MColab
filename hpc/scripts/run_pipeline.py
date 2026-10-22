@@ -183,7 +183,9 @@ def stage_steps(stage: str, a: argparse.Namespace) -> list[Step]:
                  models=coders, num_ctx=32768),
             Step("rq1_code_ours", m("evaluation.rq1.code_failures", "--source", "ours", "--n", env("RQ1_OURS_N", "400"),
                                     "--workers", w), models=coders, num_ctx=32768),
-            Step("rq3_code_runs", m("evaluation.rq3.code_runs", "--workers", w), models=coders, num_ctx=32768),
+            Step("rq3_code_runs", m("evaluation.rq3.code_runs", "--workers", w,
+                                    *(["--limit-per-cell", env("RQ3_CODE_CAP")] if env("RQ3_CODE_CAP") else [])),
+                 models=coders, num_ctx=32768),
         ]
     if stage == "analysis":
         out = LOG_ROOT / "results"          # collected next to the run's logs

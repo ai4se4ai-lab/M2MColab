@@ -61,7 +61,7 @@ memory per GPU (the Narval share). Check the fit with
 | 30 | `30_rq2_seeded_defects_vs_critics.sh` | `GPUS_RQ2_LLM` | detach on natural teams, 300 seeded defects (Gemma 3 27B), clean set, checker vs 3 LLM critics | RQ2 |
 | 31 | `31_rq4_fault_injection_builder_teams.sh` | `GPUS_RQ4_BUILDER` | 200 injected faults on builder teams (Qwen-32B) + transcript baselines | RQ4 |
 | 32 | `32_rq4_repair_vs_rebuild.sh` ×3 | 1–2 GPUs (`models.tsv`) | checked repair vs rebuild, 200 failed AutoM2M runs per model | RQ4 |
-| 33 | `33_rq1_rq3_rq4_failure_coding.sh` | `GPUS_CODING` | LLM coders (Qwen-32B + Devstral): 150 natural failures, 184 Who&When + 400 Free/Critic failures, every failing executed run | RQ4, RQ1, RQ3 (H3a) |
+| 33 | `33_rq1_rq3_rq4_failure_coding.sh` | `GPUS_CODING` | LLM coders (Qwen-32B + Devstral): 150 natural failures, 184 Who&When + 400 Free/Critic failures, a seeded stratified random sample of failing executed runs (`RQ3_CODE_CAP`, default 50 per model × benchmark × condition cell; empty codes all) | RQ4, RQ1, RQ3 (H3a) |
 | 40 | `40_analyze_and_collect_results.sh` | CPU | `analysis.analyze` (every table, figure and number), report, web JSON, per-model summaries, collection | all |
 
 **Dependencies.**

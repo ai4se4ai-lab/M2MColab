@@ -2142,18 +2142,30 @@ failures they reached Cohen's $\kappa=0.72$~\cite{cohen1960kappa}, and
 disagreements were resolved by discussion. A second assistant independently
 re-coded a 20\% sample ($\kappa=0.68$ against the first coder).
 
-\paragraph{LLM-assisted coding of failures (RQ3)} The 21{,}045 failing executed
-runs cannot all be coded by hand. Every run was rendered into a common
+\paragraph{LLM-assisted coding of failures (RQ3)} The 25{,}292 failing executed
+runs cannot all be coded by hand, and coding all of them with LLM coders would
+have taken about a week of GPU time. We coded a stratified random sample: at
+most 50 failures per model $\times$ benchmark $\times$ condition cell, drawn with
+a fixed seed (5{,}580 failures in total; cells with fewer failures were coded
+completely). Every sampled run was rendered into a common
 transcript format; in this format, typed runs appear as one message per
 accepted or rejected value. The condition is not named, although typed runs
 remain recognisable, so coding was not fully blind. Two LLM coders from
 different families (Qwen2.5-Coder 32B and Devstral) labelled each failure with
 the same codebook. Agreeing labels were kept, and the 23\% of disagreements
-were resolved by a third pass with a fixed tie-break rule. On a stratified
+were resolved by a third pass with a fixed tie-break rule.
+% TODO(author): replace "23\%" by the disagreement rate of this run (summary.json: rq3.compfail.disagreement).
+% TODO(author): the agreement with the human coders below was measured earlier; re-measure it on a sample of this
+% run's failures (needs the human coders) or state that it comes from the pilot.
+On a stratified
 sample of 600 failures, the final labels agree with the two human coders with
 $\kappa=0.74$ (0.66--0.79 across conditions; 0.71 on \auto{} transcripts).
 Non-admitted \auto{} sessions are not coded; we report them under three explicit
-rules (Section~\ref{sec:res-rq3}).
+rules (Section~\ref{sec:res-rq3}). The share of composition-caused failures
+in a condition is estimated over all of its failing executed runs: a failure
+that was not sampled takes the share of coded failures in its own cell. The
+intervals in Table~\ref{tab:compfail} resample tasks and treat these cell shares as
+known, so they do not include the uncertainty of the coding sample.
 
 \paragraph{Statistical analysis} Success is binary and paired by task. To avoid
 treating seeds as independent units, we take the majority outcome over the

@@ -398,3 +398,97 @@ def test_structural_binding_of_the_wrong_type_does_not_crash(monkeypatch):
     tp = TargetPattern("o", "OUT", "C", [StructuralBinding("tags", "some text"), StructuralBinding("n", "not a number")])
     B.apply_structural_bindings(tp, o, Match("r", {}, "k"), None, {}, None)
     assert list(o.tags) == ["some text"] and o.n == 0
+
+
+def _fake_run(root, bench, model, cond, task, seed, success=False, status="failed"):
+    d = root / "runs" / bench / model / cond
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{task}__s{seed}.json").write_text(json.dumps({"success": success, "status": status}))
+
+
+def test_rq3_failure_sample_is_stratified_seeded_and_order_independent(tmp_path, monkeypatch):
+    from evaluation.rq3 import code_runs
+
+    monkeypatch.setattr(code_runs, "RESULTS", tmp_path)
+    for t in range(40):                                   # a cell with 40 failures, one with 5, successes and errors
+        _fake_run(tmp_path, "classeval", "m1", "free", f"T{t}", 1)
+    for t in range(5):
+        _fake_run(tmp_path, "classeval", "m1", "critic", f"T{t}", 1)
+    _fake_run(tmp_path, "classeval", "m1", "free", "OK", 1, success=True, status="done")
+    _fake_run(tmp_path, "classeval", "m1", "free", "ERR", 1, status="error")
+    _fake_run(tmp_path, "classeval", "m1", "autom2m", "NA", 1, status="not_admitted")
+    _fake_run(tmp_path, "classeval", "m1", "other_condition", "X", 1)   # not a study condition
+
+    everything, design = code_runs.items()
+    assert len(everything) == 45 and design["classeval/m1/free"] == {"failing": 40, "sampled": 40}
+
+    chosen, design = code_runs.items(10)
+    by_cell = {}
+    for it in chosen:
+        by_cell.setdefault(it["condition"], []).append(it["id"])
+    assert len(by_cell["free"]) == 10 and len(by_cell["critic"]) == 5          # capped / fully coded
+    assert design["classeval/m1/free"] == {"failing": 40, "sampled": 10}
+    again, _ = code_runs.items(10)
+    assert [i["id"] for i in again] == [i["id"] for i in chosen]               # deterministic
+    assert [i["id"] for i in code_runs.items(10, seed=1)[0]] != [i["id"] for i in chosen]
+    # a random sample, not the first N in file order
+    assert sorted(by_cell["free"]) != sorted(f"classeval/m1/free/T{t}__s1" for t in range(10))
+
+
+def test_rq3_compfail_imputes_uncoded_failures_from_the_cell_share(tmp_path, monkeypatch):
+    import pandas as pd
+
+    from evaluation.analysis import analyze as an
+
+    monkeypatch.setattr(an, "DATA", tmp_path)
+    monkeypatch.setattr(an, "TAB", tmp_path / "tab")
+    monkeypatch.setattr(an, "S", {})
+    rows = []
+    for t in range(100):          # one cell: 100 runs, 60 failures (executed), 40 successes
+        rows.append(dict(bench="classeval", model="m1", task=f"T{t}", condition="free", seed=1,
+                         status="failed" if t < 60 else "done", success=0 if t < 60 else 1, out_tokens=1.0))
+    runs = pd.DataFrame(rows)
+    # 12 of the 60 failures are coded (a sample); 3 of those 12 are composition-caused (D1) -> cell share 0.25
+    coded = [dict(id=f"classeval/m1/free/T{t}__s1", bench="classeval", model="m1", condition="free", task=f"T{t}",
+                  seed=1, coder_a="D1" if t < 3 else "B1", coder_b="D1" if t < 3 else "B1",
+                  final="D1" if t < 3 else "B1", secondary=None, agree=1) for t in range(12)]
+    pd.DataFrame(coded).to_csv(tmp_path / "rq3_codes.csv", index=False)
+    monkeypatch.setattr(an, "model_groups", lambda r: {"m1": "strong"})
+    an.rq3_compfail(runs)
+    rate = an.S["rq3"]["compfail"]["per100"]["free"]["i|all"]
+    assert abs(rate - 15.0) < 1e-6          # 60 failures x 0.25 = 15 composition failures out of 100 runs
+    smp = an.S["rq3"]["compfail"]["sample"]
+    assert smp == {"failing_executed": 60, "coded": 12, "imputed_from_cell_share": 48}
+
+
+def test_rq3_failure_selection_from_raw_rows_equals_reading_every_run_record(tmp_path, monkeypatch):
+    from evaluation.rq3 import code_runs
+
+    monkeypatch.setattr(code_runs, "RESULTS", tmp_path)
+    rows = []
+    for t in range(30):
+        ok = t % 3 == 0
+        _fake_run(tmp_path, "humanevalplus", "q:7b".replace(":", "_"), "free", f"HumanEval_{t}", 1,
+                  success=ok, status="done" if ok else "failed")
+        rows.append({"bench": "humanevalplus", "model": "q:7b", "condition": "free", "task": f"HumanEval/{t}", "seed": 1,
+                     "success": ok, "status": "done" if ok else "failed"})
+    # an earlier errored attempt of the same run, followed by its retry: the last row is the record
+    rows.insert(0, {**rows[1], "status": "error", "success": False})
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    (raw / "humanevalplus__q_7b.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows) + "not json\n")
+    via_raw = code_runs.items(5)
+    for f in raw.glob("*.jsonl"):
+        f.unlink()
+    via_records = code_runs.items(5)
+    assert [i["id"] for i in via_raw[0]] == [i["id"] for i in via_records[0]] and via_raw[1] == via_records[1]
+    assert via_raw[1]["humanevalplus/q_7b/free"] == {"failing": 20, "sampled": 5}
+
+
+def test_model_order_follows_the_papers_order_not_the_alphabet():
+    from evaluation.analysis.analyze import model_order
+
+    got = model_order(["starcoder2:15b", "codellama:13b", "gemma3:27b", "qwen2.5-coder:7b", "new-model:1b",
+                       "devstral:24b", "qwen2.5-coder:32b", "granite-code:20b"])
+    assert got == ["qwen2.5-coder:7b", "qwen2.5-coder:32b", "devstral:24b", "gemma3:27b", "granite-code:20b",
+                   "codellama:13b", "starcoder2:15b", "new-model:1b"]

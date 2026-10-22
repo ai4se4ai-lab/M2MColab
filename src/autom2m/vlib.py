@@ -153,8 +153,10 @@ class RunContext:
     rng: random.Random = field(default_factory=lambda: random.Random(0))
     exec_calls: int = 0
     exec_seconds: float = 0.0
-    # target_key/binding -> last rejected value (used to submit best effort)
+    # goal method name -> best rejected code value (used to submit best effort for an escalated method): the
+    # candidate that passes the most of the method's documented examples, the later one on ties
     last_rejected: dict[str, str] = field(default_factory=dict)
+    best_rejected_score: dict[str, float] = field(default_factory=dict)
     # "<goal name>|<validator id>" -> last rejected value (attribution)
     last_rejected_any: dict[str, str] = field(default_factory=dict)
     # goal Method objects by name (set by the session; locator fallback)
@@ -433,6 +435,21 @@ def v_examples_run(value: Any, target: Any = None, method: Any = None) -> bool |
         f = res["failed"][0]
         return Rejected(f"example `{f['example']}` expected {f['expected']!r}, got {f['got']!r}")
     return True
+
+
+def examples_score(value: Any, target: Any = None, method: Any = None) -> float:
+    """Share of the method's documented examples that a code candidate passes (-1 if it defines no such function,
+    -0.5 if it does not load); used to pick the best effort among rejected candidates, never to accept one."""
+    method = goal_method_of(target, method)
+    fn = _fn(str(value), method)
+    if isinstance(fn, Rejected):
+        return -1.0
+    ctx = _ctx()
+    res = _exec(lambda: ctx.bench.run_examples(_spliced(method, fn), [_name(method)]))
+    if res.get("error"):
+        return -0.5
+    n = int(res.get("n") or 0)
+    return (n - len(res.get("failed") or [])) / n if n else 0.0
 
 
 def v_unsat(value: Any, *args: Any) -> Rejected:

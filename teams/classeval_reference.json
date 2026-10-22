@@ -212,12 +212,21 @@
               "footprint": [
                 "d.method.task.outline",
                 "d.method.signature",
+                "d.method.docstring",
+                "d.method.examples.call",
+                "d.method.examples.expected",
                 "d.contract",
                 "t.code"
               ],
               "validator": [
                 {
                   "id": "compiles"
+                },
+                {
+                  "id": "examples_run",
+                  "args": {
+                    "method": "d.method"
+                  }
                 },
                 {
                   "id": "passes_tests",

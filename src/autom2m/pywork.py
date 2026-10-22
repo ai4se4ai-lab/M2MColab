@@ -252,7 +252,9 @@ def splice_class(frame_src: str, order: list[tuple[str, list[str]]], bodies: dic
         if src is None:
             src = f"def {name}(*args, **kwargs):\n    raise NotImplementedError('{name} pending')"
         try:
-            fn = ast.parse(textwrap.dedent(src)).body[0]
+            # empty or comment-only output parses to an empty module: unusable code, like a syntax error (a model
+            # such as StarCoder2 returns it for some methods; it crashed the run with IndexError at assembly)
+            fn = (ast.parse(textwrap.dedent(src)).body or [None])[0]
             if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 raise SyntaxError("not a function")
         except SyntaxError:

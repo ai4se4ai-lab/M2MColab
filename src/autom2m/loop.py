@@ -22,6 +22,7 @@ escalate; agent claims in phi are ignored; cycles stop after three passes);
 """
 from __future__ import annotations
 
+import copy
 import json
 import re
 import tempfile
@@ -70,6 +71,8 @@ class AutoOutcome:
     accepted_values: int = 0
     seconds: float = 0.0
     error: str = ""
+    # the builder's own team was not admitted and the checked library team ran instead (admitted_round stays None)
+    fallback: bool = False
 
     def to_dict(self) -> dict:
         return dict(self.__dict__)
@@ -102,8 +105,13 @@ class AutoM2M:
                  builder_temperature: float = 0.6, temperature: float = 0.2, builder_max_tokens: int = 4096,
                  check_enabled: bool = True, repair_enabled: bool = True, n_examples: int = 3,
                  attribution_limit: int = 2, builder: str = "v2", k_prop: int = 3, k_rev: int = 2,
-                 workdir: Path | None = None, log=None) -> None:
+                 workdir: Path | None = None, log=None, complete_spec: bool = True,
+                 fallback_team: dict | None = None) -> None:
         self.llm = llm
+        # complete_spec: every proposal's deliverable binding gets the goal method's specification (specwire.py);
+        # fallback_team: a checked library team that runs when the builder's team is not admitted
+        self.complete_spec = complete_spec
+        self.fallback_team = fallback_team
         # builder "v1": one proposal, full-team revisions (the paper's first description);
         # builder "v2": schema-constrained, checker-ranked proposals, localized repair (builder.py)
         self.builder, self.k_prop, self.k_rev = builder, k_prop, k_rev
@@ -153,6 +161,15 @@ class AutoM2M:
             self._out.check_seconds += res.seconds
         return res
 
+    def _prepare(self, team_json: dict) -> dict:
+        """The executed form of a team: goal view lifted in, deliverable specification completed (specwire.py)."""
+        t = normalize(team_json)
+        if self.complete_spec:
+            from .specwire import complete_deliverable_spec
+
+            t = complete_deliverable_spec(t)
+        return t
+
     def _admit(self, team_json: dict | None, task) -> tuple[TypedTeam | None, list[str], Any, str | None]:
         """Parse, check (Alg. 3) and compile. Returns (team, diagnostics, compiled, first violated condition)."""
         if team_json is None:
@@ -171,6 +188,14 @@ class AutoM2M:
             first = res.first_cond()
             if diags:
                 return team, diags, None, first
+        if self.complete_spec:
+            # after the checker's verdict on the team as written: the executed team gets the deliverable's
+            # specification (specwire.py); this only adds well-typed reads and a check its writer can run, so an
+            # admitted team stays admissible, and admission statistics describe the builder's own team
+            try:
+                team = parse_team(self._prepare(team_json))
+            except TeamFormatError:
+                pass
         t0 = time.perf_counter()
         try:
             ct = compile_team(team, task, self.workdir / f"team{int(time.time() * 1000) % 10 ** 8}",
@@ -242,13 +267,26 @@ class AutoM2M:
             out.diagnostics.append(diags)
         out.final_team = team_json
         if not self.check_enabled and team is not None:
-            out.unchecked_diagnostics = [str(d) for d in check(team).diagnostics]
+            try:  # what the checker would have said about the team as written (not its executed completion)
+                written = parse_team(normalize(team_json))
+            except TeamFormatError:
+                written = team
+            out.unchecked_diagnostics = [str(d) for d in check(written).diagnostics]
+        if ct is None and self.fallback_team is not None and self.check_enabled and initial_team is None:
+            # the builder's team was not admitted within its budget: run the checked library team (the builder's
+            # admission statistics are kept: admitted_round stays None, diagnostics record its rounds)
+            fb_team, fb_diags, fb_ct, _ = self._admit(copy.deepcopy(self.fallback_team), task)
+            if fb_ct is not None:
+                out.fallback = True
+                team_json, team, ct = self.fallback_team, fb_team, fb_ct
+                out.final_team = team_json
         if ct is None:
             out.status = "not_admitted" if self.check_enabled else "compile_error"
             out.error = "; ".join(diags)[:500]
             out.seconds = time.time() - t0
             return out
-        out.admitted_round = out.admission_rounds
+        if not out.fallback:
+            out.admitted_round = out.admission_rounds
         if admission_only:
             out.status = "admitted"
             out.seconds = time.time() - t0

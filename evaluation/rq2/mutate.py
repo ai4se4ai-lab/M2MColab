@@ -21,7 +21,7 @@ from pathlib import Path
 
 from autom2m.checker import W4_MODES, check
 from autom2m.lift import normalize
-from autom2m.typed_team import DONE_VOCABULARY, parse_team, rule_env, type_path
+from autom2m.typed_team import DONE_VOCABULARY, _split_type, parse_team, rule_env, type_path
 from autom2m.vlib import VLIB
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -51,6 +51,11 @@ def _rules(t: dict):
 
 def mutants(team: dict):
     """Yield (operator, site, mutant_json)."""
+    if not isinstance(team.get("done"), list):
+        # builder-generated teams sometimes give "done" as a mapping or a single string; the parser reads the clauses
+        # by iterating over it, so mutate that same list of clauses
+        d = team.get("done") or []
+        team = {**team, "done": [d] if isinstance(d, str) else list(d)}
     tt = parse_team(team)
     gv = tt.goal_view
     # D1: delete a rule
@@ -81,8 +86,10 @@ def mutants(team: dict):
                 m["handoffs"][hi]["rules"][ri]["llm"][bi]["footprint"][pi] = p + "Ref"
                 yield "break_footprint", f"{r['name']}.{b['feature']}[{p}]", m
     # D2: drop a mandatory binding
-    for hi, ri, _h, r in _rules(team):
-        tv, tc = r["to"]["type"].split("!")
+    for hi, ri, h, r in _rules(team):
+        # resolve the target type as the parser does: "View!Class", "View.Class" or a bare class in the handoff's
+        # target view (builder-generated teams use all three)
+        tv, tc = _split_type(r["to"]["type"], str(h.get("target", "")))
         decl = tt.cls(tv, tc)
         for f in list(r.get("bind", {})):
             feat = decl.feature(f) if decl else None

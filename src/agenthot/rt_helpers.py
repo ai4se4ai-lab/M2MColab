@@ -156,7 +156,17 @@ def _recording(fn):
             if name:
                 ctx.last_rejected_any[f"{name}|{vid}"] = str(value)
                 if vid in _CODE_VALIDATORS:
-                    ctx.last_rejected[str(name)] = str(value)
+                    # keep the rejected candidate that passes most documented examples (best effort if the method
+                    # escalates), not merely the last one
+                    try:
+                        score = _vlib.examples_score(value, target, goal)
+                    except Exception:  # noqa: BLE001
+                        score = -2.0
+                    best = getattr(ctx, "best_rejected_score", None)
+                    if best is None or score >= best.get(str(name), float("-inf")):
+                        if best is not None:
+                            best[str(name)] = score
+                        ctx.last_rejected[str(name)] = str(value)
             tk = getattr(target, "_amt_target_key", None)
             if tk:
                 ctx.last_rejected_any[f"{tk}|{vid}"] = str(value)
