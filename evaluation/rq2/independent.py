@@ -83,6 +83,9 @@ TEAM:
 Output JSON {{"team": <the modified team>, "description": <one sentence: what you changed>}}."""
 
 
+SEED_ATTEMPTS = 4  # a seed that comes back unchanged (or without a team) is retried with that feedback
+
+
 def seed(per_class: int, workers: int) -> None:
     teams = builder_teams()
     rng = random.Random(0)
@@ -97,29 +100,60 @@ def seed(per_class: int, workers: int) -> None:
     spec = llms.seeder()
     print(f"{len(jobs)} seeding jobs over {len(teams)} admitted builder teams (seeder {llms.label(spec)})", flush=True)
 
+    out = OUT / "seeded.jsonl"
+    # resumable: valid mutants from an earlier run are kept; unchanged ("equivalent") or failed seeds are retried
+    prev = {}
+    if out.exists():
+        for line in out.read_text().splitlines():
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            prev[(r.get("defect"), r.get("origin"), r.get("variant"))] = r
+
     def work(job):
         from autom2m.loop import json_from
 
         d, item, variant = job
-        llm = llms.make(spec[0], spec[1] + variant, max_tokens=4096)
+        old = prev.get((d, item["source"], variant))
+        if old and old.get("mutant") and not old.get("equivalent"):
+            return old
         prompt = SEED_PROMPT.format(defect=f"{d} {DEFECTS[d]}", variant=variant, team=json.dumps(item["team"], indent=1))
-        try:
-            r = json_from(llm.generate(prompt, temperature=0.8, format="json")) or {}
-        except Exception as exc:  # noqa: BLE001
-            return {"defect": d, "origin": item["source"], "error": str(exc)[:200]}
-        mt = r.get("team") if isinstance(r.get("team"), dict) else None
-        if mt is None:
-            return {"defect": d, "origin": item["source"], "error": "no team in the answer"}
-        return {"defect": d, "origin": item["source"], "variant": variant, "description": str(r.get("description", ""))[:400],
-                "equivalent": _key(mt) == _key(item["team"]), "mutant": _strip_goal(mt)}
+        last = {"defect": d, "origin": item["source"], "variant": variant, "error": "not attempted"}
+        for attempt in range(SEED_ATTEMPTS):
+            llm = llms.make(spec[0], spec[1] + variant + 100 * attempt, max_tokens=4096)
+            try:
+                r = json_from(llm.generate(prompt, temperature=0.8, format="json")) or {}
+            except Exception as exc:  # noqa: BLE001
+                last = {"defect": d, "origin": item["source"], "variant": variant, "error": str(exc)[:200],
+                        "attempts": attempt + 1}
+                continue
+            mt = r.get("team") if isinstance(r.get("team"), dict) else None
+            if mt is None:
+                last = {"defect": d, "origin": item["source"], "variant": variant, "error": "no team in the answer",
+                        "attempts": attempt + 1}
+                prompt += ("\n\nYour previous answer contained no team. Output the full JSON object with the keys "
+                           "\"team\" (the modified specification) and \"description\".")
+                continue
+            last = {"defect": d, "origin": item["source"], "variant": variant,
+                    "description": str(r.get("description", ""))[:400], "equivalent": _key(mt) == _key(item["team"]),
+                    "mutant": _strip_goal(mt), "attempts": attempt + 1}
+            if not last["equivalent"]:
+                break
+            prompt += ("\n\nYour previous answer returned the specification unchanged. Change the specification so "
+                       f"that it contains a {d} defect as defined above; the result must differ from the original.")
+        return last
 
-    out = OUT / "seeded.jsonl"
     OUT.mkdir(parents=True, exist_ok=True)
-    with ThreadPoolExecutor(workers) as ex, out.open("w") as fh:
+    rows = []
+    with ThreadPoolExecutor(workers) as ex:
         for r in ex.map(work, jobs):
-            fh.write(json.dumps(r) + "\n")
-            fh.flush()
-            print(r["defect"], r.get("origin"), "equivalent" if r.get("equivalent") else "", r.get("error", ""), flush=True)
+            rows.append(r)
+            print(r["defect"], r.get("origin"), "equivalent" if r.get("equivalent") else "", r.get("error", ""),
+                  f"attempts={r.get('attempts', 1)}", flush=True)
+    tmp = out.with_suffix(".jsonl.tmp")
+    tmp.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    tmp.replace(out)
 
 
 # --------------------------------------------------------------------------

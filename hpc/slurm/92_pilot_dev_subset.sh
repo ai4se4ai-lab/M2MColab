@@ -11,7 +11,7 @@
 # on hpc/config/dev_tasks_<bench>.txt (a seeded 20% of the tasks; the other 80% are held out), for one model, written
 # to its own results directory. Compare with the study run's rows for the same tasks and seed.
 #   sbatch --account=<acc> --gpus=a100:<n> --export=ALL,HPC_DIR=$PWD/hpc,RUN_ID=am2m-pilot-v3,MODEL=qwen2.5-coder:7b,\
-#          CONDS=typed_ref,autom2m hpc/slurm/92_pilot_dev_subset.sh
+#          CONDS=autom2m hpc/slurm/92_pilot_dev_subset.sh   (one condition per job: --export splits on commas)
 set -o pipefail
 # shellcheck disable=SC1091
 source "$HPC_DIR/slurm/common.sh"

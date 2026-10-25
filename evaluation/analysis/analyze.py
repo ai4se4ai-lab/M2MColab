@@ -226,7 +226,9 @@ def rq2_independent() -> None:
         vals = [det[c][key] for c in dets]
         cis = [det[c]["ci" if key == "rate" else "fa_ci"] for c in dets]
         ax.barh(range(len(dets)), vals, color=[PAL[0] if c.startswith("checker") else PAL[1] for c in dets])
-        ax.errorbar(vals, range(len(dets)), xerr=[[v - lo for v, (lo, hi) in zip(vals, cis)], [hi - v for v, (lo, hi) in zip(vals, cis)]],
+        # Wilson bounds at a rate of exactly 0 or 1 can land a rounding error beyond the estimate: clip at 0
+        ax.errorbar(vals, range(len(dets)), xerr=[[max(0.0, v - lo) for v, (lo, hi) in zip(vals, cis)],
+                                                  [max(0.0, hi - v) for v, (lo, hi) in zip(vals, cis)]],
                     fmt="none", ecolor="#333", elinewidth=0.8, capsize=2)
         for i, v in enumerate(vals):
             ax.text(min(v + 0.03, 0.9), i, pct(v), va="center", fontsize=7)

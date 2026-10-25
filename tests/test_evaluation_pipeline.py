@@ -492,3 +492,30 @@ def test_model_order_follows_the_papers_order_not_the_alphabet():
                        "devstral:24b", "qwen2.5-coder:32b", "granite-code:20b"])
     assert got == ["qwen2.5-coder:7b", "qwen2.5-coder:32b", "devstral:24b", "gemma3:27b", "granite-code:20b",
                    "codellama:13b", "starcoder2:15b", "new-model:1b"]
+
+
+def test_rq2_seeder_retries_unchanged_mutants_and_keeps_valid_ones(tmp_path, monkeypatch):
+    from evaluation import llms
+    from evaluation.rq2 import independent as ind
+
+    team = {"name": "t", "agents": [{"name": "A", "role": "r", "tools": []}], "views": {}, "writes": {}, "handoffs": [],
+            "goal": [], "deliverable": {}, "done": []}
+    monkeypatch.setattr(ind, "OUT", tmp_path)
+    monkeypatch.setattr(ind, "builder_teams", lambda: [{"source": "s1", "team": team}])
+    monkeypatch.setattr(ind, "DEFECTS", {"D1": "coverage gap"})
+    monkeypatch.setattr(llms, "seeder", lambda: ("fake", 41))
+    calls = {"n": 0}
+
+    class Fake:
+        def generate(self, prompt, **kw):
+            calls["n"] += 1
+            changed = dict(team, name="t2")
+            out = team if calls["n"] == 1 else changed          # first answer unchanged, then a real change
+            return json.dumps({"team": out, "description": "x"})
+
+    monkeypatch.setattr(llms, "make", lambda *a, **k: Fake())
+    ind.seed(per_class=1, workers=1)
+    rows = [json.loads(l) for l in (tmp_path / "seeded.jsonl").read_text().splitlines()]
+    assert len(rows) == 1 and not rows[0]["equivalent"] and rows[0]["attempts"] == 2
+    ind.seed(per_class=1, workers=1)                             # a valid mutant is kept, not re-seeded
+    assert calls["n"] == 2

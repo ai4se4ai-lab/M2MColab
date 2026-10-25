@@ -30,7 +30,10 @@ OLLAMA = os.environ.get("AM2M_OLLAMA", "http://127.0.0.1:11435")
 BUDGET_OUT = int(os.environ.get("AM2M_BUDGET_OUT", "60000"))  # safety cap on generated tokens per run
 GATE_DEFAULT = int(os.environ.get("AM2M_GATE_BUDGET", "9000"))
 BUILDER = os.environ.get("AM2M_BUILDER", "v1")  # "v1" (paper Sec. 3) or "v2" (checked builder, autom2m/builder.py)
-FALLBACK = os.environ.get("AM2M_FALLBACK", "1") != "0"  # AutoM2M runs the checked library team when its own team is not admitted
+FALLBACK = os.environ.get("AM2M_FALLBACK", "1") != "0"
+# typed runs: samples per stochastic binding (k) and repair rounds (k_rep) - the budget knobs of Experiment 1
+K_SAMPLES = int(os.environ.get("AM2M_K", "3"))
+K_REP = int(os.environ.get("AM2M_KREP", "2"))  # AutoM2M runs the checked library team when its own team is not admitted
 CONDITIONS = ["single", "free", "critic", "schema", "typed_nc", "autom2m", "typed_ref", "single_gate"]
 TYPED = ("typed_nc", "autom2m", "typed_ref", "autom2m_1ex")
 LABEL = {"single": "Single", "single_gate": "Single-Gate", "free": "Free", "critic": "Critic", "schema": "Schema",
@@ -93,7 +96,7 @@ def run_one(bench: str, task_id: str, condition: str, model: str, seed: int, gat
                 if condition in ("autom2m", "autom2m_1ex") and FALLBACK else None
             am = AutoM2M(llm, check_enabled=condition != "typed_nc", repair_enabled=condition in ("autom2m", "typed_ref", "autom2m_1ex"),
                          n_examples=1 if condition == "autom2m_1ex" else 3, builder=BUILDER, workdir=workdir,
-                         fallback_team=fallback)
+                         fallback_team=fallback, k=K_SAMPLES, k_rep=K_REP)
             out = am.solve(task, task.prompt, wb, initial_team=initial)
             status = out.status
             declared = bool(out.phi)
@@ -120,7 +123,7 @@ def run_one(bench: str, task_id: str, condition: str, model: str, seed: int, gat
                    critic_defects=len((ex.get("critique") or {}).get("defects") or []) if condition == "critic" else None)
     if condition in TYPED:
         row.update(admitted=detail.get("admitted_round") is not None, admitted_round=detail.get("admitted_round"),
-                   fallback=bool(detail.get("fallback")),
+                   fallback=bool(detail.get("fallback")), k=K_SAMPLES, k_rep=K_REP,
                    admission_rounds=detail.get("admission_rounds"), first_violation=detail.get("first_violation"),
                    first_diags=(detail.get("diagnostics") or [[]])[0][:8], unparsable=detail.get("unparsable"),
                    checks=detail.get("checks"), check_seconds=detail.get("check_seconds"),
