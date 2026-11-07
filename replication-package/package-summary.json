@@ -1,0 +1,38 @@
+{
+  "archive": "autom2m-reviewer-2026-11-07-431600a.zip",
+  "sha256": "ac26e91eba07fab53c75da38e5d458958e46f01be6c144048d3dc7c56ac37b47",
+  "archive_bytes": 516908197,
+  "payload_files": 14431,
+  "uncompressed_payload_bytes": 6455145989,
+  "main_run_records_in_nested_archive": 44452,
+  "all_payload_hashes_and_zip_crcs_verified": true,
+  "coverage_audit_passed": true,
+  "collected_vs_scratch_differences": [],
+  "freeze": {
+    "frozen_utc": "2026-11-07T17:57:33.783544+00:00",
+    "repository": "https://github.com/ai4se4ai-lab/M2MColab",
+    "commit": "431600ae4cc102c15046a2498968af10d3ee6926",
+    "branch": "dev-hpc",
+    "working_tree_at_freeze": "?? docs/package/",
+    "runs": [
+      "am2m-20261014-015948",
+      "am2m-pilot-v3",
+      "am2m-exp1-pilot",
+      "am2m-exp1-confirm"
+    ],
+    "manuscript_sha256": "a9c64893ba4b643bbae6735f69948ff93cd9aa8feea4353fbfab6d2d86f94946",
+    "main_runs_archive_files": 44452,
+    "main_runs_archive_expanded_bytes": 951606582,
+    "collected_vs_scratch_differences": [],
+    "provenance_limit": "Current source and available Git history retained; historical dirty job states are not reconstructed.",
+    "excluded": [
+      "model weights",
+      "installed environments and binaries",
+      "unrelated setup/smoke/sizing runs",
+      "quarantined experiments",
+      ".git directories",
+      ".env files",
+      "Python and LaTeX build caches"
+    ]
+  }
+}

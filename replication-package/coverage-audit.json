@@ -1,0 +1,598 @@
+{
+  "main_study_runs": 44352,
+  "additional_1example_ablation_runs": 100,
+  "main_raw_error_rows_preserved_but_excluded": 2368,
+  "frozen_csv_matches_raw_success_and_completion": true,
+  "budget_sweeps": {
+    "am2m-exp1-confirm": [
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 30.0
+      },
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 40.4
+      },
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 21.2
+      },
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 35.8
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 86.8
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 88.5
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 71.8
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 84.5
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 29.2
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 40.8
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 18.8
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 37.5
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 88.5
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 89.1
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 70.7
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 84.5
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 30.4
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 40.8
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 18.8
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 37.5
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 89.1
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 88.5
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 74.0
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 83.7
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 31.2
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 41.2
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 17.5
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 80,
+        "runs": 240,
+        "success_pct": 35.0
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 87.0
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 89.1
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 72.8
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 131,
+        "runs": 393,
+        "success_pct": 84.5
+      }
+    ],
+    "am2m-exp1-pilot": [
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 30.0
+      },
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 26.7
+      },
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 13.3
+      },
+      {
+        "k": 1,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 21.7
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 85.9
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 86.9
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 68.7
+      },
+      {
+        "k": 1,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 80.8
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 33.3
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 30.0
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 18.3
+      },
+      {
+        "k": 2,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 21.7
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 86.9
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 86.9
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 69.7
+      },
+      {
+        "k": 2,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 81.8
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 35.0
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 26.7
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 18.3
+      },
+      {
+        "k": 4,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 23.3
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 86.9
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 86.9
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 73.7
+      },
+      {
+        "k": 4,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 80.8
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 31.7
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 25.0
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 21.7
+      },
+      {
+        "k": 8,
+        "bench": "classeval",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 20,
+        "runs": 60,
+        "success_pct": 23.3
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 88.9
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_32b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 87.9
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "autom2m",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 73.7
+      },
+      {
+        "k": 8,
+        "bench": "humanevalplus",
+        "model": "qwen2.5-coder_7b",
+        "condition": "single_gate",
+        "tasks": 33,
+        "runs": 99,
+        "success_pct": 82.8
+      }
+    ]
+  },
+  "other_paper_evidence": {
+    "mutation_teams": 3379,
+    "natural_mutants": 151516,
+    "independent_seeded_defects": 275,
+    "independent_clean_controls": 60,
+    "injected_faults": 1108,
+    "manifested_faults": 993,
+    "whowhen_failed_teams": 126,
+    "whowhen_roles": 356
+  }
+}
