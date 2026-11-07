@@ -1,11 +1,5029 @@
 %!TEX TS-program = pdflatex
 % AutoM2M -- EMSE submission draft (self-contained version; runtime named AgentHOT).
-% Revision 3: figures redrawn in black, white and grey (Figs. 1--5 are TikZ/pgfplots sources in
-% figures/*.tex); listings in rounded grey boxes; algorithms rewritten and aligned with the code;
-% reliability reported as a classifier of success, including admitted-only results; implementation
-% mapped to modules (Section 5.2).
+% Distribution: only this file and references.bib are needed, alongside a standard
+% LaTeX installation with the packages used below. All five figures are inline
+% TikZ/PGFPlots sources; their plot data are embedded as coordinates.
+% The bundled Springer class and BibTeX style are extracted automatically on the
+% first LaTeX run. Existing copies in the build directory are left unchanged.
 % Compile: pdflatex emse-autom2m; bibtex emse-autom2m; pdflatex emse-autom2m; pdflatex emse-autom2m
-% Needs: sn-jnl.cls, sn-mathphys-num.bst, references.bib, figures/*.tex
+
+% Keep the journal layout and reference style without separate template files.
+\begin{filecontents*}{sn-jnl.cls}
+%%
+%% This is file `sn-jnl.cls',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% classes.dtx  (with options: `sn-jnl')
+%%
+%% This is a generated file.
+%%
+%% Copyright 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009
+%% The LaTeX3 Project and any individual authors listed elsewhere
+%% in this file.
+%%
+%% This file was generated from file(s) of the LaTeX base system.
+%% --------------------------------------------------------------
+%%
+%% It may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This file has the LPPL maintenance status "maintained".
+%%
+%% This file may only be distributed together with a copy of the LaTeX
+%% base system. You may however distribute the LaTeX base system without
+%% such generated files.
+%%
+%% The list of all files belonging to the LaTeX base distribution is
+%% given in the file `manifest.txt'. See also `legal.txt' for additional
+%% information.
+%%
+%% The list of derived (unpacked) files belonging to the distribution
+%% and covered by LPPL is defined by the unpacking scripts (with
+%% extension .ins) which are part of the distribution.
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+\ProvidesClass{sn-jnl}
+              [2019/11/18 v0.1: An authoring template for Springer Journal articles]
+
+\newif\if@restonecol
+\newif\if@titlepage   \@titlepagefalse
+\newif\if@cropmarkson \@cropmarksonfalse
+\newif\ifDoublecol    \Doublecolfalse%
+\newif\ifpagebody\global\pagebodyfalse%
+\newif\if@iicol\global\@iicolfalse%
+\newif\if@bibcomment\global\@bibcommentfalse%
+\newif\if@referee\global\@refereefalse%
+\newif\if@vrulerlinenumberon\global\@vrulerlinenumberonfalse%
+\newif\if@pdflatex\global\@pdflatexfalse%
+\newif\if@remarkboxon\global\@remarkboxonfalse%
+
+\newif\if@Numbered@refstyle\global\@Numbered@refstylefalse% Namedate
+\newif\if@Spr@basic@refstyle\global\@Spr@basic@refstylefalse% 1.Basic Springer Nature Reference Style/Chemistry Reference Style -> sn-basic.bst
+\newif\if@Mathphys@numrefstyle\global\@Mathphys@numrefstylefalse% 2.Math and Physical Sciences Reference Style -> sn-mathphys.bst
+\newif\if@Mathphys@ayrefstyle\global\@Mathphys@ayrefstylefalse% 2.Math and Physical Sciences Reference Style -> sn-mathphys.bst
+\newif\if@APS@refstyle\global\@APS@refstylefalse% 3.American Physical Society (APS) Reference Style -> sn-APS.bst
+\newif\if@Vancouver@numrefstyle\global\@Vancouver@numrefstylefalse% 4.Vancouver Reference Style -> sn-vancouver.bst
+\newif\if@Vancouver@ayrefstyle\global\@Vancouver@ayrefstylefalse% 4.Vancouver Reference Style -> sn-vancouver.bst
+\newif\if@APA@refstyle\global\@APA@refstylefalse% 5.APA-based Social Sciences/Psychology Reference Style -> sn-apacite.bst
+\newif\if@Chicago@refstyle\global\@Chicago@refstylefalse% 6.Chicago-based Humanities Reference Style -> sn-chicago.bst
+\newif\if@Standard@Nature@refstyle\global\@Standard@Nature@refstylefalse% 7.Standard Nature Research Style -> sn-nature.bst
+
+%% Template Options
+\DeclareOption{a4paper}{\PassOptionsToPackage{a4}{crop}}
+\DeclareOption{a3paper}{\PassOptionsToClass{a3paper}{article}\PassOptionsToPackage{a3}{crop}}
+\DeclareOption{centre}{\PassOptionsToPackage{center}{crop}}
+\DeclareOption{crop}{\PassOptionsToPackage{frame}{crop}\global\@cropmarksontrue}
+\DeclareOption{nocrop}{\PassOptionsToPackage{off}{crop}\global\@cropmarksontrue}
+\DeclareOption{info}{\PassOptionsToPackage{info}{crop}}
+\DeclareOption{noinfo}{\PassOptionsToPackage{noinfo}{crop}}
+
+%% Classfile Options
+\DeclareOption{oneside}{\@twosidefalse \@mparswitchfalse}
+\DeclareOption{twoside}{\@twosidetrue  \@mparswitchtrue}
+\DeclareOption{draft}{\setlength\overfullrule{5pt}}
+\DeclareOption{titlepage}{\@titlepagetrue}
+\DeclareOption{notitlepage}{\@titlepagefalse}
+\DeclareOption{onecolumn}{\@twocolumnfalse}
+\DeclareOption{twocolumn}{\@twocolumntrue}
+\DeclareOption{openbib}{\let\if@openbib\iftrue}
+\DeclareOption{pagegrid}{\global\pagebodytrue}%
+\DeclareOption{iicol}{\global\@iicoltrue}%
+\DeclareOption{bibcomment}{\global\@bibcommenttrue}%
+\DeclareOption{referee}{\global\@refereetrue}%
+\DeclareOption{lineno}{\global\@vrulerlinenumberontrue}%
+\DeclareOption{pdflatex}{\global\@pdflatextrue}%
+\DeclareOption{remarkboxoff}{\global\@remarkboxonfalse}%
+
+\DeclareOption{sn-basic}{\global\@Spr@basic@refstyletrue}%
+\DeclareOption{sn-mathphys-num}{\global\@Mathphys@numrefstyletrue}%
+\DeclareOption{sn-mathphys-ay}{\global\@Mathphys@ayrefstyletrue}%
+\DeclareOption{sn-aps}{\global\@APS@refstyletrue}%
+\DeclareOption{sn-vancouver-num}{\global\@Vancouver@numrefstyletrue}%
+\DeclareOption{sn-vancouver-ay}{\global\@Vancouver@ayrefstyletrue}%
+\DeclareOption{sn-apa}{\global\@APA@refstyletrue}%
+\DeclareOption{sn-chicago}{\global\@Chicago@refstyletrue}%
+\DeclareOption{sn-nature}{\global\@Standard@Nature@refstyletrue}%
+
+\DeclareOption{Numbered}{\global\@Numbered@refstyletrue}%
+%\DeclareOption{NameDate}{\global\@Numbered@refstylefalse}%
+
+
+%%\ExecuteOptions{twosidecrop,crop,centre,info,croppage}
+\ProcessOptions
+\LoadClass[twoside,fleqn]{article}
+
+\gdef\refereedefns{%
+\if@referee%
+\usepackage{setspace}%
+\doublespacing%
+\fi}%
+\refereedefns%
+
+%% General Packages Used
+%
+%\AtBeginDocument{%
+%%\newcommand*\ExtraParaSkip{12pt}%
+%\SetFootnoteHook{\hspace*{-8pt}}%
+%\DeclareNewFootnote{A}[gobble]%
+%\setlength{\skip\footinsA}{0pt}
+%}%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Fonts & Sizes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%% Fonts Used
+%%\RequirePackage[T1]{fontenc}%
+%
+\DeclareOldFontCommand{\rm}{\normalfont\rmfamily}{\mathrm}%
+\DeclareOldFontCommand{\sf}{\normalfont\sffamily}{\mathsf}%
+\DeclareOldFontCommand{\tt}{\normalfont\ttfamily}{\mathtt}%
+\DeclareOldFontCommand{\bf}{\normalfont\bfseries}{\mathbf}%
+\DeclareOldFontCommand{\it}{\normalfont\itshape}{\mathit}%
+\DeclareOldFontCommand{\sl}{\normalfont\slshape}{\@nomath\sl}%
+\DeclareOldFontCommand{\sc}{\normalfont\scshape}{\@nomath\sc}%
+\DeclareRobustCommand*\cal{\@fontswitch\relax\mathcal}%
+\DeclareRobustCommand*\mit{\@fontswitch\relax\mathnormal}%
+%
+\renewcommand\normalsize{%
+   \@setfontsize\normalsize{10bp}{12bp}%
+   \abovedisplayskip 12\p@ \@plus2\p@ \@minus1\p@
+   \abovedisplayshortskip \z@ \@plus3\p@%
+   \belowdisplayshortskip 3\p@ \@plus3\p@ \@minus3\p@%
+   \belowdisplayskip \abovedisplayskip%
+   \let\@listi\@listI}%
+\normalsize%
+%
+\newcommand\medsize{%
+   \@setfontsize\small\@xipt{13}%
+   \abovedisplayskip 5\p@ \@plus3\p@ \@minus4\p@
+   \abovedisplayshortskip \z@ \@plus2\p@
+   \belowdisplayshortskip 3\p@ \@plus2\p@ \@minus2\p@
+   \def\@listi{\leftmargin\leftmargini
+               \topsep 4\p@ \@plus2\p@ \@minus2\p@
+               \parsep 2\p@ \@plus\p@ \@minus\p@
+               \itemsep \parsep}%
+   \belowdisplayskip \abovedisplayskip}%
+%
+\renewcommand\small{%
+   \@setfontsize\small\@ixpt{11}%
+   \abovedisplayskip 5\p@ \@plus3\p@ \@minus4\p@
+   \abovedisplayshortskip \z@ \@plus2\p@
+   \belowdisplayshortskip 3\p@ \@plus2\p@ \@minus2\p@
+   \def\@listi{\leftmargin\leftmargini
+               \topsep 4\p@ \@plus2\p@ \@minus2\p@
+               \parsep 2\p@ \@plus\p@ \@minus\p@
+               \itemsep \parsep}%
+   \belowdisplayskip \abovedisplayskip}%
+%
+\renewcommand\footnotesize{%
+   \@setfontsize\footnotesize{7}{8}%
+   \abovedisplayskip 5\p@ \@plus2\p@ \@minus4\p@
+   \abovedisplayshortskip \z@ \@plus\p@
+   \belowdisplayshortskip 3\p@ \@plus\p@ \@minus2\p@
+   \def\@listi{\leftmargin\leftmargini
+               \topsep 3\p@ \@plus\p@ \@minus\p@
+               \parsep 2\p@ \@plus\p@ \@minus\p@
+               \itemsep \parsep}%
+   \belowdisplayskip \abovedisplayskip}
+%
+\renewcommand\scriptsize{\@setfontsize\scriptsize\@ixpt\@ixpt}%
+\newcommand\scrisize{\@setfontsize\scrisize{9.3}{9}}%
+\renewcommand\tiny{\@setfontsize\tiny\@vpt\@vipt}%
+\renewcommand\large{\@setfontsize\large{12}{14}}%
+\newcommand\larg{\@setfontsize\larg{11}{13}}%
+\renewcommand\Large{\@setfontsize\Large{16}{18}}%
+\renewcommand\LARGE{\@setfontsize\LARGE\@xviipt{22}}%
+\renewcommand\huge{\@setfontsize\huge\@xxpt{25}}%
+\renewcommand\Huge{\@setfontsize\Huge\@xxvpt{30}}%
+%
+\DeclareMathSizes{\@ixpt}{\@ixpt}{7}{5}%
+\DeclareMathSizes{\@xpt}{\@xpt}{7}{5}%
+\DeclareMathSizes{\@xipt}{\@xipt}{7}{5}%
+%
+\DeclareRobustCommand*\textsubscript[1]{%
+  \@textsubscript{\selectfont#1}}%
+%
+\def\@textsubscript#1{%
+  {\m@th\ensuremath{_{\mbox{\fontsize\sf@size\z@#1}}}}}%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Layout Settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%\RequirePackage{geometry}%
+%
+\newlength\columnhsize%
+%
+%% Regular Pages (for Opening page - redefined)
+%
+\if@iicol%
+%
+%% for double column used sn-medium design trim and page size %%
+%
+\setlength\headheight{12pt}%
+\setlength\headsep{5.15mm}%
+%
+\setlength\columnsep{8mm}%
+\setlength\columnhsize{76mm}%
+%
+\setlength\maxdepth{0pt}%
+\setlength\footnotesep{7\p@}%
+\setlength{\skip\footins}{18\p@ \@plus 6\p@ \@minus 3\p@}%
+%
+\RequirePackage[%
+    reversemp,
+    paperwidth=210mm,
+    paperheight=297mm,
+    top={26mm},
+    headheight={12pt},
+    headsep={5.15mm},
+    text={160mm,216mm},
+    marginparsep=5mm,
+    marginparwidth=12mm,
+    bindingoffset=6mm,
+    footskip=10.13mm,twocolumn]{geometry}%
+%
+\renewcommand\footnoterule{%
+  \kern3\p@%
+  \hrule \@height.2mm \@width\columnwidth%
+  \kern5.5\p@}%
+%
+\else%
+%% For single column used smallcond design trim and page size %%
+\RequirePackage[%
+    reversemp,
+    paperwidth=210mm,
+    paperheight=297mm,
+    top={26mm},
+    headheight={5.5pt},
+    headsep={5.6mm},
+    text={31pc,194.25mm},
+    marginparsep=5mm,
+    marginparwidth=12mm,
+    bindingoffset=6mm,
+    footskip=10mm]{geometry}
+%
+    \setlength\maxdepth{0pt}%
+    \setlength\columnsep{5mm}%
+    \setlength{\marginparsep}{5mm}%
+    \setlength{\marginparwidth}{12mm}%
+    \setlength\footnotesep{5.75\p@}%
+    \setlength{\skip\footins}{8\p@ \@plus 4\p@ \@minus 0\p@}%
+%
+\renewcommand\footnoterule{%
+  \kern3\p@%
+  \ifodd\c@page%
+     \hrule \@height.2mm \@width\textwidth%
+  \else%
+     \hrule \@height.2mm \@width37mm
+  \fi%
+  \kern5.5\p@}%
+%
+\fi%
+%
+%
+\setlength\parindent{1.5em}%
+%
+\def\StepUpCounter#1{\global\advance#1by 1\relax}%
+\def\StepDownCounter#1{\global\advance#1by -1\relax}%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Pagination Settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Line spacing
+\setlength\lineskip{1\p@}%
+\setlength\normallineskip{1\p@}%
+%%\renewcommand\baselinestretch{1.5}%
+\parskip=0pt%
+%
+% Page break penalties
+%
+\@lowpenalty   51
+\@medpenalty  151
+\@highpenalty 301
+%
+% Disallow widows and orphans
+%
+\clubpenalty 10000
+\widowpenalty 10000
+%
+% Disable page breaks before equations, allow pagebreaks after
+% equations and discourage widow lines before equations.
+%
+\displaywidowpenalty 100
+\predisplaypenalty   10000
+\postdisplaypenalty  0
+%
+% Set these global demerits
+%
+\doublehyphendemerits 1000000   % corresponds to badness 800
+\finalhyphendemerits  1000000  % corresponds to badness 1000
+%
+% Allow loose lines rather than overfull lines
+%
+\vbadness=9999
+\tolerance=9999
+%
+% Allow breaking the page in the middle of a paragraph
+%
+\interlinepenalty 0
+%
+% Disallow breaking the page after a hyphenated line
+\brokenpenalty 10000
+%
+% Hyphenation; don't split words into less than three characters
+\lefthyphenmin=3
+\righthyphenmin=3
+%
+% Float placement parameters
+%
+% The total number of floats that can be allowed on a page.
+\setcounter{totalnumber}{3}
+%
+% The maximum number of floats at the top and bottom of a page.
+\setcounter{topnumber}{5}
+\setcounter{bottomnumber}{5}
+%
+% The maximum part of the top or bottom of a text page that can be
+% occupied by floats. This is set so that at least four lines of text
+% fit on the page.
+\renewcommand\topfraction{.921}
+\renewcommand\bottomfraction{.921}
+
+% The minimum amount of a text page that must be occupied by text.
+% This should accomodate four lines of text.
+\renewcommand\textfraction{.13}
+
+% The minimum amount of a float page that must be occupied by floats.
+\renewcommand\floatpagefraction{.887}
+
+% The same parameters repeated for double column output
+\renewcommand\dbltopfraction{.88}
+\renewcommand\dblfloatpagefraction{.88}
+
+% Space between floats
+\setlength\floatsep{18\p@ \@plus 4\p@ \@minus 2\p@}
+
+% Space between floats and text
+\setlength\textfloatsep{15\p@ \@plus 4\p@ \@minus 2\p@}
+
+% Space above and below an inline figure
+\setlength\intextsep   {18\p@ \@plus 4\p@ \@minus 2\p@}
+
+% For double column floats
+\setlength\dblfloatsep    {20\p@ \@plus 4\p@ \@minus 2\p@}
+\setlength\dbltextfloatsep{15\p@ \@plus 4\p@ \@minus 2\p@}
+
+\hyphenation{Figure Figures Table Tables Equation Equations Section Sections Appendix Theorem Lemma}
+
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Math Settings %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% For above/below spacing
+\def\eqnarray{%
+   \stepcounter{equation}%
+   \def\@currentlabel{\p@equation\theequation}%
+   \global\@eqnswtrue
+   \m@th
+   \global\@eqcnt\z@
+   \tabskip\@centering
+   \let\\\@eqncr
+   $$\everycr{}\halign to\displaywidth\bgroup
+       \hskip\@centering$\displaystyle\tabskip\z@skip{##}$\@eqnsel
+      &\global\@eqcnt\@ne\hskip \tw@\arraycolsep \hfil${##}$\hfil
+      &\global\@eqcnt\tw@ \hskip \tw@\arraycolsep
+         $\displaystyle{##}$\hfil\tabskip\@centering
+      &\global\@eqcnt\thr@@ \hb@xt@\z@\bgroup\hss##\egroup
+         \tabskip\z@skip
+      \cr
+}
+\def\endeqnarray{%
+      \@@eqncr
+      \egroup
+      \global\advance\c@equation\m@ne
+   $$\@ignoretrue
+}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Titles %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\renewcommand\refname{References}%
+\renewcommand\figurename{Fig.}% defined as per springer style
+\renewcommand\tablename{Table}%
+\renewcommand\appendixname{Appendix}%
+\renewcommand\abstractname{Abstract}%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Article Front Matter %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+
+\def\raggedleft{\leftskip0pt plus 1fil\parfillskip=0pt\relax}%
+\def\raggedright{\rightskip0pt plus 1fil\parfillskip=0pt\relax}%
+\def\raggedcenter{\leftskip=0pt plus 0.5fil\rightskip=0pt plus 0.5fil%
+\parfillskip=0pt\let\hb=\break}%
+\def\titraggedcenter{\leftskip=12pt plus 0.5fil\rightskip=12pt plus 0.5fil%
+\parfillskip=0pt\let\hb=\break}%
+\def\absraggedcenter{\leftskip=24pt plus 0.5fil\rightskip=24pt plus 0.5fil%
+\parfillskip=0pt\let\hb=\break}%
+
+%
+%%% Font Def
+\def\Artcatfont{\reset@font\fontsize{8bp}{10bp}\selectfont}%
+\def\Titlefont{\reset@font\fontsize{17bp}{22.5bp}\selectfont\titraggedcenter}%
+\def\SubTitlefont{\reset@font\fontsize{14bp}{16.5bp}\selectfont\titraggedcenter}%
+\def\Authorfont{\reset@font\fontsize{12bp}{14.5bp}\selectfont\boldmath\titraggedcenter}%
+\def\addressfont{\reset@font\fontsize{11bp}{13.5bp}\selectfont\titraggedcenter}%
+\def\abstractheadfont{\reset@font\fontsize{9bp}{11bp}\bfseries\selectfont\titraggedcenter}%
+\def\abstractsubheadfont{\reset@font\fontsize{9bp}{11bp}\bfseries\selectfont}%
+\def\abstractfont{\reset@font\fontsize{9bp}{11bp}\selectfont\leftskip=24pt\rightskip=24pt\parfillskip=0pt plus 1fil}%
+\def\keywordfont{\reset@font\fontsize{8bp}{9.5bp}\selectfont\leftskip=24pt\rightskip=24pt plus0.5fill}%
+\def\historyfont{\reset@font\fontsize{8bp}{9.5bp}\selectfont\leftskip=24pt\rightskip=24pt plus0.5fill}%
+
+%% Article Type
+
+\newbox\artcatbox%
+
+
+
+\def\articletype#1{\if!#1!\else\setbox\artcatbox\hbox{\Artcatfont\hskip1mm#1\hskip1mm}\fi%
+\gdef\ArtType{\fboxsep=0pt{\vbox to 4mm{\vfil%
+              {\raggedright\box\artcatbox}\vfil}}}%
+\gdef\@ArtType{#1}}%
+%%\articletype{RESEARCH ARTICLE}%
+\articletype{}%
+
+
+%% Article Title
+
+\renewcommand{\title}[2][]{%
+\gdef\@checktitle{#1}\ifx\@checktitle\empty\gdef\@title{#2}%
+\gdef\s@title{#2}\else\gdef\@title{#2}\gdef\s@title{#1}\fi%
+\markboth{\textit{\s@title}}{\textit{\s@title}}}%
+
+\def\subtitle#1{\gdef\@subtitle{#1}}\subtitle{}%
+
+%% Cross Link for Author & Address
+\def\jmkLabel#1{\@bsphack\protected@write\@auxout{}{\string\Newlabel{#1}{\@currentlabel}}\@esphack}%
+\def\Newlabel#1#2{\expandafter\xdef\csname X@#1\endcsname{#2}}%
+\def\jmkRef#1{\@ifundefined{X@#1}{0}{\csname X@#1\endcsname}}%
+
+%% Article Author(s)
+\let\sep\@empty%
+\let\authorsep\@empty%
+\newcount\aucount%
+\newcount\corraucount%
+\newcount\punctcount%
+%
+\def\artauthors{}%
+\newif\if@auemail%
+\newif\if@corauemail%
+%
+\def\au@and{\ifnum\punctcount=2\ and\else\unskip, \advance\punctcount by -1 \fi}%
+%
+\def\author{\advance\aucount by 1\@ifstar\@@corrauthor\@@author}%
+%
+\newcommand{\@@author}[2][]{\def\@authfrstarg{#1}\@corauemailfalse%
+\g@addto@macro\artauthors{%
+    \ifnum\aucount=1%
+    \global\@auemailtrue%
+    \else%
+    \global\@auemailfalse%
+    \fi%
+    \Authorfont%
+    \def\baselinestretch{1}%
+    \authorsep{#2}\unskip\ifx\@authfrstarg\empty\else\textsuperscript{\smash{{%
+      \@for\@@affmark:=#1\do{\edef\affnum{\@ifundefined{X@\@@affmark}{\@@affmark}{\jmkRef{\@@affmark}}}%
+     \unskip\sep\affnum\let\sep=,}}}}\fi%
+    \def\authorsep{{\au@and} }%%%
+    \global\let\sep\@empty\global\let\@corref\@empty%
+}}%
+%
+\newcommand{\@@corrauthor}[2][]{\def\@authfrstarg{#1}\@corauemailtrue\advance\corraucount by 1%
+\g@addto@macro\artauthors{%
+    \global\@auemailtrue%
+    \Authorfont%
+    \def\baselinestretch{1}%
+    \authorsep{#2}\unskip\ifx\@authfrstarg\empty\else\textsuperscript{\smash{{%
+      \@for\@@affmark:=#1\do{\edef\affnum{\@ifundefined{X@\@@affmark}{\@@affmark}{\jmkRef{\@@affmark}}}%
+     \unskip\sep\affnum\let\sep=,}}}{*}\hskip-1pt}\fi\unskip%
+    \def\authorsep{\au@and~}%%%
+    \global\let\sep\@empty\global\let\@corref\@empty%
+}}%
+%%
+%% Miscellaneous macros %%
+%%
+\def\fnm#1{\leavevmode\hbox{#1}}%
+\def\sur#1{\unskip~\nobreak\leavevmode\hbox{#1}}%
+\def\spfx#1{#1}%
+\def\pfx#1{#1}%
+\def\sfx#1{#1}%
+\def\tanm#1{#1}%
+\def\dgr#1{#1}%
+%
+%% Author Email
+%
+\let\nomail\relax%
+\def\corrauthemail{}%
+\def\authemail{}%
+
+\newcount\emailcnt%
+
+\def\email#1{\global\advance\emailcnt by 1\relax%
+\if@corauemail%
+   \g@addto@macro\corrauthemail{%
+   \setcounter{footnote}{0}%
+   \textcolor{blue}{#1};\ %
+   }%
+\else%
+   \g@addto@macro\authemail{%
+   \setcounter{footnote}{0}%
+   \textcolor{blue}{#1};\ %
+   }%
+\fi}
+
+%% Corrseponding Address
+\def\@copycorthanks{}%
+\def\auaddress{}%
+\def\@auaddress{}%
+
+\newcounter{affn}%
+\newcount\addcount% To check the count of address
+
+\renewcommand\theaffn{\arabic{affn}}%
+
+\def\affil{\advance\addcount by 1\@ifstar\@@coraddress\@@address}%
+
+\newcommand{\@@coraddress}[2][]{%\advance\addcount by 1
+\g@addto@macro\auaddress{%
+     \stepcounter{affn}%
+     \xdef\@currentlabel{\theaffn}%
+     \jmkLabel{\theaffn}%
+     {\textsuperscript{#1*}#2.\par} }
+}
+
+%% Macros for present address
+
+\newif\ifpresentaddress%
+
+\def\@presentaddresstxt{}%
+\def\presentaddresstxt#1{\gdef\@presentaddresstxt{#1:}}\presentaddresstxt{Present Address}%
+\newcommand{\presentaddress}[1]{\gdef\@presentaddresstext{\@presentaddresstxt\par#1}\global\presentaddresstrue}%
+
+%% Macros for equally contributed
+
+\newif\ifequalcont%
+
+%\def\@equalconttxt{}%
+%\def\equalcontxt#1{\gdef\@equalconttxt{#1}}\equalcontxt{These authors contributed equally to this work.}%
+%\newcommand{\equalcont}[1][\@equalconttxt]{\gdef\@equalconttext{#1}\g@addto@macro\artauthors{$^{\dagger}$}\global\equalconttrue}%
+
+\def\@equalconttxt{}%
+\def\equalcontxt#1{\gdef\@equalconttxt{#1}}\equalcontxt{}%
+\newcommand{\equalcont}[1]{\gdef\@equalconttext{#1}\g@addto@macro\artauthors{$^{\dagger}$}\global\equalconttrue}%
+
+%% Author Address
+
+\newcommand{\@@address}[2][]{%%\advance\addcount by 1
+\g@addto@macro\auaddress{%
+     \stepcounter{affn}%
+     \xdef\@currentlabel{\theaffn}%
+     \jmkLabel{\theaffn}%
+     {\textsuperscript{#1}#2.\par} }%\theaffn
+}
+
+%% Address tagging
+\newcommand{\orgdiv}[1]{#1}%
+\newcommand{\orgname}[1]{#1}%
+\newcommand{\orgaddress}[1]{#1}%
+\newcommand{\street}[1]{#1}%
+\newcommand{\postcode}[1]{#1}%
+\newcommand{\city}[1]{#1}%
+\newcommand{\state}[1]{#1}%
+\newcommand{\country}[1]{#1}%
+
+%% Article notes
+
+\def\@artnote{}%
+\def\artnote#1{\gdef\@artnote{#1}}%
+
+%% Miscellaneous notes
+
+\def\@miscnote{}%
+\def\miscnote#1{\gdef\@miscnote{\par\addvspace{3pt}#1}}%
+
+%% Motto
+
+\def\mottofont{\reset@font\fontfamily{\rmdefault}\fontsize{8.5bp}{10bp}\fontshape{it}\selectfont\raggedright}
+%
+\let\@motto\@empty
+\def\mottoraggedright{\rightskip0mm\leftskip=42mm plus 1fil\parfillskip=0pt\relax}%
+\newcommand{\motto}[2][]{\gdef\@headcheck{#1}\gdef\@motto{\@headcheck\ifx\@headcheck\@empty\vskip12pt\else\fi{\mottofont\mottoraggedright#2\par}}}
+
+%% Article Abstract
+\newcommand\abstracthead{\@startsection {section}{1}{\z@}{-22pt \@plus0ex \@minus0ex}{3pt}{\abstractheadfont}}
+\newcommand\subabstracthead{\@startsection{subsection}{2}{\z@}{3pt \@plus0ex \@minus0ex}{-.5em}{\abstractsubheadfont}}
+
+\def\@abstract{}%
+\long\def\abstract#1{\def\@abstract{%
+\let\paragraph\subabstracthead%
+\abstractfont%
+\abstracthead*{\abstractname}%
+#1\par}}%
+
+\def\printabstract{\ifx\@abstract\empty\else\@abstract\fi\par}%
+
+\def\printkeywords{\ifx\@keywords\empty\else\@keywords\fi\par}%
+
+%
+%% Keywords
+\def\keywordname{Keywords}%
+\def\keywords#1{\ifx#1\empty\else\def\@keywords{\par\addvspace{10pt}{\keywordfont{\bfseries\keywordname:} #1\par}}\fi}%
+\def\@keywords{}%
+
+%% PACs
+
+\def\pacsbullet{\hbox{\hskip2.5pt,\hskip2.5pt}}%
+
+\def\change@commas#1,#2{%
+  \ifx#2\@empty%
+    #1%
+  \else%
+    #1\nobreak\hbox{\pacsbullet}\allowbreak\expandafter\change@commas%
+  \fi%
+  #2}%
+
+\newcommand\keywordhead[1]{\par\addvspace{10pt}%
+{{\keywordfont\bfseries#1:\ }}}%
+
+\newcommand{\pacs}[1]{\keywordhead{\pacsname}#1}%
+%
+\newcount\PacsCount%
+\PacsCount=0%
+%
+\newcount\PacsTmpCnt%
+\PacsTmpCnt=1%
+%
+\gdef\StorePacsText#1#2{%
+\edef\GetRoman{\romannumeral#1}%
+\expandafter\gdef\csname\GetRoman StorePacsTxt\endcsname{#2}%
+}%
+%
+\let\oldpacs\pacs%
+\renewcommand\pacs[2][PAC Codes]{\gdef\pacsname{{\bfseries#1}}\gdef\@pacs{\keywordfont\raggedright\oldpacs\change@commas#2,\@empty\par}
+\StepUpCounter{\PacsCount}%
+\StorePacsText{\the\PacsCount}{\gdef\pacsname{{\bfseries#1}}\keywordfont\raggedright\oldpacs\change@commas#2,\@empty}%
+}%
+
+\def\@pacs{}%
+
+%% Glossary
+
+\def\gloshead{Glossary}%
+
+\newenvironment{glos}[1][\gloshead]{\begingroup\parindent=0pt%
+\section*{#1}
+\def\item[##1]{##1,\ }}{%
+\endgroup}%
+%
+
+%% Article History
+
+\def\received#1{\g@addto@macro\@history{{Received #1}}}%
+\def\revised#1{\g@addto@macro\@history{{; revised #1}}}%
+\def\accepted#1{\g@addto@macro\@history{{; accepted #1}}}%
+
+%% Remark on Front page %%
+
+\newdimen\FMremarkdim%
+
+\newcommand{\FMremark}{\begingroup\parindent=0pt\parskip=0pt%
+\if@referee\singlespacing\fi%
+\fboxsep=6pt\fboxrule=0.5pt%
+\FMremarkdim=\textwidth%%\paperwidth%
+\advance\FMremarkdim-\fboxsep%
+\advance\FMremarkdim-2\fboxrule%
+\if@referee\vskip-21pt\fi%
+%%\fbox{\vbox{\hsize=\FMremarkdim\small%
+\unvbox\fmremarkbox
+%%}}%
+\endgroup}
+
+\newbox\fmremarkbox%
+
+\newenvironment{fmremark}{\begingroup\parindent=0pt%
+\fboxsep=6pt\fboxrule=0.5pt%
+\FMremarkdim=\textwidth%%\paperwidth%
+\advance\FMremarkdim-\fboxsep%
+\advance\FMremarkdim-2\fboxrule%
+\global\setbox\fmremarkbox\vbox\bgroup\small%
+}{\egroup\endgroup}
+
+%% Article Header Definition
+\renewcommand{\@maketitle}{\newpage\null%
+    \if@remarkboxon\vbox to 0pt{\vspace*{-78pt}\hspace*{-18pt}\FMremark}\else\vskip21pt\fi%%\par%
+    \hsize\textwidth\parindent0pt%%%\vskip7pt%
+    %% Aritle Type
+    {\hbox to \textwidth{{\Artcatfont\ArtType\hfill}\par}}
+    %% Aritle Title
+    \ifx\@title\empty\else%
+        \removelastskip\vskip20pt\nointerlineskip%
+        {\Titlefont\@title\par}
+        %\addcontentsline{toc}{chapter}{\@title}% for bookmarks
+    \fi%
+    %% Aritle SubTitle
+    \ifx\@subtitle\empty\else%
+        \vskip9pt%
+        {{\SubTitlefont\@subtitle\par}}
+    \fi%
+    %% Aritle Authors, Address and Correspondings
+    \ifnum\aucount>0
+        \global\punctcount\aucount%
+        \vskip20pt%
+        \artauthors\par%%     authors and emails
+        {\vskip7pt\addressfont\auaddress\par%%      corresponding adress
+	 \removelastskip\vskip24pt%
+	\ifnum\emailcnt>0\relax%
+           \ifx\corrauthemail\@empty\else{\ifnum\aucount>1*\fi}%
+	   Corresponding author(s). E-mail(s): \corrauthemail\par\fi%
+	   \ifx\authemail\@empty\else Contributing authors:\ \authemail\fi%
+        \fi%
+        \ifequalcont{\par$^{\dagger}$\@equalconttext\par}\fi%
+	 \removelastskip\vskip24pt%
+        \ifpresentaddress{\par\@presentaddresstext\par}\fi%
+	}
+     \fi%
+     {\printabstract\par}%
+     {\printkeywords\par}%
+     \ifx\@pacs\empty\else%
+       \loop\ifnum\PacsCount>0%
+          \csname\romannumeral\PacsTmpCnt StorePacsTxt\endcsname\par%
+          \StepDownCounter{\PacsCount}%
+          \StepUpCounter{\PacsTmpCnt}%
+       \repeat%
+    \fi%
+    %%{\printhistory\par}%
+    %%{\ifx\@motto\empty\else\@motto\fi}%
+    \removelastskip\vskip36pt\vskip0pt}%
+
+\usepackage{cuted}%
+\@ifpackageloaded{cuted}{\gdef\@setmarks{}}{}%
+
+%% Printing Article Header
+\newdimen\firstpagehtcheck
+
+\renewcommand\maketitle{\par
+  \@afterindentfalse%
+  \begingroup
+    \gdef\UrlFont{\rmfamily}%
+    \renewcommand\thefootnote{\@fnsymbol\c@footnote}%
+    \def\@makefnmark{\rlap{\@textsuperscript{\normalfont\smash{\@thefnmark}}}}%
+    \long\def\@makefntext##1{\parindent 1em\noindent\small\selectfont
+            \hbox{\@textsuperscript{\normalfont\@thefnmark}}##1}%
+    \if@twocolumn
+      \ifnum \col@number=\@ne%
+\setbox0=\vbox{\@maketitle}
+\firstpagehtcheck=\ht0%
+\advance\firstpagehtcheck by \dp0%
+\ifdim\firstpagehtcheck>\textheight%
+\setbox1=\vsplit0to2\textheight%
+\setbox1=\vbox{\unvbox1}%
+\setbox2=\vbox{\unvbox0}%
+\unvbox1%
+\stripsep=0pt%
+\begin{strip}
+\unvbox2%
+\end{strip}
+\else
+\twocolumn[\@maketitle]%
+\fi
+\else
+\@maketitle
+\fi%
+    \else%
+      \newpage%
+      \global\@topnum\z@% Prevents figures from going at top of page.
+      \@maketitle%
+    \fi%
+  \endgroup%
+  \ifx\@artnote\@empty\else\footnoteA{\@artnote}\fi%
+  \ifx\@miscnote\@empty\else\footnoteA{\@miscnote\par}\fi%
+  \setcounter{footnote}{0}%
+  \global\let\thanks\relax%
+  \global\let\artnote\relax%
+  \global\let\maketitle\relax%
+  \global\let\@maketitle\relax%
+  \global\let\@thanks\@empty%
+  \global\let\@author\@empty%
+  \global\let\@date\@empty%
+  \global\let\title\relax%
+  \global\let\author\relax%
+  \global\let\date\relax%
+  \global\let\and\relax%
+  \pagestyle{headings}%
+  %%%print continuous abstract on next page
+  \@afterheading%
+  %%\vskip-18pt% this is included to avoid vertical space at the beginning of left column on article opening pages
+}%
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Page Styles %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%
+\def\opheaderfont{\reset@font\fontsize{10bp}{0bp}\selectfont}%
+\def\headerfont{\reset@font\fontsize{10bp}{0bp}\selectfont}%
+\def\footerfont{\reset@font\fontsize{10bp}{0bp}\selectfont}%
+
+%% Regular Page Style
+\def\ps@headings{%
+    \def\@oddfoot{\hfill\thepage\hfill}%
+    \let\@evenfoot\@oddfoot%
+      \def\@evenhead{%
+      \vbox to 0pt{\vspace*{-48pt}%
+         \hbox to \hsize{\hfill \relax\hfill}}\par%%
+      \hspace*{-\textwidth}\hbox to \hsize{\hfill}}%
+      \def\@oddhead{%
+      \vbox to 0pt{\vspace*{-48pt}%
+         \hbox to \hsize{\hfill \relax\hfill}}\par%%
+      \hspace*{-\textwidth}\hbox to \hsize{\hfill}}%
+      \let\@mkboth\markboth%
+      }%
+
+
+%% Opening Page Style
+\def\ps@titlepage{%
+     %%\def\@oddhead{\vbox{\vskip-36pt\hbox to \textwidth{\hfill\includegraphics{springer-nature-logo}\hspace*{-1pt}}}}%
+     %%\let\@oddhead\@empty\let\@evenhead\@empty%
+      \def\@oddhead{%
+      \vbox to 0pt{\vspace*{-38pt}%
+         \hbox to \hsize{\hfill \hfill}}}%%
+     \let\@evenhead\@oddhead%
+     \def\@oddfoot{\vbox to 18pt{\vfill\reset@font\rmfamily\hfil\thepage\hfil}}%%
+     \def\@evenfoot{}}%
+
+\def\ps@plain{\let\@mkboth\@gobbletwo%
+\let\@oddhead\@empty\let\@evenhead\@empty%
+\def\@oddfoot{\vbox to 18pt{\vfill\reset@font\rmfamily\hfil ddd\thepage\hfil}}%
+\let\@evenfoot\@oddfoot}%
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Sections %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+
+\def\numbered{\setcounter{secnumdepth}{3}}%
+\def\unnumbered{\setcounter{secnumdepth}{0}}%
+\numbered%% default is numbered Sections
+
+\renewcommand\thesection      {\@arabic\c@section}%
+\renewcommand\thesubsection   {\thesection.\@arabic\c@subsection}%
+\renewcommand\thesubsubsection{\thesubsection.\@arabic\c@subsubsection}%
+\renewcommand\theparagraph    {\thesubsubsection.\@arabic\c@paragraph}%
+\renewcommand\thesubparagraph {\theparagraph.\@arabic\c@subparagraph}%
+%%
+\def\@seccntformat#1{\csname the#1\endcsname\hskip.5em}%
+
+\def\@sect#1#2#3#4#5#6[#7]#8{%
+  \ifnum #2>\c@secnumdepth
+    \let\@svsec\@empty
+  \else
+    \refstepcounter{#1}%
+      \protected@edef\@svsec{\@seccntformat{#1}\relax}%
+  \fi
+  \@tempskipa #5\relax
+  \ifdim \@tempskipa>\z@
+    \begingroup
+      #6{%
+        \@hangfrom{\hskip #3\relax\@svsec}%
+          \interlinepenalty \@M #8\@@par}%
+    \endgroup
+    \csname #1mark\endcsname{#7}%
+    \addcontentsline{toc}{#1}{%
+      \ifnum #2>\c@secnumdepth \else
+        \protect\numberline{\csname the#1\endcsname}%
+      \fi
+      #7}%
+  \else
+    \def\@svsechd{%
+      #6{\hskip #3\relax
+      \@svsec #8.}%
+      \csname #1mark\endcsname{#7}%
+      \addcontentsline{toc}{#1}{%
+        \ifnum #2>\c@secnumdepth \else
+          \protect\numberline{\csname the#1\endcsname}%
+        \fi
+        #7}}%
+  \fi
+  \@xsect{#5}}
+%
+\def\sectionfont{\reset@font\fontfamily{\rmdefault}\fontsize{14bp}{16bp}\bfseries\selectfont\raggedright\boldmath}%
+\def\subsectionfont{\reset@font\fontfamily{\rmdefault}\fontsize{12bp}{14bp}\bfseries\selectfont\raggedright\boldmath}%
+\def\subsubsectionfont{\reset@font\fontsize{11bp}{13bp}\bfseries\selectfont\raggedright\boldmath}%
+\def\paragraphfont{\reset@font\fontsize{10bp}{12bp}\bfseries\itshape\selectfont\raggedright}%
+%
+\def\subparagraphfont{\itshape}%
+\def\bmheadfont{\reset@font\fontfamily{\rmdefault}\fontsize{10bp}{12bp}\bfseries\selectfont\raggedright\boldmath}%
+%
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+                                    {-12pt \@plus -4pt \@minus -2pt}%
+                                    {9pt}%
+                                    {\sectionfont}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                                       {-12pt \@plus -4pt \@minus -2pt}%
+                                       {6pt}%
+                                       {\subsectionfont}}
+\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
+                                          {-12pt \@plus -4pt \@minus -2pt}%
+                                          {6pt}%
+                                          {\subsubsectionfont}}
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+                                      {-12pt \@plus -4pt \@minus-2pt}%
+                                      {3pt}%
+                                      {\paragraphfont}}
+\renewcommand\subparagraph{\@startsection{subparagraph}{5}{\z@}%
+                                         {6pt \@plus1ex \@minus.2ex}%
+                                         {-1em}%
+                                         {\subparagraphfont}}
+\newcommand\bmhead{\@startsection{subparagraph}{5}{\z@}%
+                                 {6pt \@plus1ex \@minus .2ex}%
+                                 {-1em}%
+                                 {\bmheadfont}}
+%
+\def\@startsection#1#2#3#4#5#6{%
+  \if@noskipsec \leavevmode \fi
+  \par
+  \@tempskipa #4\relax
+  \@afterindenttrue
+  \ifdim \@tempskipa <\z@
+    \@tempskipa -\@tempskipa \@afterindentfalse
+  \fi
+  \if@nobreak
+    \everypar{}%
+  \else
+    \addpenalty\@secpenalty\addvspace\@tempskipa
+  \fi
+  \@ifstar
+    {\@ssect{#3}{#4}{#5}{#6}}%
+    {\@dblarg{\@sect{#1}{#2}{#3}{#4}{#5}{#6}}}}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Lists %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\newdimen\labelwidthi%
+\newdimen\labelwidthii%
+\newdimen\labelwidthiii%
+\newdimen\labelwidthiv%
+
+\def\normal@labelsep{0.5em}%
+\labelsep\normal@labelsep%
+\settowidth{\labelwidthi}{(iii)}%
+\settowidth{\labelwidthii}{(d)}%
+\settowidth{\labelwidthiii}{(iii)}%
+\settowidth{\labelwidthiv}{(M)}%
+
+\leftmargini\labelwidthi     \advance\leftmargini\labelsep
+\leftmarginii\labelwidthii   \advance\leftmarginii\labelsep
+\leftmarginiii\labelwidthiii \advance\leftmarginiii\labelsep
+\leftmarginiv\labelwidthiv   \advance\leftmarginiv\labelsep
+
+\def\setleftmargin#1#2{\settowidth{\@tempdima}{#2}\labelsep\normal@labelsep
+  \csname labelwidth#1\endcsname\@tempdima
+  \@tempdimb\@tempdima \advance\@tempdimb\labelsep
+  \csname leftmargin#1\endcsname\@tempdimb}
+\def\@listI{\leftmargin\leftmargini
+  \labelwidth\labelwidthi \labelsep\normal@labelsep
+%  \topsep \z@
+  \topsep\baselineskip %%updated
+  \partopsep\z@ \parsep\z@ \itemsep\z@
+  \listparindent 1em}
+\def\@listii{\leftmargin\leftmarginii
+  \labelwidth\labelwidthii \labelsep\normal@labelsep
+  \topsep\z@ \partopsep\z@ \parsep\z@ \itemsep\z@
+  \listparindent 1em}
+\def\@listiii{\leftmargin\leftmarginiii
+  \labelwidth\labelwidthiii \labelsep\normal@labelsep
+  \topsep\z@ \partopsep\z@ \parsep\z@ \itemsep\z@
+  \listparindent 1em}
+\def\@listiv{\leftmargin\leftmarginiv
+  \labelwidth\labelwidthiv \labelsep\normal@labelsep
+  \topsep\z@ \partopsep\z@ \parsep\z@ \itemsep\z@
+  \listparindent 1em}
+\let\@listi\@listI
+\@listi
+%
+\setlength  \labelsep  {.5em}
+\setlength  \labelwidth{\leftmargini}
+\addtolength\labelwidth{-\labelsep}
+\@beginparpenalty -\@lowpenalty
+\@endparpenalty   -\@lowpenalty
+\@itempenalty     -\@lowpenalty
+\def\labelitemi{$\bullet$}          \def\labelitemii{$\cdot$}
+\def\labelenumi{\theenumi.}         \def\theenumi{\arabic{enumi}}
+\def\labelenumii{(\alph{enumii})}   \def\theenumii{\alph{enumii}}
+\def\labelenumiii{(\roman{enumiii})}\def\theenumiii{\roman{enumiii}}
+\def\labelenumiv{(\Alph{enumiv})}   \def\theenumiv{\Alph{enumiv}}
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Ordered & Unordered List  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\def\listfont{\normalsize}%
+%
+\def\enumargs{%
+   \listfont%
+   \leftmargini0pt%
+   \leftmarginii0pt%
+   \leftmarginiii0pt%
+   \ifnum\@enumdepth=3\topsep0pt\else\ifnum\@enumdepth=2\topsep0pt\else\topsep 6pt\fi\fi%
+   \partopsep     \z@%
+   \itemsep       \z@%
+   \parsep        \z@%
+   \labelsep      0.5em%
+   \rightmargin   \z@%
+   \raggedright%
+   \listparindent \parindent%
+   \itemindent    \z@}%
+
+\def\enumerate{%
+    \@ifnextchar[{\@numerate}{\@numerate[0.]}}
+
+\def\@numerate[#1]{\par%
+     \ifnum \@enumdepth >3 \@toodeep\else
+     \advance\@enumdepth \@ne
+     \edef\@enumctr{enum\romannumeral\the\@enumdepth}
+     \list{\csname label\@enumctr\endcsname}{%
+       \enumargs%
+       \setlength{\leftmargin}{\csname leftmargin\romannumeral\the\@enumdepth\endcsname}
+       \usecounter{\@enumctr}
+       \settowidth\labelwidth{#1}
+       \addtolength{\leftmargin}{\labelwidth}
+       \addtolength{\leftmargin}{\labelsep}
+       \def\makelabel##1{\hss\llap{##1}}}%
+     \fi
+   }
+\let\endenumerate\endlist
+
+%%Unnumbered list%%
+
+\def\unenumargs{%
+   \listfont%
+   \leftmargini\parindent%
+   \topsep6pt%
+   \partopsep     \z@%
+   \itemsep       \z@%
+   \parsep        \z@%
+   \labelsep      0\p@%
+   \rightmargin   \z@%
+   \raggedright%
+   \listparindent \parindent%
+   \itemindent    -12pt}%
+
+\def\unenumerate{%
+    \@ifnextchar[{\@unenumerate}{\@unenumerate[0.]}}
+
+\def\@unenumerate[#1]{\par%
+     \ifnum \@enumdepth >3 \@toodeep\else
+     \advance\@enumdepth \@ne
+     \edef\@enumctr{enum\romannumeral\the\@enumdepth}
+     \list{}{%
+       \unenumargs
+       \setlength{\leftmargin}{\csname leftmargin\romannumeral\the\@enumdepth\endcsname}
+       \usecounter{\@enumctr}
+       \settowidth\labelwidth{#1}
+       \addtolength{\leftmargin}{0pt}
+       \addtolength{\leftmargin}{0pt}
+       \def\makelabel##1{\hss\llap{##1}}}%
+     \fi
+   }
+
+\let\endunenumerate\endlist%
+
+%% bulleted list
+
+\def\itemargs{%
+   \listfont%
+   \leftmargini0pt%
+   \leftmarginii0pt%
+   \ifnum\@enumdepth=3\topsep0pt\else\ifnum\@enumdepth=2\topsep0pt\else\topsep 6pt\fi\fi%
+   \partopsep     \z@%
+   \itemsep       \z@%
+   \parsep        \z@%
+   \labelsep      0.5em%
+   \rightmargin   \z@%
+   \raggedright%
+   \listparindent \z@%
+   \itemindent    \z@}%
+
+\renewcommand\labelitemi{\raise1pt\hbox{\textbullet}}%
+\renewcommand\labelitemii{\textendash}%
+
+\def\itemize{%
+   \@ifnextchar[{\@itemize}{\@itemize[$\bullet$]}}
+
+\def\@itemize[#1]{\par%
+     \ifnum \@itemdepth >3 \@toodeep\else
+     \advance\@itemdepth \@ne
+     \edef\@itemctr{item\romannumeral\the\@itemdepth}
+     \list{\csname label\@itemctr\endcsname}{%
+       \itemargs
+       \setlength{\leftmargin}{\csname leftmargin\romannumeral\the\@itemdepth\endcsname}
+       \settowidth\labelwidth{#1}
+       \addtolength{\leftmargin}{\labelwidth}
+       \addtolength{\leftmargin}{\labelsep}
+       \def\makelabel##1{\hss \llap{##1}}}%
+     \fi
+   }
+\let\enditemize\endlist
+%
+\def\quote{\list{}{\itemindent\z@
+   \leftmargin 1em \rightmargin \z@}%
+\item[]}
+\let\endquote\endlist
+%
+\def\descriptionlabel#1{\hspace\labelsep \itshape #1}
+\def\description{\list{}{\labelwidth\z@
+  \leftmargin \z@ \topsep6pt\itemindent \z@ %-\leftmargin
+  \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Float %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setlength\abovecaptionskip{2.25\p@}%
+\setlength\belowcaptionskip{6\p@}%
+
+\setlength\arraycolsep{2\p@}%
+\setlength\tabcolsep{6\p@}%
+\setlength\arrayrulewidth{.4\p@}%
+\setlength\doublerulesep{2\p@}%
+\setlength\tabbingsep{\labelsep}%
+
+\def\fnum@figure{{\bfseries\figurename\space\thefigure}}%
+\def\fnum@table{{\bfseries\tablename\space\thetable}}%
+
+\def\FigName{figure}%
+
+\long\def\@makecaption#1#2{%
+    \ifx\FigName\@captype
+      \vskip\abovecaptionskip
+        \@figurecaption{#1}{#2}
+    \else
+        \@tablecaption{#1}{#2}
+      \vskip\belowcaptionskip
+    \fi%
+}
+
+%% Figure
+
+\def\figurecaptionfont{\reset@font\fontfamily{\rmdefault}\fontsize{8}{9.5}\selectfont}%
+
+\newdimen\figwidth%
+\newdimen\figheight%
+\newdimen\sidecapwidth
+\newdimen\wrapcapline%
+\newdimen\totalwrapline%
+\newdimen\wraptotline%
+
+%% Figures macro
+\newbox\figurebox%
+\newbox\wrapfigcapbox
+
+\def\FIG#1#2{%
+\setbox\figurebox\hbox{#1}%
+%% Figure dimensions
+\figwidth\wd\figurebox%
+\figheight\ht\figurebox%
+{\parbox{\hsize}{%
+\centerline{\box\figurebox}%
+%% Caption
+#2}}}
+
+%% Figures caption
+\newbox\figcapbox
+\newbox\capbox
+\long\def\@figurecaption#1#2{{\figurecaptionfont{\bfseries#1}\hskip.7em#2\par}}%
+
+\newenvironment{unnumfigure}{\begingroup\setlength{\topsep}{12pt}%
+\begin{center}}{\end{center}\endgroup}
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\@ifpackageloaded{booktabs}{\cmidrulewidth=.15pt}{}%
+%
+\def\tablecaptionfont{\reset@font\fontsize{8bp}{9.5bp}\selectfont}%
+\def\tablebodyfont{\reset@font\fontsize{8bp}{9.5bp}\selectfont}%
+\def\tablecolheadfont{\reset@font\fontsize{8bp}{9.5bp}\selectfont\bfseries\boldmath}%
+\def\tablefootnotefont{\reset@font\fontsize{8bp}{9.5bp}\selectfont}%
+
+%% Table Macro
+
+\newskip\headwidthskip%
+
+\def\tabraggedcenter{\leftskip=0pt plus 0.5fil\rightskip=0pt plus 0.5fil\parfillskip=0pt}%
+
+\newenvironment{@processtable}[4]{%
+\setbox4=\hbox to \hsize{\hss%
+\begin{minipage}[t]{#4}%
+\tabraggedcenter%
+\caption{#1}\par%
+{\tablebodyfont\noindent\ignorespaces#2\par}\par\vglue6pt%
+{\if!#3!\else{\tablefootnotefont#3}\fi}%
+\end{minipage}%
+\hss}%
+\box4\par}%
+
+\newcommand\TBL[3]{\begingroup%
+%
+\if!#1!\let\caption\relax\fi%
+%
+   \global\setbox\temptbox=\hbox{\bgroup{\tablebodyfont#2}\egroup}%
+   \global\tempdime\wd\temptbox%
+    \@processtable{#1}{\global\headwidthskip=\tempdime%
+	 \vbox{#2}}{#3}{\tempdime}%
+\endgroup}%
+
+%% Table Caption
+\newbox\tabcapbox%
+\newbox\temptbox%
+\newdimen\tempdime%
+\newdimen\tabhtdime%
+
+\long\def\@tablecaption#1#2{%
+  \setbox\tabcapbox\vbox{\tablecaptionfont\raggedright%
+  {\bfseries #1}{\hskip2mm}#2\vphantom{y}\par}%
+  \box\tabcapbox%
+}
+
+%% Table Column Heads
+\def\TCH#1{{\tablecolheadfont #1}}
+
+%% Table Footnotes
+
+\newenvironment{tablenotes}{\list{}{\setlength{\labelsep}{0pt}%
+\setlength{\labelwidth}{0pt}%
+\setlength{\leftmargin}{0pt}%
+\setlength{\rightmargin}{0pt}%
+\setlength{\topsep}{-6pt}%
+\setlength{\itemsep}{2pt}%
+\setlength{\partopsep}{0pt}%
+\setlength{\listparindent}{0em}%
+\setlength{\parsep}{0pt}}%
+\item\relax%
+}{\endlist}%
+
+\def\tnote#1{$^{#1}$}%%
+
+%% Table Rules
+
+\def\toprule{%\noalign{\vskip3pt}
+\noalign{\ifnum0=`}\fi
+  \hrule \@height 0\p@ \@width 0pt
+  \hrule \@height 0.75\p@ % <- rule height
+  \hrule \@height 5pt \@width 0pt
+  \futurelet\@tempa\@xhline}
+% Middle rule
+\def\midrule{\noalign{\ifnum0=`}\fi%
+  \hrule \@height 3pt \@width 0pt
+  \hrule \@height .5pt % <- rule height
+  \hrule \@height 5pt \@width 0pt
+  \futurelet \@tempa\@xhline}
+% Bottom rule
+\def\botrule{\noalign{\ifnum0=`}\fi
+  \hrule \@height 3pt \@width 0pt
+  \hrule \@height 0.75\p@ % <- rule height
+  \hrule \@height 3pt \@width 0pt
+  \futurelet\@tempa\@xhline}
+%
+\def\@@@cmidrule[#1-#2]#3#4{\global\@cmidla#1\relax
+    \global\advance\@cmidla\m@ne
+    \ifnum\@cmidla>0\global\let\@gtempa\@cmidrulea\else
+    \global\let\@gtempa\@cmidruleb\fi
+    \global\@cmidlb#2\relax
+    \global\advance\@cmidlb-\@cmidla
+    \global\@thisrulewidth=#3
+    \@setrulekerning{#4}
+    \ifnum\@lastruleclass=\z@\vskip 3\p@\fi
+    \ifnum0=`{\fi}\@gtempa
+    \noalign{\ifnum0=`}\fi\futurenonspacelet\@tempa\@xcmidrule}
+\def\@xcmidrule{%
+   \ifx\@tempa\cmidrule
+       \vskip-\@thisrulewidth
+       \global\@lastruleclass=\@ne
+   \else \ifx\@tempa\morecmidrules
+       \vskip \cmidrulesep
+       \global\@lastruleclass=\@ne\else
+       \vskip 5\p@
+       \global\@lastruleclass=\z@
+   \fi\fi
+   \ifnum0=`{\fi}}
+\let\cline\cmidrule
+
+\usepackage[figuresright]{rotating}%
+\usepackage{threeparttable}
+
+\let\tableorg\table%
+\let\endtableorg\endtable%
+
+\let\sidewaystableorg\sidewaystable%
+\let\endsidewaystableorg\endsidewaystable%
+
+\renewenvironment{table}[1][]%
+{\begin{tableorg}[#1]%
+\begin{center}
+\begin{threeparttable}
+\tablebodyfont%
+\renewcommand\footnotetext[2][]{{\removelastskip\vskip3pt%
+\let\tablebodyfont\tablefootnotefont%
+\hskip0pt\if!##1!\else{\smash{$^{##1}$}}\fi##2\par}}%
+}{\end{threeparttable}\end{center}\end{tableorg}}
+
+\renewenvironment{sidewaystable}[1][]%
+{\begin{sidewaystableorg}[#1]%
+\begin{center}
+\begin{threeparttable}
+\tablebodyfont%
+\renewcommand\footnotetext[2][]{{\removelastskip\vskip3pt%
+\let\tablebodyfont\tablefootnotefont%
+\hskip0pt\if!##1!\else{\smash{$^{##1}$}}\fi##2\par}}%
+}{\end{threeparttable}\end{center}\end{sidewaystableorg}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Other Env. %%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\quotefont{\reset@font\fontfamily{\rmdefault}\fontsize{9}{11}\selectfont}%
+
+\renewenvironment{quote}
+               {\list{}{\topsep=0pt\topsep6pt\leftmargin=1em\raggedright\quotefont}%
+                \item\relax}
+               {\endlist}
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Appendix %%%%%%%%%%%%%%%%%%%%%%%%%
+%
+
+\newif\ifbackmatter%
+\newcommand{\backmatter}{\global\backmattertrue}%
+
+\usepackage[title]{appendix}%
+
+\@ifpackageloaded{appendix}{%
+%
+\renewenvironment{appendices}{%
+  \@resets@pp
+  \if@dotoc@pp
+    \if@dopage@pp              % both page and toc
+      \if@chapter@pp           % chapters
+        \clear@ppage
+      \fi
+      \appendixpage
+    \else                      % toc only
+       \if@chapter@pp          % chapters
+         \clear@ppage
+       \fi
+      \addappheadtotoc
+    \fi
+  \else
+    \if@dopage@pp              % page only
+      \appendixpage
+    \fi
+  \fi
+  \if@chapter@pp
+    \if@dotitletoc@pp \@redotocentry@pp{chapter} \fi
+  \else
+    \if@dotitletoc@pp \@redotocentry@pp{section} \fi
+    \if@dohead@pp
+      \def\sectionmark##1{%
+        \if@twoside
+          \markboth{\@formatsecmark@pp{##1}}{}
+        \else
+          \markright{\@formatsecmark@pp{##1}}{}
+        \fi}
+    \fi
+    \if@dotitle@pp
+      \def\sectionname{\appendixname}
+      \def\@seccntformat##1{\@ifundefined{##1name}{}{\csname ##1name\endcsname\ }%
+        \csname the##1\endcsname\quad}
+    \fi
+  \fi
+}{%
+  \@ppsaveapp\@pprestoresec}
+%%
+\AtBeginDocument{%
+%
+\let\oldappendices\appendices%
+\let\oldendappendices\endappendices%
+%%
+\renewenvironment{appendices}{%
+\setcounter{figure}{0}%
+\setcounter{table}{0}%
+\setcounter{equation}{0}%
+%%
+\begin{oldappendices}%
+  \gdef\thefigure{\@Alph\c@section\arabic{figure}}%
+  \gdef\thetable{\@Alph\c@section\arabic{table}}%
+  \gdef\theequation{\@Alph\c@section\arabic{equation}}%
+}{\end{oldappendices}}
+}
+%%
+}{}
+
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Article History  %%%%%%%%%%%%%%%%%%%%
+%
+\def\@history{}
+\def\printhistory{{\par\addvspace{8pt}%
+\historyfont\noindent%
+\ifx\@history\empty\gdef\@history{Received xx xxx xxxx}\fi\@history\par}}%
+%
+%%%%%%%%%%%%%%%%%%%%%%% Footnotes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%
+\renewcommand\@makefntext[1]{%
+    \hskip8pt{\smash{\@makefnmark}}#1}
+%
+\RequirePackage{hyperref}%
+%%\RequirePackage{hypcap}%
+\gdef\breakurldefns{%
+\if@pdflatex\else%
+  \RequirePackage[hyphenbreaks]{breakurl}%
+%  \let\href\burlalt%
+\fi}%
+\breakurldefns%
+%    \bgroup
+%      \catcode`\&=12\relax
+%      \hyper@normalise\burl@addtocharlistbefore{%}
+%      \hyper@normalise\burl@addtocharlistafter{:/.?#&_,;!=+~}%% for extra breaks in url
+%    \egroup
+%    \burl@defifstructure
+%
+\hypersetup{%
+        colorlinks,
+        breaklinks=true,
+        plainpages=false,%
+        citecolor=blue,
+        linkcolor=blue,
+        urlcolor=blue,
+        bookmarksopen=true,%
+        bookmarksnumbered=false,%
+        bookmarksdepth=5%
+}
+%
+\AtBeginDocument{\renewcommand\UrlFont{\rmfamily}}%
+%
+\AtBeginDocument{%
+\@ifpackageloaded{natbib}{%
+  \renewcommand\bibsection{%
+   \section*{\refname}%
+  }%
+}{}%
+}%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\pagestyle{headings}%
+\pagenumbering{arabic}%
+\sloppy%
+\frenchspacing%
+\flushbottom%
+
+%%% special parameters for TeX
+\adjdemerits=100
+\linepenalty=100
+%
+%%%%%%%%%%%%%%% Biography
+%
+\RequirePackage{wrapfig}%
+%
+%
+%  \begin{wrapfigure}[12]{r}[34pt]{5cm} <figure> \end{wrapfigure}
+%                     --  -  ----  ---
+%  [number of narrow lines] {placement} [overhang] {width of figure}
+\newcount\wraplines%
+%%\wraplines=5%
+%
+\newbox\@authorfigbox%
+\newskip\@authorfigboxdim%
+%
+\newskip\biofigadjskip%
+\biofigadjskip=0pt%
+%
+\def\authbiotextfont{\reset@font\fontsize{8bp}{9.5bp}\selectfont}%
+%
+\newenvironment{biography}[2]{\par\addvspace{11.5pt plus3.375pt minus1.6875pt}%\lineno@off%
+\def\author##1{{\bfseries##1}}%
+\if!#1!\def\@authorfig{}\else\def\@authorfig{{#1}}\fi%
+\setbox\@authorfigbox=\hbox{#1}%
+\@authorfigboxdim=\wd\@authorfigbox%
+\if@iicol\advance\@authorfigboxdim by -10pt\else\advance\@authorfigboxdim by -2pt\fi%
+\wraplines=9\fboxrule=1pt\fboxsep=6pt%
+\noindent{%
+\ifx\@authorfig\@empty\else\unskip%
+\begin{wrapfigure}[\wraplines]{l}[0pt]{\@authorfigboxdim}%{38.25mm}%
+\vskip-19pt\addvspace{\biofigadjskip}%
+\@authorfig%
+\end{wrapfigure}%
+\fi%
+{\authbiotextfont#2\par}%
+\par%
+}}{\par\addvspace{10.5pt plus3.375pt minus1.6875pt}}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Theorem %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%
+\usepackage{amsthm}
+\usepackage{fix-cm}
+
+\@ifpackageloaded{amsthm}{%
+%
+%\let\proof\relax%
+%\let\endproof\relax%
+
+\def\@begintheorem#1#2[#3]{%
+  \deferred@thm@head{\the\thm@headfont \thm@indent
+    \@ifempty{#1}{\let\thmname\@gobble}{\let\thmname\@iden}%
+    \@ifempty{#2}{\let\thmnumber\@gobble}{\let\thmnumber\@iden}%
+    \@ifempty{#3}{\let\thmnote\@gobble}{\let\thmnote\@iden}%
+    \thm@swap\swappedhead\thmhead{#1}{#2}{#3}%
+    \the\thm@headpunct
+    \thmheadnl % possibly a newline.
+    \hskip\thm@headsep
+  }%
+  \ignorespaces
+}
+
+\def\@endtheorem{\endtrivlist\@endpefalse}
+
+
+\AtBeginDocument{%
+%
+\DeclareRobustCommand{\S}{\ifmmode\mathsection\else\textsection\fi}
+
+\DeclareSymbolFont{AMSa}{U}{msa}{m}{n}%
+\DeclareMathSymbol{\opensquare}{\mathord}{AMSa}{"03}%
+\def\qedsymbol{\ensuremath{\opensquare}}%
+%
+\newenvironment{spiproof}[1][\proofname]{\par\removelastskip%\vspace*{2pt}%
+  \pushQED{\qed}%
+  \small\normalfont \topsep7.5\p@\@plus7.5\p@\relax%
+  \trivlist%
+  \item[\hskip\labelsep%
+        \itshape%
+    #1\@addpunct{}]\ignorespaces%
+}{%
+  \popQED\endtrivlist\@endpefalse%
+}%
+%
+\let\proof\spiproof\let\endproof\endspiproof%
+%
+}%
+%
+\def\thm@space@setup{%
+\thm@preskip=12pt%
+\thm@postskip=12pt}
+%
+%%%%%%%%%%%%%%%%%% StyleOne
+%
+\newtheoremstyle{thmstyleone}% Numbered
+{18pt plus2pt minus1pt}% Space above
+{18pt plus2pt minus1pt}% Space below
+{\small\itshape}% Body font
+{0pt}% Indent amount
+{\small\bfseries}% Theorem head font
+{}% Punctuation after theorem head
+{.5em}% Space after theorem headi
+{\thmname{#1}\thmnumber{\@ifnotempty{#1}{ }\@upn{#2}}%
+  \thmnote{ {\the\thm@notefont(#3)}}}% Theorem head spec (can be left empty, meaning `normal')
+%
+\newtheoremstyle{thmstyletwo}% Numbered
+{18pt plus2pt minus1pt}% Space above
+{18pt plus2pt minus1pt}% Space below
+{\small\normalfont}% Body font
+{0pt}% Indent amount
+{\small\itshape}% Theorem head font
+{}% Punctuation after theorem head
+{.5em}% Space after theorem headi
+{\thmname{#1}\thmnumber{\@ifnotempty{#1}{ }{#2}}%
+  \thmnote{ {\the\thm@notefont(#3)}}}% Theorem head spec (can be left empty, meaning `normal')
+%
+\newtheoremstyle{thmstylethree}% Definition
+{18pt plus2pt minus1pt}% Space above
+{18pt plus2pt minus1pt}% Space below
+{\small\normalfont}% Body font
+{0pt}% Indent amount
+{\small\bfseries}% Theorem head font
+{}% Punctuation after theorem head
+{.5em}% Space after theorem headi
+{\thmname{#1}\thmnumber{\@ifnotempty{#1}{ }\@upn{#2}}%
+  \thmnote{ {\the\thm@notefont(#3)}}}% Theorem head spec (can be left empty, meaning `normal')
+%
+\newtheoremstyle{thmstylefour}% Proof
+{18pt plus2pt minus1pt}% Space above
+{18pt plus2pt minus1pt}% Space below
+{\small\normalfont}% Body font
+{0pt}% Indent amount
+{\small\itshape}% Theorem head font
+{}% Punctuation after theorem head
+{.5em}% Space after theorem headi
+{\global\proofthmtrue\thmname{#1} \thmnote{#3}}% Theorem head spec (can be left empty, meaning `normal')
+%
+}{}
+
+%% Macros for bibliographystyles %%
+
+% \def\bibcommenthead{\if@bibcomment\begingroup\parindent=0pt\parskip=0pt%
+% \removelastskip\vskip13pt\nointerlineskip%
+%
+% \vbox{\bibfont If you are submitting to one of the Nature Research journals, using the eJP
+%  submission system, please include the references within the manuscript file itself. You may
+%  do this by copying the reference list from your .bbl file, and pasting it into the bibliography
+%  environment of the main manuscript .tex file.}\par%
+% \removelastskip\nobreak\vskip13pt\nobreak%
+% \endgroup\fi}%
+
+\def\bibcommenthead{}%
+
+\if@Spr@basic@refstyle%
+\if@Numbered@refstyle%
+  \usepackage[numbers,sort&compress]{natbib}%
+  \gdef\NumBib{YES}%
+\else%
+ \usepackage[authoryear]{natbib}%
+  \setcitestyle{aysep={}}
+  \gdef\NumBib{NO}%
+\fi%
+  \bibliographystyle{sn-basic}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\fi%
+
+\if@Mathphys@numrefstyle%
+  \usepackage[numbers,sort&compress]{natbib}%
+  \gdef\NumBib{YES}%
+  \bibliographystyle{sn-mathphys-num}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\else%
+\if@Mathphys@ayrefstyle%
+ \usepackage[authoryear]{natbib}%
+  \gdef\NumBib{NO}%
+  \setcitestyle{aysep={}}
+  \bibliographystyle{sn-mathphys-ay}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\fi\fi%
+\if@APS@refstyle%
+  \usepackage[numbers,sort&compress]{natbib}%
+  \gdef\NumBib{YES}%
+  \bibliographystyle{sn-APS}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\fi%
+\if@Vancouver@numrefstyle%
+  \usepackage[numbers,sort&compress]{natbib}%
+  \gdef\NumBib{YES}%
+  \bibliographystyle{sn-vancouver-num}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\else%
+\if@Vancouver@ayrefstyle%
+ \usepackage[authoryear]{natbib}%
+  \gdef\NumBib{NO}%
+  \setcitestyle{aysep={}}
+  \bibliographystyle{sn-vancouver-ay}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\fi\fi%
+\if@APA@refstyle%
+\if@Numbered@refstyle%
+  \usepackage[natbibapa]{apacite}%
+  \gdef\NumBib{YES}%
+\else%
+  \usepackage[natbibapa]{apacite}%
+  \gdef\NumBib{NO}%
+\fi%
+  \bibliographystyle{sn-apacite}%
+  \def\refdoi#1{\urlstyle{rm}\url{#1}}%
+  \renewcommand{\doiprefix}{}%
+  \AtBeginDocument{%
+    \renewcommand{\BPBI}{.}% Period between initials - command from apacite.sty
+  }%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\fi%
+\if@Chicago@refstyle%
+\if@Numbered@refstyle%
+  \usepackage[numbers,sort&compress]{natbib}%
+  \gdef\NumBib{YES}%
+\else%
+ \usepackage[authoryear]{natbib}%
+  \gdef\NumBib{NO}%
+  \setcitestyle{aysep={}}
+\fi%
+  \bibliographystyle{sn-chicago}%
+  \hypersetup{urlcolor=black,colorlinks=false,pdfborder={0 0 0}}\urlstyle{same}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\fi%
+\if@Standard@Nature@refstyle%
+  \usepackage[numbers,sort&compress]{natbib}%
+  \gdef\NumBib{YES}%
+  \bibliographystyle{sn-nature}%
+  \setlength{\bibsep}{1em}%
+  \def\bibfont{\reset@font\fontfamily{\rmdefault}\normalsize\selectfont}%
+\fi%
+
+\AtBeginDocument{\allowdisplaybreaks}%
+
+\def\eqnheadfont{\reset@font\fontfamily{\rmdefault}\fontsize{16}{18}\bfseries\selectfont}%
+
+\newcommand{\eqnhead}[1]{\begingroup%
+\begin{center}
+{\eqnheadfont #1}\par%
+\end{center}
+\removelastskip\vskip24pt%
+\thispagestyle{titlepage}%%
+%%\thispagestyle{empty}%
+\endgroup}
+
+%% Macros for border matrix %%
+
+\newif\if@borderstar
+
+\def\bordermatrix{\@ifnextchar*{%
+\@borderstartrue\@bordermatrix@i}{\@borderstarfalse\@bordermatrix@i*}%
+}
+\def\@bordermatrix@i*{\@ifnextchar[{\@bordermatrix@ii}{\@bordermatrix@ii[()]}}
+\def\@bordermatrix@ii[#1]#2{%
+\begingroup
+\m@th\@tempdima8.75\p@\setbox\z@\vbox{%
+\def\cr{\crcr\noalign{\kern 2\p@\global\let\cr\endline }}%
+\ialign {$##$\hfil\kern 2\p@\kern\@tempdima & \thinspace %
+\hfil $##$\hfil && \quad\hfil $##$\hfil\crcr\omit\strut %
+\hfil\crcr\noalign{\kern -\baselineskip}#2\crcr\omit %
+\strut\cr}}%
+\setbox\tw@\vbox{\unvcopy\z@\global\setbox\@ne\lastbox}%
+\setbox\tw@\hbox{\unhbox\@ne\unskip\global\setbox\@ne\lastbox}%
+\setbox\tw@\hbox{%
+$\kern\wd\@ne\kern -\@tempdima\left\@firstoftwo#1%
+\if@borderstar\kern2pt\else\kern -\wd\@ne\fi%
+\global\setbox\@ne\vbox{\box\@ne\if@borderstar\else\kern 2\p@\fi}%
+\vcenter{\if@borderstar\else\kern -\ht\@ne\fi%
+\unvbox\z@\kern-\if@borderstar2\fi\baselineskip}%
+\if@borderstar\kern-2\@tempdima\kern2\p@\else\,\fi\right\@secondoftwo#1 $%
+}\null \;\vbox{\kern\ht\@ne\box\tw@}%
+\endgroup
+}
+
+%% Macros for line numbers %%
+
+\if@vrulerlinenumberon%
+%
+\usepackage{vruler}%
+%
+%%\setvruler[<SCALE>][<INITIAL_COUNT>][<STEP>][<DIGITS>][<MODE>][<ODD_HSHIFT]>][<EVEN_HSHIFT>][<VSHIFT>][<HEIGHT>]
+\def\linenoon{%%\definecolor{blue}{gray}{0}%
+\def\tiny{\normalsize\color{black}}%
+\setvruler[12bp][1][1][3][1][1.18\textwidth][26pt][-7pt][0.99\textheight]% for even pages: left side; for odd pages: right side;
+%%\linkbluecolor
+}%
+\linenoon%
+\def\lineno@off{\unsetvruler}%
+\fi%
+%% url macros %%
+
+\gdef\orcidlogo{%
+\includegraphics{Orcidlogo.eps}%
+}%
+
+\gdef\orcid#1{\href{#1}{\orcidlogo}}%
+
+
+\endinput
+\end{filecontents*}
+
+\begin{filecontents*}{sn-mathphys-num.bst}
+%% This is file `sn-mathphys-num.bst'
+%% Compatible with bibtex version 0.99d.
+%%
+%% Note: Per default sorting entries is done in the order of citation.
+%% If the journal requires alphabetical order of references, select the “alpha” option
+%%
+%% You are free to use this style file as you see fit, provided
+%% that you do not make changes to the file.
+%%
+%% It may be distributed under the terms of the LaTeX Project Public
+%% License, as described in lppl.txt in the base LaTeX distribution.
+%% Either version 1.0 or, at your option, any later version.
+%%
+%% LIMITATIONS:
+%% If you are getting error like
+%% "Sorry---you've exceeded BibTeX's number of string global-variables"
+%% that means you are using to old bibtex version. You should download latest version 0.99d.
+%% (One of the binaries location is minimals.contextgarden.net/current/bin/common/)
+
+FUNCTION {identify.mathphys.version}
+{ % Put identifying string in the .blg file
+  "sn-mathphys-num.bst"
+  " [2024/07/19 v1.1  bibliography style]"
+  * top$
+}
+
+ENTRY
+  { address
+    author
+    booktitle
+    bnumber
+    chapter
+    doi
+    edition
+    editor
+    howpublished
+    institution
+    isbn
+    journal
+    key
+    keywords
+    month
+    note
+    number
+    organization
+    pages
+    publisher
+    school
+    series
+    title
+    type
+    volume
+    year
+    url
+    info
+    options
+    urldate
+    eprint
+    archive
+    archivePrefix
+    primaryClass
+    eid
+    adsurl
+    adsnote
+    version
+  }
+  {}
+  { label extra.label sort.label short.list}
+
+INTEGERS { output.state before.all mid.sentence after.sentence
+           after.block after.authors between.elements bother
+           Nisbn Nmonth slen set.settings tmp month.printed}
+
+FUNCTION {init.state.consts}
+{ #0 'before.all :=
+  #1 'mid.sentence :=
+  #2 'after.sentence :=
+  #3 'after.block :=
+  #4 'after.authors :=
+  #5 'between.elements :=
+}
+
+STRINGS { s t  element}
+STRINGS { longest.label last.label list.string default.list}
+STRINGS { v l f j b temp.str}
+
+FUNCTION {output.nonnull}
+{ 's :=
+  output.state mid.sentence =
+    { " " * write$ newline$}
+    { output.state after.block =
+        { add.period$ write$
+          newline$
+        }
+        {
+          output.state after.authors =
+          { ": " * write$
+            newline$
+          }
+          { output.state between.elements =
+              { ", " * write$ newline$}
+              { output.state before.all =
+                  'write$
+                  { add.period$ " " * write$ newline$}
+                if$
+              }
+            if$
+          }
+          if$
+        }
+      if$
+      mid.sentence 'output.state :=
+    }
+  if$
+  s
+}
+
+FUNCTION {output}
+{ duplicate$ empty$
+    'pop$
+    'output.nonnull
+  if$
+}
+
+FUNCTION {output.check}
+{ 't :=
+  duplicate$ empty$
+    { pop$ "empty " t * " in " * cite$ * warning$ }
+    'output.nonnull
+  if$
+}
+FUNCTION {fin.entry}
+{ write$ newline$ }
+
+FUNCTION {stupid.colon}
+{ after.authors 'output.state := }
+
+
+FUNCTION {insert.comma}
+{ output.state before.all =
+    'skip$
+    { between.elements 'output.state := }
+  if$
+}
+
+FUNCTION {new.sentence}
+{ output.state after.block =
+    'skip$
+    { output.state before.all =
+        'skip$
+        { after.sentence 'output.state := }
+      if$
+    }
+  if$
+}
+
+FUNCTION {not}
+{   { #0 }
+    { #1 }
+  if$
+}
+
+FUNCTION {and}
+{   'skip$
+    { pop$ #0 }
+  if$
+}
+
+FUNCTION {or}
+{   { pop$ #1 }
+    'skip$
+  if$
+}
+
+
+FUNCTION {field.or.null}
+{ duplicate$ empty$
+    { pop$ "" }
+    'skip$
+  if$
+}
+
+FUNCTION {sort.format.month}
+{ 't :=
+    t #1 #2 substring$ "01" =
+    t	#1 #1 substring$ "1" =
+    t	#2 #2 substring$ "" =
+    and or
+    { "January" }
+    { t #1 #2 substring$ "02" =
+      t	#1 #1 substring$ "2" =
+      t	#2 #2 substring$ "" =
+      and or
+      { "February" }
+      { t #1 #2 substring$ "03" =
+         t #1 #1 substring$ "3" =
+         t	#2 #2 substring$ "" =
+         and or
+        { "March" }
+        { t #1 #2 substring$ "04" =
+          t #1 #1 substring$ "4" =
+          or
+          { "April" }
+          { t #1 #2 substring$ "05" =
+             t #1 #1 substring$ "5" =
+             or
+            { "May" }
+            { t #1 #2 substring$ "06" =
+              t #1 #1 substring$ "6" =
+              or
+              { "June" }
+              { t #1 #2 substring$ "07" =
+                t #1 #1 substring$ "7" =
+                or
+                { "July" }
+                { t #1 #2 substring$ "08" =
+                   t #1 #1 substring$ "8" =
+                   or
+                  { "August" }
+                  { t #1 #2 substring$ "09" =
+                    t #1 #1 substring$ "9" =
+                    or
+                    { "September" }
+                    { t #1 #2 substring$ "10" =
+                      { "October" }
+                      { t #1 #2 substring$ "11" =
+                        { "November" }
+                        { t #1 #2 substring$ "12" =
+                          { "December" }
+                          { t } % No match
+                        if$
+                        }
+                      if$
+                      }
+                    if$
+                    }
+                  if$
+                  }
+                if$
+                }
+              if$
+              }
+            if$
+            }
+          if$
+          }
+        if$
+        }
+      if$
+      }
+    if$
+    }
+  if$
+
+}
+
+INTEGERS {sk}
+FUNCTION {is.num}
+{	chr.to.int$
+   duplicate$ "0" chr.to.int$ < not
+  swap$ "9" chr.to.int$ > not and
+}
+
+FUNCTION {make.tag}
+{ 't :=
+  duplicate$ empty$
+    { pop$ "" }
+    { bother #0 =
+      {
+        t "volume" =
+          {"\textbf{"  swap$ * "}" * }
+          'skip$
+        if$
+      }
+      { "\b" t * "{" * swap$ * "}" * }
+    if$
+    }
+  if$
+}
+
+
+
+FUNCTION {springer.publisher}
+{publisher #1 #8 substring$ "Springer" =
+    { "Springer"  }
+    { publisher }
+ if$
+}
+
+FUNCTION {format.adsurl}
+{
+  adsurl empty$
+      { "" }
+      {" \href{" adsurl "}" *}
+  if$
+}
+
+FUNCTION {format.adsnote}
+{
+  adsnote empty$
+      { "" }
+      { ". " * adsnote *}
+  if$
+}
+
+
+FUNCTION {format.soft.title}
+{
+  title empty$
+      { "" }
+      { title "," *}
+  if$
+}
+
+FUNCTION {format.softmisctitle}
+{ title empty$
+     { ""}
+     { version empty$
+          { title ", " *}
+          { title ", " * version " " *}
+       if$
+     }
+  if$
+}
+
+FUNCTION {format.softmisc.archive}
+{
+  archivePrefix empty$
+      { "" }
+      { "" }
+  if$
+}
+
+FUNCTION {format.archive}
+{
+  archivePrefix empty$
+      { "" }
+      { archivePrefix ":" *}
+  if$
+}
+
+FUNCTION {format.primaryClass}
+{
+  primaryClass empty$
+      { "" }
+      { "{[" primaryClass * "]}" *}
+  if$
+}
+
+FUNCTION {format.eprint}
+{ eprint empty$
+     { ""}
+     { archive empty$
+          {"{\href{https://arxiv.org/abs/" eprint * "}" *
+             "{{" * format.archive * eprint * "}}}" *}
+          {"{\href{https://arxiv.org/abs/" eprint * "}" *
+             "{{" * format.archive * eprint * "}}}" *}
+       if$
+     }
+     if$
+}
+
+FUNCTION {format.softmisc.eprint}
+{ eprint empty$
+     { ""}
+     { archive empty$
+          {"{\href{https://ascl.net/" format.softmisc.archive * eprint * "}" *
+             "{{" * format.archive * eprint * "}}}" *}
+          {"{\href{https://ascl.net/" format.softmisc.archive * eprint * "}" *
+             "{{" * format.archive * eprint * "}}}" *}
+       if$
+     }
+     if$
+}
+
+FUNCTION {format.pub.address}
+{ publisher empty$
+  howpublished empty$
+  and
+    {
+    address empty$
+      'skip$
+        {	volume empty$
+            'insert.comma
+            'new.sentence
+          if$
+          address
+          type$ "inproceedings" =
+            {"conflocation"}
+            {"location"}
+           if$
+          make.tag output
+        }
+      if$
+    }
+    {
+      address empty$
+        {	publisher empty$
+            {howpublished}
+            {springer.publisher}
+          if$
+           "publisher" make.tag
+          #1 bother =
+            {", \blocation{???}" *  }
+            'skip$
+           if$
+           output
+        }
+        {
+          publisher empty$
+            {howpublished }
+            {springer.publisher }
+           if$
+          "publisher" make.tag output
+          insert.comma
+          address "location" make.tag output
+        }
+      if$
+    }
+  if$
+}
+
+INTEGERS { nameptr namesleft numnames }
+
+FUNCTION {mk.tag}
+{ 'temp.str :=
+  duplicate$ empty$
+    { pop$ "" }
+    {
+      b "nothing" =
+        'skip$
+        { "\b" temp.str * "{" * swap$ * "}" * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {space.after.dot}
+{'j :=
+  t 'f :=
+  j 't :=
+  s 'j :=
+  "" 'l :=
+  "" 's :=
+  { t empty$ not }
+  {
+    t #1 #3 substring$ "{-}" =
+      { l  " {q}. " * 'l :=
+        t #4 global.max$ substring$ 't :=
+      }
+       'skip$
+    if$
+
+    t #1 #1 substring$ 's :=
+    l  s * 'l :=
+    s "." =
+      {
+        t #2 #1 substring$ " " =
+          'skip$
+           {
+            l  " " * 'l :=
+             t #2 #4 substring$ "{\,}" =
+               { t #5 global.max$ substring$ 't := }
+               'skip$
+            if$
+          }
+        if$
+      }
+      'skip$
+    if$
+      t #2 global.max$ substring$ 't :=
+  }
+  while$
+  f 't :=
+  j 's :=
+  l
+}
+
+FUNCTION {fix.inits}{
+  't :=
+   "" 'element :=
+  { t empty$ not }
+  {
+    t #1 #3 substring$ ".q." =
+      { element  ".-" * 'element :=
+        t #3 global.max$ substring$ 't :=
+       }
+       {element  t #1 #1 substring$ * 'element :=}
+    if$
+
+    t #2 global.max$ substring$ 't :=
+  }
+  while$
+  element
+}
+
+FUNCTION {fix.snm}{
+  't :=
+   "" 'element :=
+  { t empty$ not }
+  {
+    t #1 #3 substring$ "{-}" =
+      {element  "-" * 'element :=
+        t #3 global.max$ substring$ 't :=
+       }
+       {element  t #1 #1 substring$ * 'element :=}
+     if$
+
+    t #2 global.max$ substring$ 't :=
+  }
+  while$
+  element
+}
+
+FUNCTION {enbrace.dash}{
+  't :=
+  "" 'element :=
+  { t empty$ not }
+  {
+    t #1 #1 substring$ "-" =
+      {element  "{-}" * 'element :=}
+       {element  t #1 #1 substring$ * 'element :=}
+    if$
+    t #2 global.max$ substring$ 't :=
+  }
+  while$
+  element
+}
+
+FUNCTION {fix.name}{
+
+  enbrace.dash 's :=
+  "" 'l :=
+  "" 't :=
+
+  #1 'nameptr :=
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+  { namesleft #0 > }
+  {
+     s nameptr "{vv~}{ll}{, jj}" format.name$
+     s nameptr "{, ff}" format.name$ space.after.dot * 'l :=
+    #1 nameptr =
+      {l 't :=}
+      {t " and " * l * 't := }
+    if$
+    nameptr #1 + 'nameptr :=
+    namesleft #1 - 'namesleft :=
+  }
+  while$
+  t
+}
+
+FUNCTION {name.separator}{
+  namesleft #1 >
+    {", " * }
+    'skip$
+  if$
+}
+
+FUNCTION {format.author.editor}
+{ 'b :=
+
+  bother #1 =
+  b "nothing" =
+  or
+    'skip$
+    {"b" b * 'b :=}
+  if$
+
+   b "editor"  =
+   b "beditor" =
+   b "nothing" =
+   or or
+    {editor 's :=}
+    {author 's :=}
+  if$
+
+   %% modifying name
+  s fix.name 's :=
+
+  "" 't :=
+
+  #1 'nameptr :=
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+
+  s numnames "{ll}" format.name$ 'l :=
+  l  "others" =
+   l  "{others}" =
+   l  "et al." =
+   l  "{et al.}" =
+   or or or
+     {#1 'tmp :=}
+     {#0 'tmp :=}
+  if$
+
+  { namesleft #0 > }
+  {	s nameptr "{vv}" 	  format.name$           "particle" mk.tag  'v :=
+    s nameptr "{ll}" 	  format.name$ fix.snm   "snm"      mk.tag  'l :=
+    s nameptr "{f{.}.}" format.name$ fix.inits "inits"    mk.tag  'f :=
+     s nameptr "{jj}" 	  format.name$           "suffix"   mk.tag  'j :=
+
+
+     namesleft #1 =
+     tmp #1 =
+     and
+       {	b "bauthor" =
+         b "beditor" =
+        or
+          {"et al."}
+           {"\betal"}
+        if$
+        #1 'tmp :=
+      }
+       {
+         b "bauthor" =
+         b "beditor" =
+         or
+          {"\oauthor{"}
+          {
+             b "nothing" =
+               {""}
+              {"\b" b * "{" *}
+            if$
+          }
+%%        if$
+%%
+%%        v empty$
+%%          'skip$
+%%          {v * " " *}
+        if$
+
+           l empty$
+            'skip$
+          { l *}
+        if$
+
+           f empty$
+          'skip$
+          {", " * f *}
+        if$
+
+           j empty$
+            'skip$
+          {" "  * j *}
+        if$
+
+         b "nothing" =
+           {""}
+          {"}"}
+        if$
+
+        * "" 't :=
+      }
+    if$
+
+    name.separator
+    write$
+
+    namesleft #1 >
+    b "nothing" = not
+    and
+      {	namesleft #2 =
+         tmp #1 =
+         and
+          'skip$
+          'newline$
+         if$
+      }
+      'skip$
+    if$
+
+    nameptr #1 + 'nameptr :=
+    namesleft #1 - 'namesleft :=
+  }
+  while$
+}
+
+FUNCTION {format.editors}
+{ editor empty$
+    'skip$
+    {
+      bother #0 =
+        {	author empty$
+             {"editor"}
+             {"nothing"}
+            if$
+        }
+        {"editor"}
+      if$
+      format.author.editor
+      editor num.names$ #1 >
+        { " (eds.)" }
+        { " (ed.)" }
+      if$
+      write$
+    }
+  if$
+}
+
+FUNCTION {format.authors}
+{ author empty$
+    'skip$
+    {"author"  format.author.editor}
+  if$
+}
+
+FUNCTION {cite.author.editor}
+{ 's :=
+  s #1 "{vv~}{ll}" format.name$
+  s num.names$ duplicate$
+  #2 >
+    { pop$ " et~al." * }
+    { #2 =
+        {	s #2 "{vv~}{ll}{ jj}{ f}" format.name$ "others" =
+            { " et~al."  * }
+            { " and " * s #2 "{vv~}{ll}" format.name$ * }
+           if$
+         }
+         'skip$
+        if$
+    }
+  if$
+}
+
+FUNCTION {check.auth.edit.org}
+{author empty$
+  {
+    editor empty$
+      {
+        organization empty$
+          {""}
+          {organization}
+        if$
+      }
+      {editor cite.author.editor}
+    if$
+  }
+  {author cite.author.editor}
+ if$
+}
+
+FUNCTION {check.year}
+{	year empty$
+    {""}
+    {year extra.label *}
+  if$
+}
+
+INTEGERS { multiresult char.num k int}
+INTEGERS {str.length count return save.num1 save.num2}
+FUNCTION {is.in.list}{
+  'f :=
+  %%%% saveing "s" and "t"
+  s 'j :=
+  f 's :=
+  t 'f :=
+  list.string text.length$ 'str.length :=
+  list.string 't :=
+%  s text.length$ 'slen :=
+  int   'save.num1 :=
+  count 'save.num2 :=
+  #1 'int :=
+  #1 'count :=
+  #0 'return :=
+
+    { count str.length = not
+      #0 str.length = not
+      and
+    }
+    {
+       count #1 + 'count :=
+       t int #1 substring$ "," =
+        {
+          t #1 int substring$ s "," * =
+            {
+               #1 'return :=
+               str.length 'count :=
+            }
+            'skip$
+           if$
+
+          int #1 + 'int :=
+           t int global.max$ substring$ 't :=
+          #0 'int :=
+        }
+        'skip$
+      if$
+      int #1 + 'int :=
+    }
+  while$
+
+  save.num1 'int   :=
+  save.num2 'count :=
+
+  #0 return =
+    { s t =
+        {#1 'return :=}
+        'skip$
+      if$
+    }
+    'skip$
+  if$
+  %%%% returning original "s" and "t"
+  j 's :=
+  f 't :=
+
+  return
+}
+
+INTEGERS {bibitem.count}
+
+FUNCTION {print.count}
+{ bibitem.count #1 + 'bibitem.count :=
+  newline$
+  "%%% "
+  bibitem.count int.to.str$ * write$
+}
+
+
+FUNCTION {output.bibitem}
+{ print.count
+  newline$
+  "\bibitem[\protect\citeauthoryear{" write$
+           check.auth.edit.org write$
+       "}{" write$
+           check.year write$
+       "}]{"  write$
+  cite$ write$
+  "}" write$
+  newline$
+  "" before.all 'output.state :=
+}
+
+
+
+
+FUNCTION {string.to.integer}
+{ 't :=
+  t text.length$ 'k :=
+  #1 'char.num :=
+  { t char.num #1 substring$ 's :=
+     s is.num
+     s "." =
+     or
+     char.num k = not
+     and
+   }
+   { char.num #1 + 'char.num := }
+  while$
+  char.num #1 - 'char.num :=
+  t #1 char.num substring$
+}
+
+
+FUNCTION {find.integer}
+{ 't :=
+  #0 'int :=
+    { int not
+      t empty$ not
+      and
+    }
+    { t #1 #1 substring$ 's :=
+      s is.num
+        {#1 'int :=}
+        { t #2 global.max$ substring$ 't := }
+      if$
+    }
+  while$
+  int
+}
+
+function{title.lowerwords}{
+"a,an,and,of,the,for,in,to,over,from,on,or,so,than,that,this,as,but,with,by,at,down,up,upon,al,ale,aus,aux,d'Analyse,d'Analystes,d'Architecture,d'Etudes,d'Histoire,da,dans,de,degli,dei,del,"
+"dell',dell'Accademia,dell'Istituto,dell'Universita,della,delle,dem,der,des,detta,di,die,din,dlia,do,du,e,eXpress,ed,ego,el,em,en,et,fur,i,iz,l'Academie,l'Age,l'Antiquite," *
+"l'Approximation,l'Ecole,l'Histoire,l'I.S.U.P.,l'INSA,l'IREM,l'Indirizzo,l'Institut,l'Institute,l'UFR,l'Union,l'Universite,la,las,les,na,nella,per,po,si,sue,sur,ta,tes,und,van,voor,zu,zum,zur" *
+}
+
+FUNCTION {upercase.first.letters}{
+  't :=
+  "" 's :=
+  #1 'int :=
+  #1 'count :=
+  list.string  'v :=
+  "" 'b :=
+  title.lowerwords 'list.string :=
+
+  t text.length$ 'slen :=
+
+    {count slen = not }
+    {t int #1 substring$ " " =
+        {
+          int #1 - 'int :=
+          t #1 int substring$ 'b :=
+
+          % if word not in title.lowerwords - uppercase first letter
+          b is.in.list not
+            {	b "l" change.case$ b =
+                { b "u" change.case$ "t" change.case$ 'b := }
+                'skip$
+              if$
+            }
+            'skip$
+          if$
+
+          int #1 + 'int :=
+
+          s b " " *  * 's :=
+          int #1 + 'int :=
+           t int global.max$ substring$ 't :=
+          #0 'int :=
+        }
+        'skip$
+      if$
+      int #1 + 'int :=
+      count #1 + 'count :=
+%			"count=" count int.to.str$ * " slen=" * slen int.to.str$ * top$
+    }
+  while$
+  v 'list.string :=
+  % last word is "t" and need to check it too
+  s t
+  t "l" change.case$ t =
+    { "u" change.case$ "t" change.case$ }
+    'skip$
+  if$
+  *
+}
+
+
+FUNCTION {format.title}
+{ title empty$
+    { "" }
+    { title
+      "article" type$ =
+      type$ "techreport" =
+      type$ "inbook" =
+      type$ "inproceedings" =
+      type$ "incollection" =
+      type$ "phdthesis" =
+      type$ "mastersthesis" =
+      or or or or or or
+         {"t" change.case$}
+         {	type$ "unpublished" =
+           type$ "misc" =
+           or
+             'skip$
+            'upercase.first.letters
+          if$
+        }
+      if$
+    }
+  if$
+}
+
+
+FUNCTION {note.presented}
+{	note #1 #9 substring$ "presented" =
+   note #1 #9 substring$ "Presented" =
+  or
+}
+
+FUNCTION {n.filter}
+{ 't :=
+  ""
+  { t empty$ not }
+  { t #1 #1 substring$ "," =
+    t #1 #1 substring$ "\" =
+    t #1 #1 substring$ "~" =
+    or or
+      { "" *
+        t #2 global.max$ substring$ 't :=
+      }
+      { t #1 #1 substring$ *
+        t #2 global.max$ substring$ 't :=
+      }
+    if$
+  }
+  while$
+}
+
+FUNCTION {byear}
+{ duplicate$ empty$
+    { pop$ "" }
+    {	't :=
+       t text.length$ 'sk :=
+      #5 sk =
+        {	t #1 #4 substring$ 's :=
+          t #5 #1 substring$ 'longest.label :=
+          longest.label is.num not
+            {s "year" make.tag
+              "nameyear" is.in.list
+                {longest.label * }
+                'skip$
+              if$
+            }
+            {t "year" make.tag }
+          if$
+        }
+        {	t "year" make.tag
+          "nameyear" is.in.list
+            {extra.label *}
+            'skip$
+          if$
+        }
+      if$
+    }
+  if$
+}
+
+FUNCTION {format.date}
+{ year empty$
+    { "" }
+    { year byear }
+  if$
+}
+
+FUNCTION {parens}
+{ "(" swap$ * ")" * }
+
+FUNCTION {format.date.parens}
+{ year empty$
+    { "" }
+    { year byear parens }
+  if$
+}
+
+FUNCTION {noparens}
+{ " " swap$ * "" * }
+
+FUNCTION {format.softmiscdate}
+{ year empty$
+    { "" }
+    { year byear parens }
+  if$
+}
+
+FUNCTION {format.month}{
+  month empty$
+    {""}
+    {month sort.format.month "confdate" make.tag}
+  if$
+}
+
+FUNCTION {formatpatent.date}
+{ year empty$
+    'skip$
+    { month empty$
+       { year }
+       {format.month " " * year *}
+      if$
+    }
+  if$
+}
+
+FUNCTION {month.year.date}
+{ year empty$
+    {""}
+    { month empty$
+        {year byear}
+        { format.month " " * year byear * }
+      if$
+      type$ "inproceedings" =
+        'skip$
+        {"(" swap$ * ")" * }
+      if$
+    }
+  if$
+}
+
+FUNCTION {tie.or.space.connect}
+{ duplicate$ text.length$ #3 <
+    { "~" }
+    { " " }
+  if$
+  swap$ * *
+}
+FUNCTION {format.volume}
+{ volume empty$
+    { "book" type$ =
+        {number empty$
+          {""}
+          {"vol. " number "seriesno" make.tag *}
+          if$
+        }
+        {""}
+      if$
+    }
+    {"vol. " volume "seriesno" make.tag *}
+  if$
+}
+FUNCTION {format.volume2}
+{ volume empty$
+    {""}
+    {"vol. " volume "seriesno" make.tag *}
+  if$
+}
+
+FUNCTION {format.art.vol}
+{
+ volume empty$
+  {""}
+  {volume n.filter "volume" make.tag}
+  if$
+  number empty$
+    'skip$
+    { "(" number "issue" make.tag * ")" * * }
+  if$
+}
+
+FUNCTION {format.series}
+{ series empty$
+  'skip$
+    {series "sertitle" make.tag}
+  if$
+}
+
+FUNCTION {format.edition}
+{ edition empty$
+    { "" }
+    { "" 'v :=
+      "" 'l :=
+      "" 'f :=
+      edition "l" change.case$ 's :=
+         "1" s =
+         "first" s =
+         or
+           {
+             "1" 'v :=
+            "st" 'l :=
+           }
+           {
+             "2" s =
+             "second" s =
+             or
+               {
+                 "2" 'v :=
+                "nd" 'l :=
+               }
+               {
+                 "3" s =
+                 "third" s =
+                 or
+                   {
+                     "3" 'v :=
+                    "rd" 'l :=
+                   }
+                   {
+                     "4" s =
+                     "fourth" s =
+                     or
+                       {
+                         "4" 'v :=
+                        "th" 'l :=
+                       }
+                       {
+                         "5" s =
+                         "fifth" s =
+                         or
+                           {
+                             "5" 'v :=
+                            "th" 'l :=
+                           }
+                           {
+                             "6" s =
+                             "sixth" s =
+                             or
+                               {
+                                 "6" 'v :=
+                                "th" 'l :=
+                               }
+                               {
+                                 "7" s =
+                                 "seventh" s =
+                                 or
+                                   {
+                                     "7" 'v :=
+                                    "th" 'l :=
+                                   }
+                                   {
+                                     "8" s =
+                                     "eighth" s =
+                                     or
+                                       {
+                                         "8" 'v :=
+                                        "th" 'l :=
+                                       }
+                                       {
+                                         "9" s =
+                                         "nineth" s =
+                                         or
+                                           {
+                                             "9" 'v :=
+                                            "th" 'l :=
+                                           }
+                                           {
+                                               edition "t" change.case$ 'f :=
+                                           }
+                                         if$
+                                       }
+                                     if$
+                                   }
+                                 if$
+                               }
+                             if$
+                           }
+                         if$
+                       }
+                     if$
+                   }
+                 if$
+               }
+             if$
+           }
+         if$
+        #0 bother =
+           {	f "" =
+               { v l *	'f :=}
+               'skip$
+             if$
+           }
+           {	f "" =
+               { "\bedition{" v * "}" * l *	'f :=}
+               { "\bedition{" f * "}" *	'f :=}
+             if$
+           }
+       if$
+       f " edn." *
+    }
+  if$
+}
+FUNCTION {format.isbn}
+{ isbn empty$
+    { "" }
+    { isbn "isbn" make.tag}
+  if$
+}
+
+INTEGERS {default.info}
+
+
+FUNCTION {multi.page.check}
+{ 't :=
+  #0 'multiresult :=
+  "" 'l :=
+
+    {t empty$ not}
+    { t #1 #1 substring$  's :=
+
+      s is.num not
+        { "" l = not
+            {t find.integer
+                {#1 'multiresult := }
+                {#0 'multiresult := }
+                if$
+                "" 't :=
+             }
+             {
+             t #2 global.max$ substring$ 't :=
+             }
+           if$
+        }
+        { l  s * 'l :=
+          t #2 global.max$ substring$ 't :=
+        }
+      if$
+    }
+  while$
+  multiresult
+}
+FUNCTION {clearpage}
+{ 't :=
+  "" 's :=
+  "" 'l :=
+
+    { t empty$ not }
+    {
+      t #1 #1 substring$ 's :=
+      s is.num not
+        'skip$
+        {	l  s * 'l := 	}
+      if$
+      t #2 global.max$ substring$ 't :=
+    }
+  while$
+  l
+
+}
+FUNCTION {do.pages}
+{'t :=
+  "" 'j :=
+  "" 'v :=
+    {t empty$ not}
+    { t #1 #1 substring$  's :=
+      s is.num not
+      s "," = not
+      and
+        { "" j =
+             {
+               t #2 global.max$ substring$ 't :=
+             }
+            {t find.integer
+                { t clearpage  'v := }
+                'skip$
+                if$
+                "" 't :=
+             }
+           if$
+        }
+        {	j  s * 'j :=
+            t #2 global.max$ substring$ 't :=
+        }
+      if$
+    }
+  while$
+  j clearpage  'j :=
+  j  "fpage" make.tag
+  "cnd" is.in.list
+    'skip$
+    {"--"  * v "lpage" make.tag *}
+  if$
+}
+
+
+FUNCTION {format.pages}
+{ pages empty$
+    { "" }
+    { pages multi.page.check
+        {type$ "article" =
+          {""}
+          {"cnd" is.in.list
+             {"p. "}
+             {"pp. "}
+            if$
+          }
+         if$
+          pages do.pages *
+        }
+        {type$ "article" =
+          {""}
+          {"p. "}
+         if$
+          pages clearpage "fpage" make.tag *
+        }
+
+      if$
+    }
+  if$
+}
+
+FUNCTION {replace.tilde}
+{ 't :=
+  ""
+    { t empty$ not }
+    { t #1 #1 substring$ "~" =
+            {   { t #1 #1 substring$ "~" = }
+                { "\texttildelow " *
+                  t #2 global.max$ substring$ 't :=
+                }
+              while$
+            }
+        { t #1 #1 substring$ *
+          t #2 global.max$ substring$ 't :=
+        }
+      if$
+    }
+  while$
+}
+
+
+FUNCTION {format.url}
+{ url empty$
+    'skip$
+    { type$ "article" =
+        'skip$
+        {	#0 bother =
+            { "\url{" }
+             { "\burl{" }
+          if$
+          url replace.tilde * "}" *
+          output
+        }
+      if$
+
+       urldate empty$
+           'skip$
+         { "Accessed " urldate * output }
+       if$
+    }
+  if$
+}
+
+
+FUNCTION {publisher.month.pages}{
+  publisher empty$ series empty$ and
+     { address empty$
+         'skip$
+         'new.sentence
+       if$
+      format.pub.address
+
+      pages empty$
+        'skip$
+         {insert.comma}
+      if$
+       format.pages output
+
+     }
+     {
+      pages empty$
+          'skip$
+          {insert.comma}
+      if$
+      format.pages output
+      publisher empty$
+         'skip$
+        {new.sentence}
+      if$
+      format.pub.address
+     }
+  if$
+}
+
+function{process.doi}{
+  doi 't :=
+    "" 'b :=
+    #1 'int :=
+% 	"doi =" t * top$
+
+  t text.length$ 'slen :=
+
+    {int slen = not }
+    {t int #3 substring$ "10." =
+        {
+          t int #1 - #1 substring$ 'b :=
+          b "" =
+            {"a" 'b :=} % if b is empty need to set a letter
+            'skip$
+          if$
+
+          b is.num not
+            {
+               t int slen int - #1 + substring$ 't :=
+              slen #1 - 'int :=
+            }
+            'skip$
+          if$
+
+        }
+        'skip$
+      if$
+      int #1 + 'int :=
+    }
+  while$
+  t
+}
+
+FUNCTION {format.doi}
+{ doi empty$
+  {""}
+  {
+     "nodoi" is.in.list
+      {""}
+      %%{"doi:\doiurl{" process.doi * "}" * }
+      {"\doiurl{" process.doi * "} " * }
+     if$
+  }
+  if$
+}
+
+FUNCTION {format.in.ed.booktitle}
+{ booktitle empty$
+    {#1 bother =
+     "cnd" is.in.list not
+     and
+          { editor empty$
+                'skip$
+                { "In: " output write$ format.editors }
+            if$
+          }
+          'skip$
+      if$
+    }
+    { editor empty$
+        { "In: " booktitle upercase.first.letters "btitle" make.tag * output}
+        { "In: " output write$ format.editors  "" %%% pushing empty string to the empty stack
+           booktitle upercase.first.letters "btitle" make.tag  output
+        }
+      if$
+    }
+
+  if$
+}
+
+FUNCTION {format.in.ed}
+{ title empty$
+    'skip$
+    { editor empty$
+         {  title "btitle" make.tag output}
+         { author empty$
+          {  format.editors
+              stupid.colon
+              %format.date output
+              title "btitle" make.tag output
+          }
+          { "In: " output write$ format.editors  "" %%% pushing empty string to the empty stack
+            title "btitle" make.tag output
+          }
+        if$
+        }
+     if$
+     }
+  if$
+}
+
+FUNCTION {format.tr.number}
+{ type empty$
+    { "Technical Report" }
+    'type
+  if$
+  number empty$
+    { "t" change.case$ }
+    { number tie.or.space.connect }
+  if$
+}
+
+FUNCTION {patent.number}
+{ number empty$
+    'skip$
+    { number }
+  if$
+}
+INTEGERS { len }
+
+FUNCTION {chop.word}
+{ 's :=
+  'len :=
+  s #1 len substring$ =
+    { s len #1 + global.max$ substring$ }
+    's
+  if$
+}
+
+FUNCTION {format.inpres}
+{ "l" change.case$ 't :=
+  "in press: " #10
+  "in press. " #10
+  "in press " #9 t chop.word
+  chop.word
+  chop.word
+  #1 global.max$ substring$
+}
+
+FUNCTION {bcomment.note}
+{	note empty$
+    'skip$
+     {note format.inpres "comment" make.tag output}
+   if$
+}
+
+FUNCTION {empty.misc.check}
+{ author empty$ title empty$ howpublished empty$
+  month empty$ year empty$ note empty$
+  and and and and and
+    { "all relevant fields are empty in " cite$ * warning$ }
+    'skip$
+  if$
+}
+
+FUNCTION {format.thesis.type}
+{ type empty$
+    'skip$
+    { pop$
+      type "t" change.case$
+    }
+  if$
+}
+
+FUNCTION {format.chapter.and.note}
+{	note empty$ chapter empty$ organization empty$ and and
+    'skip$
+    {	chapter empty$
+      "notnumber" last.label =
+      or
+        {organization empty$
+            {	note "comment" make.tag output }
+            {	note empty$
+                { organization "comment" make.tag output }
+                { organization ". " * note * "comment" make.tag output }
+             if$
+            }
+         if$
+        }
+        {	note empty$
+            {	"Chap. "  chapter * "comment" make.tag output}
+            {	type empty$
+                { "Chap. " }
+                { type "t" change.case$ "Section" =
+                     {	"Sect. " }
+                    { "Chap. " }
+                  if$
+                }
+              if$
+              chapter * ". " * note * "comment" make.tag  output
+            }
+          if$
+        }
+      if$
+    }
+  if$
+}
+
+FUNCTION {item.end}
+{	chapter empty$
+  type$ "unpublished" = not
+  type$ "misc" = not
+  and	and
+    {	new.sentence
+      format.doi  output
+    }
+    'skip$
+  if$
+
+  type$ "unpublished" =
+  type$ "misc" =
+  or
+    {	note empty$
+        'skip$
+        {note.presented
+            'skip$
+            {new.sentence note output}
+         if$
+        }
+      if$
+      format.date.parens output
+    }
+    { new.sentence
+      type$ "proceedings" =
+        {	author empty$ editor empty$ and
+            'bcomment.note
+             'format.chapter.and.note
+           if$
+        }
+         'format.chapter.and.note
+       if$
+    }
+  if$
+  list.string  'v :=
+  default.list  'list.string :=
+
+  type$ ".isbn" * is.in.list
+  "cnd" is.in.list
+    or
+    {
+     new.sentence
+%       format.isbn output
+    }
+     'skip$
+  if$
+  new.sentence
+  %% commented by SPi as we are using format.eprint %%
+  %% and also to avoide eprint being printed twice - Start %%
+  %%eprint empty$
+  %%  'skip$
+  %%  {"\arxivurl{" eprint * "}" * output}
+  %%if$
+  %% End %%
+  chapter empty$
+  type$ "unpublished" = not
+  type$ "misc" = not
+  and	and
+    'skip$
+    {	new.sentence
+      format.doi  output
+    }
+  if$
+  new.sentence
+  format.url
+  v 'list.string :=
+  fin.entry
+}
+
+FUNCTION {article.item.end}
+{	chapter empty$
+  type$ "unpublished" = not
+  type$ "misc" = not
+  and	and
+    {	new.sentence
+%      format.doi  output
+    }
+    'skip$
+  if$
+
+  type$ "unpublished" =
+  type$ "misc" =
+  or
+    {	note empty$
+        'skip$
+        {note.presented
+            'skip$
+            {new.sentence note output}
+         if$
+        }
+      if$
+      format.date.parens output
+    }
+    { new.sentence
+      type$ "proceedings" =
+        {	author empty$ editor empty$ and
+            'bcomment.note
+             'format.chapter.and.note
+           if$
+        }
+         'format.chapter.and.note
+       if$
+    }
+  if$
+  list.string  'v :=
+  default.list  'list.string :=
+
+  type$ ".isbn" * is.in.list
+  "cnd" is.in.list
+    or
+    {
+     new.sentence
+%       format.isbn output
+    }
+     'skip$
+  if$
+  new.sentence
+  %% commented by SPi as we are using format.eprint %%
+  %% and also to avoide eprint being printed twice - Start %%
+  %%eprint empty$
+  %%  'skip$
+  %%  {"\arxivurl{" eprint * "}" * output}
+  %%if$
+  %% End %%
+  chapter empty$
+  type$ "unpublished" = not
+  type$ "misc" = not
+  and	and
+    'skip$
+    {	new.sentence
+%%      format.doi  output
+    }
+  if$
+  new.sentence
+  format.url
+  v 'list.string :=
+  fin.entry
+}
+
+
+FUNCTION {insert.element}
+{	#0 bother =
+    {	element "{botherref}" * write$ newline$}
+    {
+      type$ "article" =
+        {element "{barticle}" * write$ newline$}
+        'skip$
+      if$
+      type$ "book" =
+      type$ "proceedings" =
+      type$ "manual" =
+      type$ "booklet" =
+      or or or
+        {element "{bbook}" * write$ newline$}
+        'skip$
+      if$
+
+      type$ "inbook" =
+        {	"notnumber" last.label =
+            {element "{bchapter}" * write$ newline$}
+            {element "{bbook}" * write$ newline$}
+          if$
+        }
+        'skip$
+      if$
+
+       type$ "incollection" =
+       type$ "inproceedings" =
+       type$ "conference" =
+       or or
+        {element "{bchapter}" * write$ newline$}
+        'skip$
+      if$
+     }
+  if$
+}
+
+FUNCTION {end.element}
+{ "\end" 'element :=
+  item.end
+  insert.element
+  "\endbibitem" write$ newline$
+}
+
+FUNCTION {article.end.element}
+{ "\end" 'element :=
+  article.item.end
+  insert.element
+  "\endbibitem" write$ newline$
+}
+
+
+FUNCTION {begin.element}
+{ "\begin" 'element :=
+  insert.element
+}
+function {set.options}{
+  options empty$
+    'skip$
+    {options 'list.string :=}
+  if$
+}
+
+FUNCTION {settings}
+{}
+
+FUNCTION {article}
+{ output.bibitem
+  author empty$
+  institution empty$
+  editor empty$
+  and and
+  journal empty$
+  or
+  year empty$
+   or
+  %	above tagging rule means:
+  % nead: (volume & (pages or number) ) or (doi [without volume, pages and number])
+    volume empty$ not
+    pages empty$ not bnumber empty$ not or
+    and
+
+    volume empty$ pages empty$ bnumber empty$ and and
+    doi empty$ not and
+    or
+    not
+  or
+    {#0 'bother :=}
+     {#1 'bother :=}
+  if$
+  begin.element
+  author empty$
+    { editor empty$
+        'skip$
+         {format.editors stupid.colon}
+      if$
+    }
+    { format.authors stupid.colon}
+  if$
+  "cnd" is.in.list
+    {
+      journal empty$
+        {format.title "atitle" make.tag "title" output.check}
+         {journal "jtitle" make.tag  output}
+      if$
+    }
+    {
+      format.title "atitle" make.tag "title" output.check
+      journal empty$
+        'skip$
+        {new.sentence journal "jtitle" make.tag  output}
+      if$
+    }
+  if$
+   format.art.vol output
+  pages empty$
+    'skip$
+    {insert.comma}
+  if$
+   format.pages output
+   format.date.parens output
+   format.doi output
+   format.eprint output
+   format.primaryClass output
+  article.end.element
+}
+
+
+FUNCTION {patent}
+{ output.bibitem
+  #0 'bother :=
+  begin.element
+  author empty$
+  'skip$
+    {format.authors stupid.colon}
+  if$
+  format.title "title" output.check
+  add.period$
+  patent.number output
+  insert.comma
+   formatpatent.date output
+  end.element
+}
+
+FUNCTION { other } { patent }
+
+FUNCTION {book}
+{ output.bibitem
+  author empty$
+  institution empty$
+  organization empty$
+  editor empty$
+  and and and
+  title empty$
+   year empty$
+   or or
+    {#0 'bother :=}
+    {
+      publisher empty$ address empty$ not and
+        {#0 'bother :=}
+        {#1 'bother :=}
+      if$
+    }
+  if$
+  begin.element
+  author empty$
+    { editor empty$
+      'skip$
+       {format.editors stupid.colon}
+      if$
+    }
+    { format.authors stupid.colon}
+  if$
+  format.title "btitle" make.tag "title" output.check
+   series empty$
+    {
+      format.volume output
+      insert.comma
+      format.edition output
+    }
+    {	edition empty$
+        'skip$
+        'insert.comma
+      if$
+      format.edition output
+      new.sentence
+      format.series output
+      insert.comma
+      format.volume output
+    }
+  if$
+  publisher.month.pages
+  format.date.parens output
+  end.element
+}
+
+FUNCTION {booklet}
+{output.bibitem
+  author empty$
+  title empty$
+   year empty$
+   howpublished empty$
+   or or or
+    {#0 'bother :=}
+    {#1 'bother :=}
+  if$
+
+  begin.element
+  author empty$
+    'skip$
+    {format.authors stupid.colon}
+  if$
+  format.title "btitle" make.tag "title" output.check
+  address empty$ publisher empty$ howpublished empty$ and and
+    'skip$
+    'new.sentence
+  if$
+  format.pub.address
+  format.date.parens output
+  end.element
+}
+
+FUNCTION {misc}
+{output.bibitem
+   #0 'bother :=
+  begin.element
+  author empty$
+    'skip$
+    {format.authors stupid.colon}
+  if$
+  format.title "btitle" make.tag "title" output.check
+  address empty$ publisher empty$ howpublished empty$ and and
+    'skip$
+    'new.sentence
+  if$
+  format.pub.address
+  end.element
+}
+
+FUNCTION {softmisc}
+{output.bibitem
+   #0 'bother :=
+  begin.element
+  author empty$
+    'skip$
+    {format.authors}
+  if$
+  stupid.colon
+  format.title "btitle" make.tag "title" output.check
+  insert.comma
+  version output
+  insert.comma
+  %%address empty$ publisher empty$ howpublished empty$ and and
+  %%'skip$
+  %%  'new.sentence
+  %%if$
+  format.pub.address
+  format.softmiscdate output
+  insert.comma
+  format.softmisc.eprint output
+  end.element
+}
+
+FUNCTION {inbook}
+{ output.bibitem
+   author empty$
+  institution empty$
+  organization empty$
+  editor empty$
+  and and and
+  title empty$
+   year empty$
+   or or
+    {#0 'bother :=}
+    {
+      publisher empty$ address empty$ not and
+        {#0 'bother :=}
+        {#1 'bother :=}
+      if$
+    }
+  if$
+
+  chapter empty$
+    {	"" 'last.label :=}
+      {	chapter string.to.integer empty$ author empty$ not and
+          {	"notnumber" 'last.label :=}
+          {	"" 'last.label :=}
+        if$
+      }
+    if$
+
+  begin.element
+   author empty$
+    'skip$
+    {format.authors stupid.colon}
+  if$
+  "notnumber" last.label =
+    {	chapter "ctitle" make.tag output
+      add.period$
+    }
+    'skip$
+  if$
+  format.in.ed
+  series empty$
+    {
+      insert.comma
+      format.volume output
+      insert.comma
+      format.edition output
+      new.sentence
+    }
+    {
+      insert.comma
+      format.edition output
+      new.sentence
+      format.series output
+      volume empty$
+        'skip$
+         'insert.comma
+      if$
+      format.volume output
+    }
+  if$
+  publisher.month.pages
+  publisher empty$ address empty$ edition empty$ series empty$ pages empty$ volume empty$ and and and and and
+    'insert.comma
+    'skip$
+  if$
+  format.date.parens output
+  end.element
+}
+FUNCTION {incollection}
+{ output.bibitem
+  author empty$
+  institution empty$
+  and
+  booktitle empty$
+  title empty$
+  year empty$
+   or or or
+    {#0 'bother :=}
+    {
+      publisher empty$ address empty$ not and
+        {#0 'bother :=}
+        {#1 'bother :=}
+      if$
+    }
+  if$
+  begin.element
+  author empty$
+    'skip$
+    {format.authors stupid.colon}
+  if$
+
+  "cnd" is.in.list
+    {
+      booktitle empty$ title empty$ not and
+         {
+          format.title "ctitle" make.tag "title" output.check
+          new.sentence
+        }
+        'skip$
+      if$
+    }
+    {
+      format.title "ctitle" make.tag "title" output.check
+       title empty$
+         'skip$
+          {new.sentence}
+       if$
+    }
+  if$
+  format.in.ed.booktitle
+  series empty$
+     {
+        format.volume output
+        insert.comma
+        format.edition output
+     }
+     {
+        edition empty$
+          'skip$
+           {	insert.comma
+              format.edition output
+          }
+        if$
+        new.sentence
+        format.series output
+        insert.comma
+        format.volume output
+     }
+  if$
+   publisher.month.pages
+  format.date.parens output
+  end.element
+}
+
+FUNCTION {inproceedings}
+{ output.bibitem
+  author empty$
+  institution empty$
+  and
+  title empty$
+  year empty$
+   or or
+    {#0 'bother :=}
+    {#1 'bother :=}
+  if$
+  begin.element
+  author empty$
+  'skip$
+    {format.authors stupid.colon}
+  if$
+
+  "cnd" is.in.list
+    {
+      booktitle empty$ title empty$ not and
+         {
+          format.title "ctitle" make.tag "title" output.check
+          new.sentence
+        }
+        'skip$
+      if$
+    }
+    {
+      format.title "ctitle" make.tag "title" output.check
+       title empty$ booktitle empty$ not and
+        'skip$
+        {new.sentence}
+      if$
+    }
+  if$
+
+  format.in.ed.booktitle
+  series empty$
+      'skip$
+      {new.sentence format.series output}
+  if$
+  volume empty$ address empty$ publisher empty$ and and
+    'skip$
+    'insert.comma
+  if$
+  format.volume output
+  publisher.month.pages
+  format.date.parens output
+  end.element
+}
+
+FUNCTION {conference} { inproceedings }
+
+FUNCTION {manual}
+{	output.bibitem
+  author empty$
+  organization empty$
+  title empty$
+   year empty$
+   address  empty$
+   or or or or
+    {#0 'bother :=}
+    {#1 'bother :=}
+  if$
+  begin.element
+
+  author empty$
+    { organization empty$
+        'skip$
+        { organization "publisher" make.tag output.nonnull
+          stupid.colon% add.period$
+        }
+      if$
+    }
+    { format.authors stupid.colon}
+  if$
+  title empty$
+    'skip$
+    {format.title "btitle" make.tag output}
+   if$
+  edition empty$
+     {new.sentence}
+     {insert.comma}
+  if$
+  format.edition output
+  edition empty$
+    'skip$
+     {new.sentence}
+  if$
+   author empty$ organization empty$
+   or
+    'skip$
+    { organization "publisher" make.tag output.nonnull
+      insert.comma
+    }
+  if$
+  address empty$
+    'skip$
+     {address "location" make.tag output}
+  if$
+  format.date.parens output
+  end.element
+}
+
+
+FUNCTION {phdthesis}
+{output.bibitem
+  #0 'bother :=
+  begin.element
+  author empty$
+  'skip$
+    {format.authors stupid.colon}
+  if$
+  format.title "title" output.check
+  new.sentence
+  type$ "mastersthesis"  =
+    {"Master's thesis" format.thesis.type output.nonnull}
+    {"PhD thesis" format.thesis.type output.nonnull}
+  if$
+  school empty$
+    'skip$
+     'insert.comma
+  if$
+  school "school" output.check
+  address empty$
+    'skip$
+     'insert.comma
+  if$
+  address output
+  month.year.date output
+  end.element
+}
+FUNCTION {mastersthesis}{phdthesis}
+
+
+FUNCTION {proceedings}
+{ output.bibitem
+  author empty$
+  institution empty$
+  organization empty$
+  editor empty$
+  and and and
+  title empty$
+  year empty$
+   or or
+    {#0 'bother :=}
+    {
+      publisher empty$ address empty$ not and
+        {#0 'bother :=}
+        {#1 'bother :=}
+      if$
+    }
+  if$
+
+  begin.element
+  author empty$
+     { editor empty$
+       {organization "institutionaled" make.tag "organization" output.check }
+    { format.editors }
+      if$
+    }
+    { format.authors }
+  if$
+  stupid.colon
+  format.title "btitle" make.tag output
+  series empty$
+    'skip$
+    {new.sentence format.series output}
+  if$
+  volume empty$
+    'skip$
+    'insert.comma
+  if$
+  format.volume output
+  publisher.month.pages
+  format.date.parens output
+  end.element
+}
+
+FUNCTION {techreport}
+{	output.bibitem
+  #0 'bother :=
+  begin.element
+  author empty$
+    'skip$
+    {format.authors stupid.colon}
+  if$
+  format.title "title" output.check
+  new.sentence
+  format.tr.number output.nonnull
+  institution empty$
+    'skip$
+     'insert.comma
+  if$
+  institution "institution" output.check
+  address empty$
+    'skip$
+    'insert.comma
+  if$
+  address output
+  month.year.date  output
+  end.element
+}
+
+FUNCTION {unpublished}
+{ output.bibitem
+  #0 'bother :=
+
+  begin.element
+  author empty$
+  'skip$
+    {format.authors stupid.colon}
+  if$
+  format.title "title" output.check
+  note empty$
+    'skip$
+    {	note.presented
+        {note output}
+        'skip$
+      if$
+    }
+  if$
+  end.element
+}
+
+FUNCTION {default.type} { unpublished }
+
+MACRO {jan} {"January"}
+MACRO {feb} {"February"}
+MACRO {mar} {"March"}
+MACRO {apr} {"April"}
+MACRO {may} {"May"}
+MACRO {jun} {"June"}
+MACRO {jul} {"July"}
+MACRO {aug} {"August"}
+MACRO {sep} {"September"}
+MACRO {oct} {"October"}
+MACRO {nov} {"November"}
+MACRO {dec} {"December"}
+
+READ
+
+EXECUTE {identify.mathphys.version}
+
+FUNCTION {sortify}
+{ purify$
+  "l" change.case$
+}
+
+INTEGERS { et.al.char.used }
+
+FUNCTION {initialize.et.al.char.used}
+{ #0 'et.al.char.used :=
+}
+
+%%%%% setting default options
+FUNCTION {set.default.opt}
+{"unsort" 'list.string :=}
+%%{"alpha" 'list.string :=}
+
+EXECUTE {set.default.opt}
+
+FUNCTION {assign.opt}{
+  % First need to set options
+  "settings" type$ =
+    {	options empty$
+        'skip$
+        {options 'list.string :=}
+       if$
+    }
+    'skip$
+  if$
+}
+
+ITERATE {assign.opt}
+EXECUTE {initialize.et.al.char.used}
+
+FUNCTION {alpha.format.lab.names}
+{ 's :=
+  s num.names$ 'numnames :=
+  numnames #1 >
+    { numnames #4 >
+        { #3 'namesleft := }
+        { numnames 'namesleft := }
+      if$
+      #1 'nameptr :=
+      ""
+      { namesleft #0 > }
+      { nameptr numnames =
+          { s nameptr "{ff }{vv }{ll}{ jj}" format.name$ "others" =
+        { "+" *
+          #1 'et.al.char.used :=
+        }
+        { s nameptr "{v{}}{l{}}" format.name$ * }
+            if$
+          }
+          { s nameptr "{v{}}{l{}}" format.name$ * }
+        if$
+        nameptr #1 + 'nameptr :=
+        namesleft #1 - 'namesleft :=
+      }
+      while$
+      numnames #4 >
+         { "+" *
+          #1 'et.al.char.used :=
+        }
+        'skip$
+      if$
+    }
+    { s #1 "{v{}}{l{}}" format.name$
+      duplicate$ text.length$ #2 <
+        { pop$ s #1 "{ll}" format.name$ #3 text.prefix$ }
+        'skip$
+      if$
+    }
+  if$
+}
+
+FUNCTION {standard.format.lab.names}
+{ 's :=
+  s #1 "{vv~}{ll}" format.name$
+  s num.names$ duplicate$
+  #2 >
+    { pop$ " et~al." * }
+    { #2 <
+        'skip$
+        { s #2 "{ff }{vv }{ll}{ jj}" format.name$ "others" =
+            { " et~al." * }
+            { " and " * s #2 "{vv~}{ll}" format.name$ * }
+          if$
+        }
+      if$
+    }
+  if$
+}
+FUNCTION {format.lab.names}{
+  "alpha" is.in.list
+    'alpha.format.lab.names
+    'standard.format.lab.names
+  if$
+}
+
+FUNCTION {author.key.label}
+{ author empty$
+    { key empty$
+        { cite$ #1 #3 substring$ }
+        { key #3 text.prefix$ }
+      if$
+    }
+    { author format.lab.names }
+  if$
+}
+
+FUNCTION {author.editor.key.label}
+{ author empty$
+    { editor empty$
+        { key empty$
+            { "zzz" }
+            { key #3 text.prefix$ }
+          if$
+        }
+        { editor format.lab.names }
+      if$
+    }
+    { author format.lab.names }
+  if$
+}
+
+FUNCTION {author.key.organization.label}
+{ author empty$
+    { key empty$
+        { organization empty$
+            { "zzz" }
+            { "The " #4 organization chop.word #3 text.prefix$ }
+          if$
+        }
+        { key #3 text.prefix$ }
+      if$
+    }
+    { author format.lab.names }
+  if$
+}
+
+FUNCTION {editor.key.organization.label}
+{ editor empty$
+    { key empty$
+        { organization empty$
+            { "zzz" }
+            { "The " #4 organization chop.word #3 text.prefix$ }
+          if$
+        }
+        { key #3 text.prefix$ }
+      if$
+    }
+    { editor format.lab.names }
+  if$
+}
+
+FUNCTION {calc.short.authors}
+{ type$ "book" =
+  type$ "inbook" =
+  or
+    'author.editor.key.label
+    { type$ "proceedings" =
+        'editor.key.organization.label
+        { type$ "manual" =
+            'author.key.organization.label
+            'author.key.label
+          if$
+        }
+      if$
+    }
+  if$
+  'short.list :=
+}
+
+FUNCTION {calc.label}
+{ calc.short.authors
+  short.list
+
+  "alpha" is.in.list
+  {
+    duplicate$
+    year field.or.null purify$ #-1 #2 substring$
+    *
+    'label :=
+    year field.or.null purify$ #-1 #4 substring$
+    *
+    sortify 'sort.label :=
+  }
+  {
+    "("
+    *
+    year duplicate$ empty$
+    short.list key field.or.null = or
+      { pop$ "" }
+      'skip$
+    if$
+    *
+    'label :=
+    label 'sort.label :=
+  }
+  if$
+}
+
+FUNCTION {sort.format.names}
+{ 's :=
+  #1 'nameptr :=
+  ""
+  s num.names$ 'numnames :=
+  numnames 'namesleft :=
+    { namesleft #0 > }
+    { nameptr #1 >
+        { "   " *
+          "alpha" is.in.list
+            'skip$
+            {numnames int.to.str$ * "   " *}
+          if$
+        }
+        'skip$
+      if$
+      s nameptr "{vv{ } }{ll{ }}{  ff{ }}{  jj{ }}" format.name$ 't :=
+      nameptr numnames =
+      t "others" =
+      and
+        { "et al" * }
+        { t sortify * }
+      if$
+      #3 numnames  <
+      "alpha" is.in.list not
+      and
+        {#0 'namesleft :=
+             " zzz   " *
+        }
+        {
+           nameptr #1 + 'nameptr :=
+          namesleft #1 - 'namesleft :=
+        }
+      if$
+    }
+  while$
+}
+
+FUNCTION {sort.format.title}
+{ 't :=
+  "A " #2
+  "An " #3
+  "The " #4 t chop.word
+  chop.word
+  chop.word
+  sortify
+  #1 global.max$ substring$
+}
+
+FUNCTION {author.sort}
+{ author empty$
+    { key empty$
+        { "to sort, need author or key in " cite$ * warning$
+          "zzz"
+        }
+        { key sortify }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+
+FUNCTION {author.editor.sort}
+{ author empty$
+    { editor empty$
+        { key empty$
+            { "to sort, need author, editor, or key in " cite$ * warning$
+              "z"
+            }
+            { key sortify }
+          if$
+        }
+        { editor sort.format.names }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+
+FUNCTION {author.organization.sort}
+{ author empty$
+    { organization empty$
+        { key empty$
+            { "to sort, need author, organization, or key in " cite$ * warning$
+              "z"
+            }
+            { key sortify }
+          if$
+        }
+        { "The " #4 organization chop.word sortify }
+      if$
+    }
+    { author sort.format.names }
+  if$
+}
+
+FUNCTION {editor.organization.sort}
+{ editor empty$
+    { organization empty$
+        { key empty$
+            { "to sort, need editor, organization, or key in " cite$ * warning$
+              "z"
+            }
+            { key sortify }
+          if$
+        }
+        { "The " #4 organization chop.word sortify }
+      if$
+    }
+    { editor sort.format.names }
+  if$
+}
+
+FUNCTION {presort}
+{ calc.label
+  sort.label sortify
+  "    "
+  *
+  type$ "book" =
+  type$ "inbook" =
+  or
+     {author empty$
+       'editor.organization.sort
+      'author.organization.sort
+     if$
+    }
+    { type$ "proceedings" =
+      type$ "incollection" =
+       or
+        {author empty$
+            'editor.organization.sort
+            'author.organization.sort
+        if$
+        }
+        { type$ "manual" =
+            'author.organization.sort
+            'author.sort
+          if$
+        }
+      if$
+    }
+  if$
+  "    "
+  *
+  year field.or.null sortify
+  *
+  "    "
+  *
+  title field.or.null
+  sort.format.title
+  *
+  #1 entry.max$ substring$ 'sort.label :=
+  sort.label *
+  #1 entry.max$ substring$ 'sort.key$ :=
+
+  "settings" type$ =
+    {"aaa"}
+    {"unsort" is.in.list
+      {"bb"}
+      {"alpha" is.in.list
+        {sort.key$}
+        {sort.label}
+        if$
+       }
+     if$
+    }
+    if$
+  'sort.key$ :=
+}
+
+
+ITERATE {presort}
+
+SORT
+
+INTEGERS { longest.label.width last.extra.num number.label }
+
+FUNCTION {initialize.longest.label}
+{ "" 'longest.label :=
+  #0 int.to.chr$ 'last.label :=
+  "" 'j :=
+  #0 'longest.label.width :=
+  #0 'last.extra.num :=
+  #0 'number.label :=
+}
+
+FUNCTION {forward.pass}
+{ last.label label =
+    { last.extra.num #1 + 'last.extra.num :=
+      last.extra.num int.to.chr$ 'extra.label :=
+    }
+    { "a" chr.to.int$ 'last.extra.num :=
+      "" 'extra.label :=
+      label 'last.label :=
+    }
+  if$
+  number.label #1 + 'number.label :=
+}
+
+FUNCTION {reverse.pass}
+{ j "b" =
+    { "a" 'extra.label := }
+    'skip$
+  if$
+  extra.label 'j :=
+  label extra.label * 'label :=
+}
+
+EXECUTE {initialize.longest.label}
+
+ITERATE {forward.pass}
+
+REVERSE {reverse.pass}
+
+FUNCTION {write.preambule}
+{ "%% BioMed_Central_Bib_Style_v1.01" write$ newline$ newline$
+  "\begin{thebibliography}{" number.label int.to.str$ * "}" * write$ newline$
+  "% BibTex style file: bmc-mathphys.bst (version 2.1), 2014-07-24" write$ newline$
+  "\ifx \bisbn   \undefined \def \bisbn  #1{ISBN #1}\fi" write$ newline$
+  "\ifx \binits  \undefined \def \binits#1{#1}\fi" write$ newline$
+  "\ifx \bauthor  \undefined \def \bauthor#1{#1}\fi" write$ newline$
+  "\ifx \batitle  \undefined \def \batitle#1{#1}\fi" write$ newline$
+  "\ifx \bjtitle  \undefined \def \bjtitle#1{#1}\fi" write$ newline$
+  "\ifx \bvolume  \undefined \def \bvolume#1{\textbf{#1}}\fi" write$ newline$
+  "\ifx \byear  \undefined \def \byear#1{#1}\fi" write$ newline$
+  "\ifx \bissue  \undefined \def \bissue#1{#1}\fi" write$ newline$
+  "\ifx \bfpage  \undefined \def \bfpage#1{#1}\fi" write$ newline$
+  "\ifx \blpage  \undefined \def \blpage #1{#1}\fi" write$ newline$
+  "\ifx \burl  \undefined \def \burl#1{\textsf{#1}}\fi" write$ newline$
+  %%"\ifx \doiurl  \undefined \def \doiurl#1{\textsf{#1}}\fi" write$ newline$
+  "\ifx \doiurl  \undefined \def \doiurl#1{\url{https://doi.org/#1}}\fi" write$ newline$
+  "\ifx \betal  \undefined \def \betal{\textit{et al.}}\fi" write$ newline$
+  "\ifx \binstitute  \undefined \def \binstitute#1{#1}\fi" write$ newline$
+  "\ifx \binstitutionaled  \undefined \def \binstitutionaled#1{#1}\fi" write$ newline$
+  "\ifx \bctitle  \undefined \def \bctitle#1{#1}\fi" write$ newline$
+  "\ifx \beditor  \undefined \def \beditor#1{#1}\fi" write$ newline$
+  "\ifx \bpublisher  \undefined \def \bpublisher#1{#1}\fi" write$ newline$
+  "\ifx \bbtitle  \undefined \def \bbtitle#1{#1}\fi" write$ newline$
+  "\ifx \bedition  \undefined \def \bedition#1{#1}\fi" write$ newline$
+  "\ifx \bseriesno  \undefined \def \bseriesno#1{#1}\fi" write$ newline$
+  "\ifx \blocation  \undefined \def \blocation#1{#1}\fi" write$ newline$
+  "\ifx \bsertitle  \undefined \def \bsertitle#1{#1}\fi" write$ newline$
+  "\ifx \bsnm \undefined \def \bsnm#1{#1}\fi" write$ newline$
+  "\ifx \bsuffix \undefined \def \bsuffix#1{#1}\fi" write$ newline$
+  "\ifx \bparticle \undefined \def \bparticle#1{#1}\fi" write$ newline$
+  "\ifx \barticle \undefined \def \barticle#1{#1}\fi" write$ newline$
+  "\bibcommenthead" write$ newline$
+}
+
+
+FUNCTION {begin.bib}
+{ preamble$ empty$
+    'skip$
+    { preamble$ write$ newline$ }
+  if$
+  write.preambule
+  "\ifx \bconfdate \undefined \def \bconfdate #1{#1}\fi" write$ newline$
+  "\ifx \botherref \undefined \def \botherref #1{#1}\fi" write$ newline$
+  "\ifx \url \undefined \def \url#1{\textsf{#1}}\fi" write$ newline$
+  "\ifx \bchapter \undefined \def \bchapter#1{#1}\fi" write$ newline$
+  "\ifx \bbook \undefined \def \bbook#1{#1}\fi" write$ newline$
+  "\ifx \bcomment \undefined \def \bcomment#1{#1}\fi" write$ newline$
+  "\ifx \oauthor \undefined \def \oauthor#1{#1}\fi" write$ newline$
+  "\ifx \citeauthoryear \undefined \def \citeauthoryear#1{#1}\fi" write$ newline$
+  "\ifx \endbibitem  \undefined \def \endbibitem {}\fi" write$ newline$
+  "\ifx \bconflocation  \undefined \def \bconflocation#1{#1}\fi" write$ newline$
+  "\ifx \arxivurl  \undefined \def \arxivurl#1{\textsf{#1}}\fi" write$ newline$
+  "\csname PreBibitemsHook\endcsname" write$ newline$
+}
+
+EXECUTE {begin.bib}
+
+EXECUTE {init.state.consts}
+
+ITERATE {call.type$}
+
+FUNCTION {end.bib}
+{ newline$
+  "\end{thebibliography}" write$ newline$
+}
+
+EXECUTE {end.bib}
+
+
+%% XML output -  done for each entry referenced in the BibTeX database
+INTEGERS {i ll li j.int global.counter}
+STRINGS {lr lp lt ls }
+
+FUNCTION {replace}
+{
+  'lr :=     % replace string
+  'lp :=     % pattern
+  'lt :=     % text to search
+  "" 'ls :=  % result string
+  lp text.length$ 'll := % length of the search pattern
+  { lt empty$ not }
+  {  lt #1 ll substring$ lp =
+      { ls lr * 'ls :=
+        lt ll #1 + global.max$ substring$ 'lt := }
+      { ls lt #1 #1 substring$ * 'ls :=
+        lt #2 global.max$ substring$ 'lt := }
+    if$
+  }
+  while$
+  ls
+}
+
+FUNCTION {strip.letters}
+{
+  "" 's :=
+  duplicate$ missing$
+    'pop$
+    {
+      't :=
+       { t "" = not }
+       { % ascii '0' = 48,  '9' = 57
+         t #1 #1 substring$ chr.to.int$ 'i :=
+         i #47 > i #58 < and
+           { s t #1 #1 substring$ * 's := }
+           'skip$
+         if$
+         t #2 global.max$ substring$ 't :=
+       }
+       while$
+    }
+  if$
+  s
+}
+FUNCTION {output.xml}
+{ duplicate$ "" =
+   'pop$
+   { "  " swap$ * write$ newline$ }
+ if$
+}
+
+%%
+ % markup.xml
+ %
+ % Takes 2 args text & tag {"the text " "tag"}
+ % Returns 1 string        {"<tag>the text <\tag>"}
+%%
+FUNCTION {markup.xml}
+{
+  "" 'v :=  % result
+  't :=  % tag
+  duplicate$ missing$
+    'pop$
+    { 'v := }
+  if$
+  v "" =
+    'skip$
+    { "<" t * ">" * v * "</" * t * ">" * 'v := }
+ if$
+ v
+}
+
+%% Takes 2 args - tag, string
+FUNCTION{markup.xml.title}
+{   pop$ % tag
+    duplicate$ missing$
+      'pop$
+      {
+       's := % string
+        s "\&" "&amp" replace 's :=
+        s "p" markup.xml 's :=
+        s "title" markup.xml output.xml
+      }
+    if$
+}
+
+
+%%
+ % markup.xml.pages
+ %
+ % Takes 1 arg (pages string)
+ % seperates into <fpage> and <lpage> if
+ %    there is a - seperator. else no lpage.
+ %
+ % need to remove others
+%%
+FUNCTION{markup.xml.pages}
+{
+  "" 'v := % fpage
+  "" 's := % lpage
+  duplicate$ missing$
+    'pop$
+    {
+        't :=
+        t " " "" replace 't :=  % remove all spaces. pgs must be - seperated
+        { t empty$ not }
+        {
+              t #1 #1 substring$ "-" =
+              {
+                t #2 global.max$ substring$ 's :=
+                "" 't :=  % break while loop
+              }{
+                v t #1 #1 substring$ * 'v :=
+                t #2 global.max$ substring$ 't :=
+              }
+              if$
+        }
+        while$
+    }
+    if$
+  v "fpage" markup.xml output.xml
+  s "lpage" markup.xml output.xml
+}
+
+
+%%
+ % markup.xml.names
+ %
+ % Takes 2 args
+ % tag, namefield (eg. author "au")
+ % splits fields into <fnm> and <snm>
+ % writes info
+ % returns nothing
+%%
+FUNCTION {markup.xml.names}
+{
+  't :=  % tag
+  "" 'v :=
+  "" 's :=
+  duplicate$ empty$
+    { pop$
+      organization missing$
+        { institution "cnm" markup.xml
+          "au" markup.xml "aug" markup.xml output.xml  }
+        { organization "cnm" markup.xml
+          "au" markup.xml "aug" markup.xml output.xml  }
+      if$ }
+    {
+      "  <aug>" write$ newline$
+      'temp.str :=               % names string
+      temp.str num.names$ 'j.int :=  % num of names
+      #1 'i :=            % init counter
+      { i #1 j.int + < }     % while (i <= j.int)
+      {
+        "    <au>" write$
+
+        % Initial first names
+        % if first name all in capitals
+        %  - assume is initial list of first names.
+        temp.str i "{ff{ }}" format.name$
+          duplicate$ "u" change.case$ =
+          { temp.str i "{ff{ }}" format.name$ }
+          { temp.str i "{f{}}" format.name$ }
+          if$
+
+        % if last name but no first name use cnm; else snm
+        duplicate$ "" =
+          { temp.str i "{ll{ }}" format.name$ % last names space seperated.
+            "cnm" markup.xml write$ }
+          { temp.str i "{ll{ }}" format.name$ % last names space seperated.
+            "snm" markup.xml write$ }
+        if$
+
+        "fnm" markup.xml write$
+
+        "</au>" write$ newline$
+        i #1 + 'i :=
+      }
+      while$
+      "  </aug>" write$ newline$
+    }
+  if$
+}
+
+
+%%
+ % markup.xml.pub
+ %
+ % Takes 4 args (school address publisher tag)
+ % prints concatenation
+ % returns nothing
+%%
+FUNCTION {markup.xml.pub}
+{
+  't :=    % Tag
+  "" 'v := % Publisher
+  "" 'l := % Address
+  "" 'f := % School
+  "" 's := % Answer
+  duplicate$ missing$ 'pop$ { 'v := } if$
+  duplicate$ missing$ 'pop$ { 'l := } if$
+  duplicate$ missing$ 'pop$ { 'f := } if$
+  "" f = not     % school not empty
+    { f 's := }   % return school as publisher
+    {             % else
+      "" v = "" l = and % address and pub empty
+        'skip$
+        {
+          "" l =
+            { v 's := }         % return pub
+            { "" v =
+                { l 's := }         % return add
+                { l ": " * v * 's := }  % return add : pub
+              if$
+            }
+          if$
+        }
+      if$
+    }
+  if$
+  s t markup.xml output.xml
+}
+
+%%
+ % xml.phd
+ %
+ % Takes nothing
+ % Returns type (phd/msc) of empty string
+%%
+FUNCTION {xml.phd}
+{
+    "phdthesis" type$ =
+    "mastersthesis" type$ = or
+    { "phdthesis" type$ =
+        { "PhD thesis" }
+        { "Master's thesis" }
+      if$
+    }
+    { type } % usually empty
+  if$
+}
+
+% markup.xml.edition
+%
+% edition is a numeric value. ie "2"
+% if format 2nd 1st etc.. strip letters.
+%
+FUNCTION {markup.xml.edition}
+{ pop$ pop$  %clear stack
+  edition strip.letters duplicate$ "" =
+      { pop$ edition }
+      'skip$
+  if$
+  "edition"   markup.xml  output.xml
+}
+
+
+FUNCTION{begin.bmcxmlcomment}{
+    newline$
+    "\newcommand{\BMCxmlcomment}[1]{}" write$ newline$
+    newline$
+    "\BMCxmlcomment{" write$ newline$
+    newline$ "<refgrp>" write$ newline$
+}
+
+FUNCTION{end.bmcxmlcomment}{
+    newline$
+    "</refgrp>" write$ newline$
+    "} % end of \BMCxmlcomment" write$ newline$
+}
+
+FUNCTION {export.xml}{
+  newline$
+  global.counter #1 + 'global.counter :=
+  "<bibl id=" quote$ * "B" * global.counter int.to.str$ * quote$ * ">" *
+  write$ newline$
+%  title "\&" "&amp" replace "title" markup.xml.title
+  title         "title"     markup.xml.title
+  author        "aug"       markup.xml.names % org. and inst. here
+  howpublished missing$
+    { booktitle missing$
+      { journal missing$
+          { xml.phd } % <type> Phd/Msc
+          {journal}
+        if$
+      } {booktitle}
+    if$
+    } { howpublished }
+  if$           "source"    markup.xml output.xml
+  school
+  address
+  publisher     "publisher" markup.xml.pub
+  editor        "editor"    markup.xml output.xml
+  edition       "edition"   markup.xml.edition
+  series        "p"         markup.xml
+                "title"     markup.xml
+                "series"    markup.xml output.xml
+  chapter       "p"         markup.xml
+                "title"     markup.xml
+                "section"   markup.xml output.xml
+  % month       % ignore
+  year          "pubdate"   markup.xml output.xml
+
+  note missing$
+      { volume  "volume"    markup.xml output.xml
+        number  "issue"     markup.xml output.xml
+        pages               markup.xml.pages
+        url     "url"       markup.xml output.xml }
+      { note "l" change.case$ "in press" =
+          { "  <inpress />" write$ newline$ }
+          { volume  "volume"    markup.xml output.xml
+            number  "issue"     markup.xml output.xml
+            pages               markup.xml.pages
+            url     "url"       markup.xml output.xml
+            note    "note"      markup.xml output.xml
+          }
+        if$
+      }
+  if$
+  "</bibl>" write$ newline$
+}
+
+%%EXECUTE {begin.bmcxmlcomment}
+%%ITERATE {export.xml}
+%%EXECUTE {end.bmcxmlcomment}
+
+%% End of file `sn-mathphys-num.bst'.
+\end{filecontents*}
+
 \documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
 \usepackage{url}
 \usepackage{placeins} 
@@ -716,7 +5734,148 @@ evaluation (Section~\ref{sec:impl}).
 
 \begin{figure*}[t]
 \centering
-\resizebox{\textwidth}{!}{\input{figures/fig-architecture.tex}}
+\resizebox{\textwidth}{!}{%
+% Figure 1: components of AutoM2M and the steps A--F of Algorithm 1 (black, white and grey only).
+% Kinds of sub-components: LLM call (grey fill), deterministic program (white), model (light grey,
+% double rule), raw text (white, dashed). Requires TikZ libraries positioning, fit, backgrounds,
+% arrows.meta, calc and the pifont package.
+\begin{tikzpicture}[font=\sffamily\scriptsize, >={Stealth[length=3.4pt]}, x=1cm, y=1cm,
+  sub/.style={draw=black, rounded corners=1.5pt, align=center, inner sep=1.8pt, minimum height=5.2mm,
+    text width=#1, font=\sffamily\fontsize{6.2}{7}\selectfont, line width=0.4pt,
+    execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}},
+  sub/.default=2.0cm,
+  llm/.style={sub=#1, fill=black!30},
+  det/.style={sub=#1, fill=white},
+  mdl/.style={sub=#1, fill=black!7, double, double distance=0.7pt},
+  raw/.style={sub=#1, fill=white, dashed},
+  comp/.style={draw=black!70, fill=white, rounded corners=3pt, inner sep=3.2pt, line width=0.5pt},
+  ttl/.style={font=\sffamily\scriptsize\bfseries, inner sep=1pt},
+  flow/.style={->, line width=0.6pt, black},
+  stp/.style={circle, fill=black, text=white, font=\sffamily\fontsize{6}{6}\selectfont\bfseries,
+    inner sep=0.6pt, minimum size=3.6mm},
+  lab/.style={font=\sffamily\fontsize{6}{6.8}\selectfont, fill=white, inner sep=0.8pt, align=center}]
+
+% ===================== team level (top row) =====================
+\node[raw=1.7cm] (task) at (1.05,3.55) {Task $x$: class skeleton with docstrings};
+
+% (1) Lifter
+\node[ttl] (Lt) at (1.05,2.55) {\ding{172} Lifter};
+\node[det=1.7cm] (sp) at (1.05,2.03) {Skeleton parser};
+\node[det=1.7cm] (ex) at (1.05,1.40) {Doctest extractor};
+\node[mdl=1.7cm] (goal) at (1.05,0.62) {Goal model $M_0$};
+
+% (2) Builder
+\node[ttl] (Bt) at (3.75,2.55) {\ding{173} Builder};
+\node[llm=1.85cm] (prop) at (3.75,2.03) {Proposer: $k_{\mathit{prop}}$ candidate teams};
+\node[llm=1.85cm] (rev)  at (3.75,1.38) {Reviser: fixes diagnosed parts};
+\node[raw=1.85cm] (lib)  at (3.75,0.52) {Prompt library: schema, validators, examples};
+
+% (3) Typed team
+\node[ttl] (Tt) at (6.7,2.55) {\ding{174} Typed team $\Team$};
+\node[mdl=2.15cm] (tv) at (6.7,2.03) {Views $V$ (metamodels)};
+\node[mdl=2.15cm] (tt) at (6.7,1.43) {Hand-offs $\mathbf{T}$: hybrid rules};
+\node[mdl=2.15cm] (tw) at (6.7,0.83) {Agents $A$, writes $\omega$, tools $\kappa$};
+\node[mdl=2.15cm] (tg) at (6.7,0.23) {Goals $G$, deliverable $\delta$, $\varphi$};
+
+% (4) Checker
+\node[ttl] (Ct) at (10.65,2.55) {\ding{175} Checker};
+\node[det=1.55cm] (w1) at (9.79,2.03) {\W{1} typing};
+\node[det=1.55cm] (w2) at (11.51,2.03) {\W{2} one writer};
+\node[det=1.55cm] (w3) at (9.79,1.46) {\W{3} completeness};
+\node[det=1.55cm] (w4) at (11.51,1.46) {\W{4} anchoring};
+\node[det=1.55cm] (w5) at (9.79,0.89) {\W{5} completion};
+\node[det=1.55cm] (w6) at (11.51,0.89) {\W{6} capability};
+\node[det=3.21cm] (dg) at (10.65,0.30) {Diagnostics: rule, element, hint};
+
+\node[raw=2.0cm] (na) at (11.45,3.55) {Refusal: \textsc{NotAdmitted}};
+
+% ===================== hand-off level (bottom row) =====================
+% (5) Compiler
+\node[ttl] (Kt) at (1.05,-1.55) {\ding{176} Compiler};
+\node[det=1.7cm] (mg) at (1.05,-2.07) {Metamodel generator};
+\node[det=1.7cm] (rg) at (1.05,-2.70) {Rule-module generator};
+
+% (6) Runtime
+\node[ttl] (Rt) at (4.45,-1.55) {\ding{177} Runtime};
+\node[det=1.6cm] (se) at (3.55,-2.07) {Structural engine};
+\node[mdl=1.6cm] (ts) at (5.35,-2.07) {Trace models, stamps};
+\node[llm=1.6cm] (sb) at (3.55,-2.70) {Stochastic bindings};
+\node[det=1.6cm] (vs) at (5.35,-2.70) {Validators};
+\node[det=3.3cm] (pe) at (4.45,-3.33) {Acceptance $\varphi$: cover(G), valid, fresh, noEsc};
+
+% (7) Attribution
+\node[ttl] (At) at (8.0,-1.55) {\ding{178} Attribution};
+\node[det=1.7cm] (lo) at (8.0,-2.07) {Locator: trace lookup};
+\node[llm=1.7cm] (rp) at (8.0,-2.70) {Replayer: bounded replays};
+\node[det=1.7cm] (cl) at (8.0,-3.33) {Fault classifier};
+
+% (8) Repair
+\node[ttl] (Pt) at (11.1,-1.55) {\ding{179} Repair};
+\node[det=2.05cm] (pl) at (11.1,-2.07) {Planner: cheapest fix first};
+\node[det=2.05cm] (mr) at (11.1,-2.70) {Mechanical: retry, re-sample};
+\node[det=0.92cm] (wd) at (10.52,-3.33) {Delta: widen};
+\node[llm=0.92cm] (dp) at (11.68,-3.33) {Delta: LLM edit};
+
+% outputs
+\node[raw=2.3cm] (out) at (4.45,-4.45) {Deliverable, returned only when $\varphi$ holds};
+\node[raw=2.3cm] (fr)  at (8.0,-4.45) {Fault report, when the repair budget is spent};
+
+% ===================== containers and levels =====================
+\begin{scope}[on background layer]
+\node[comp, fit=(Lt)(sp)(ex)(goal)] (L) {};
+\node[comp, fit=(Bt)(prop)(rev)(lib)] (B) {};
+\node[comp, fit=(Tt)(tv)(tt)(tw)(tg)] (TH) {};
+\node[comp, fit=(Ct)(w1)(w2)(w5)(w6)(dg)] (C) {};
+\node[comp, fit=(Kt)(mg)(rg)] (K) {};
+\node[comp, fit=(Rt)(se)(ts)(sb)(vs)(pe)] (R) {};
+\node[comp, fit=(At)(lo)(rp)(cl)] (AT) {};
+\node[comp, fit=(Pt)(pl)(mr)(wd)(dp)] (RP) {};
+\fill[black!6, rounded corners=5pt] ($(K.north west)+(-0.12,0.12)$) rectangle ($(R.south east)+(0.12,-0.12)$);
+\end{scope}
+\node[anchor=north west, font=\sffamily\fontsize{6.4}{7.4}\selectfont\bfseries, inner sep=1.5pt, align=left]
+  at ($(K.south west)+(0.0,-0.12)$) {\tool{}:\\hand-off level};
+
+% ===================== flows =====================
+\draw[flow] (task) -- (L.north);
+\draw[flow] (task.east) -| node[lab, pos=0.25] {$x$} ([xshift=-0.5cm]B.north);
+\draw[flow] (goal.east) -- node[lab, above=1pt] {$M_0$} (goal.east -| B.west);
+% A: propose
+\draw[flow] (prop.east -| B.east) -- node[stp, above=2pt] {A} (prop.east -| TH.west);
+% B: check
+\draw[flow] (tt.east -| TH.east) -- node[stp, above=2pt] {B} (tt.east -| C.west);
+% C: diagnostics back to the builder
+\draw[flow] ([xshift=-0.85cm]C.north) -- ++(0,0.42) coordinate (cc) -| node[lab, pos=0.25] {ranks and diagnostics, $\le k_{\mathit{adm}}$ rounds} node[stp, pos=0.72] {C} ([xshift=0.55cm]B.north);
+% refusal
+\draw[flow] ([xshift=0.8cm]C.north) -- ([xshift=0.8cm]C.north |- na.south);
+% D: admitted team to the compiler, compiled team to the runtime
+\draw[flow] ([xshift=-1.1cm]C.south) -- ++(0,-0.55) coordinate (dd) -| node[lab, pos=0.2] {admitted $\Team$} ([xshift=0.45cm]K.north);
+\draw[flow] ([xshift=-0.45cm]L.south) -- node[lab, right=1pt, pos=0.42] {$M_0$} ([xshift=-0.45cm]K.north);
+\draw[flow] (K.east) -- node[stp, above=2pt] {D} (K.east -| R.west);
+% E: failure to attribution
+\draw[flow] ([yshift=0.15cm]R.east -| R.east) -- node[stp, above=2pt] {E} node[lab, below=1pt] {$\neg\varphi$} ([yshift=0.15cm]R.east -| AT.west);
+\draw[->, line width=0.6pt, black, densely dashed] ([yshift=-0.55cm]AT.west) -- node[lab, below=1pt] {trace} ([yshift=-0.55cm]AT.west -| R.east);
+\draw[flow] (AT.east) -- node[lab, above=1pt] {report} (AT.east -| RP.west);
+% F: delta back to the checker
+\draw[flow] ([xshift=0.6cm]RP.north) -- node[stp, left=2pt, pos=0.5] {F} node[lab, right=2pt, pos=0.5] {$\Team\oplus\Delta$} ([xshift=0.6cm]RP.north |- C.south);
+% outputs
+\draw[flow] (R.south) -- (out.north);
+\draw[flow] (AT.south) -- (fr.north);
+
+% ===================== legend =====================
+\begin{scope}[every node/.style={font=\sffamily\fontsize{6.2}{7}\selectfont, inner sep=1pt},
+  sw/.style={minimum width=3.4mm, minimum height=2.4mm, inner sep=0, text width={}}]
+\node[sw, llm=3.4mm] (k1) at (0.3,-5.35) {};  \node[anchor=west] (t1) at (k1.east) {calls an LLM};
+\node[sw, det=3.4mm, right=7pt of t1] (k2) {}; \node[anchor=west] (t2) at (k2.east) {deterministic program};
+\node[sw, mdl=3.4mm, right=7pt of t2] (k3) {}; \node[anchor=west] (t3) at (k3.east) {model};
+\node[sw, raw=3.4mm, right=7pt of t3] (k4) {}; \node[anchor=west] (t4) at (k4.east) {raw text};
+\coordinate[right=7pt of t4] (l1); \draw[flow] (l1) -- ++(0.45,0) coordinate (l1e);
+\node[anchor=west] (t5) at (l1e) {data flow};
+\coordinate[right=7pt of t5] (l2); \draw[->, line width=0.6pt, densely dashed] (l2) -- ++(0.45,0) coordinate (l2e);
+\node[anchor=west] (t6) at (l2e) {trace read};
+\node[stp, right=7pt of t6] (s1) {A}; \node[anchor=west] at (s1.east) {step of Alg.~\ref{alg:auto}};
+\end{scope}
+\end{tikzpicture}
+}
 \caption{Components of \auto{} (\ding{172}--\ding{179}) and the steps A--F of
 Algorithm~\ref{alg:auto}. The top row works on the \emph{team}; the shaded row is
 \tool{}, which executes \emph{hand-offs}. A~the builder proposes candidate teams;
@@ -1449,7 +6608,76 @@ producers never see the goal.
 
 \begin{figure}[t]
 \centering
-\input{figures/fig-anchoring.tex}
+%
+% Figure 2: feature-level data flow F_Theta used by W4, for the admitted DevTeam (a) and its first
+% proposal (b). Columns: goal features, then derivation depth. Production edges solid, check edges
+% dashed. Anchor features: grey fill; behaviour-checked features (set B): thick rule.
+\begin{tikzpicture}[font=\sffamily\scriptsize, >={Stealth[length=3.6pt]},
+  feat/.style={draw=black, rounded corners=2pt, minimum height=6.2mm, text width=2.3cm, align=center,
+    inner sep=1.4pt, line width=0.45pt, fill=white, font=\sffamily\fontsize{6.2}{7.2}\selectfont},
+  anc/.style={feat, fill=black!15},
+  checked/.style={feat, line width=1.5pt},
+  prod/.style={->, line width=0.65pt, black},
+  chk/.style={->, line width=0.65pt, black, dashed, dash pattern=on 2.4pt off 1.6pt},
+  hdr/.style={font=\sffamily\fontsize{6.6}{7.6}\selectfont\itshape, text=black!65},
+  ptitle/.style={font=\sffamily\small\bfseries, anchor=west},
+  verdict/.style={draw=black, rounded corners=2pt, fill=black!4, font=\sffamily\fontsize{6.6}{7.8}\selectfont,
+    align=left, inner sep=3pt, text width=2.45cm},
+  bad/.style={font=\sffamily\fontsize{6.6}{7.6}\selectfont\itshape, align=left}]
+
+% column headers
+\node[hdr] at (0,1.0)  {goal view $\MM_0$};
+\node[hdr] at (3.0,1.0) {first hand-off};
+\node[hdr] at (6.0,1.0) {second hand-off};
+\draw[black!25] (-1.3,0.8) -- (10.4,0.8);
+
+% ================= (a) admitted team =================
+\node[ptitle] at (-1.35,0.45) {(a) Admitted \devteam{}: the goal is anchored};
+\node[anc]  (ex)   at (0,-0.3)   {\cls{Example}.call, .expected};
+\node[feat]    (md)   at (0,-1.45)  {\cls{Method}.signature, .docstring};
+\node[checked] (tc)   at (3.0,-0.3) {\cls{TestCase}.code};
+\node[feat]    (con)  at (3.0,-1.45){\cls{MethodDesign}.contract};
+\node[checked] (body) at (6.0,-0.87){\cls{MethodImpl}.body};
+% Method2Test: footprint reads the examples and the method; test_valid reads the examples
+\draw[prod] ([yshift=1.2mm]ex.east) -- ([yshift=1.2mm]tc.west);
+\draw[chk]  ([yshift=-1.2mm]ex.east) -- ([yshift=-1.2mm]tc.west);
+\draw[prod] (md.north east) -- ([xshift=3mm]tc.south west);
+% Method2Design
+\draw[prod] (md.east) -- (con.west);
+% Design2Impl: footprint reads signature, contract and tests; passes_tests reads the tests
+\draw[prod] ([yshift=1.4mm]tc.east) -- ([yshift=2.4mm]body.west);
+\draw[chk]  ([yshift=-1.0mm]tc.east) -- ([yshift=0.6mm]body.west);
+\draw[prod] (con.east) -- ([yshift=-2.0mm]body.west);
+\node[verdict, anchor=west] (va) at (7.75,-0.87) {anchored at\\ \cls{TestCase}.code:\\
+  (i) production side \cmark\\ (ii) check side \cmark\\ \textbf{\W{4} holds}};
+
+% ================= (b) first proposal =================
+\begin{scope}[yshift=-3.05cm]
+\node[ptitle] at (-1.35,0.45) {(b) First proposal: \W{4} fails};
+\node[anc]  (ex2)   at (0,-0.3)   {\cls{Example}.call, .expected};
+\node[feat]    (md2)   at (0,-1.45)  {\cls{Method}.name, .signature};
+\node[feat]    (con2)  at (3.0,-1.45){\cls{MethodDesign}.contract};
+\node[feat]    (body2) at (6.0,-1.45){\cls{MethodImpl}.body};
+\node[checked] (ver2)  at (6.0,-0.3) {\cls{TestRun}.verdict\\ \fontsize{5.8}{6.4}\selectfont (third hand-off, \code{Impl2Run})};
+\draw[prod] (md2) -- (con2);
+\draw[prod] (con2) -- (body2);
+\draw[prod] ([xshift=-2.5mm]body2.north) -- ([xshift=-2.5mm]ver2.south);
+\draw[chk]  ([xshift=2.5mm]body2.north) -- ([xshift=2.5mm]ver2.south);
+\node[bad, anchor=west] at ([xshift=12pt]ex2.east) {no outgoing\\edge};
+\draw[black, line width=0.9pt] ([xshift=2pt]ex2.east) ++(0,-0.12) -- ++(0.24,0.24) ++(-0.24,0) -- ++(0.24,-0.24);
+\node[verdict, anchor=west] (vb) at (7.75,-0.87) {no anchor for \cls{Example}:\\
+  (i) production side \xmark\\ (ii) check side \xmark\\ \textbf{\W{4} rejects}};
+\end{scope}
+
+% ================= legend =================
+\begin{scope}[yshift=-5.3cm, every node/.style={font=\sffamily\fontsize{6.4}{7}\selectfont, anchor=west, inner sep=1pt}]
+\draw[prod] (-1.3,0) -- ++(0.5,0);  \node at (-0.75,0) {production (footprint)};
+\draw[chk]  (1.55,0) -- ++(0.5,0);  \node at (2.1,0) {check (validator reads)};
+\node[anc, minimum height=3mm, text width=4mm] at (4.75,0) {}; \node at (5.3,0) {anchor feature};
+\node[checked, minimum height=3mm, text width=4mm] at (6.95,0) {}; \node at (7.5,0) {behaviour-checked ($\mathcal{B}$)};
+\end{scope}
+\end{tikzpicture}
+
 \caption{Feature-level data flow $\mathcal{F}_\Team$ that \W{4} analyses, for the
 obligation $(\cls{Example},\mathit{all},\mathit{checked},\{\mathit{call},\mathit{expected}\})$.
 Solid arrows are production edges (a footprint reads the feature), dashed arrows
@@ -2546,7 +7774,73 @@ task~\cite{liang1986gee}. We use $\alpha=0.05$.
 
 \begin{figure*}[t]
 \centering
-\input{figures/fig-rq1-outcomes.tex}
+%
+% RQ1: outcome of every run, split by the condition's own completion signal (replaces the former
+% reliability table and silent-failure bar chart). Data: paper_numbers/reliability.csv
+% (run am2m-20261014-015948), pooled over seven models and three seeds. Segments, left to right:
+% silent failure (whisker: 95% task-clustered bootstrap interval) | says done and passes |
+% does not say done but passes | flagged failure.
+\begin{tikzpicture}
+\pgfplotsset{
+  rqone/.style={
+    xbar stacked, width=5.0cm, height=6.0cm, bar width=7.4pt,
+    xmin=0, xmax=100, ymin=0.4, ymax=8.6, y dir=reverse,
+    ytick={1,...,8}, xtick={0,25,50,75,100},
+    tick label style={font=\scriptsize}, xlabel style={font=\scriptsize, yshift=2pt},
+    xlabel={\% of runs}, title style={font=\small\bfseries, yshift=-3pt},
+    axis line style={black!55}, tick style={black!55}, major tick length=2pt,
+    xmajorgrids, grid style={black!12, line width=0.3pt}, clip=false}}
+\tikzset{
+  sil/.style={fill=black, draw=black, line width=0.3pt},
+  dpass/.style={fill=black!45, draw=black, line width=0.3pt},
+  npass/.style={fill=black!12, draw=black, line width=0.3pt},
+  flag/.style={fill=white, draw=black, line width=0.3pt},
+  val/.style={font=\scriptsize, anchor=west, inner sep=1pt, xshift=2pt}}
+\begin{axis}[rqone, name=ce, title={ClassEval},
+  yticklabels={Single, Single-Gate, Free, Critic, Schema, Typed-NC, \textbf{\auto{}}, Typed-Ref}]
+\addplot[sil, error bars/.cd, x dir=both, x explicit, error bar style={line width=0.7pt, black},
+  error mark options={rotate=90, mark size=1.6pt, line width=0.7pt}] coordinates {(17.6,1) +- (5.1,0) (21.5,2) +- (6.1,0) (42.1,3) +- (3.0,0) (45.8,4) +- (3.1,0) (56.2,5) +- (3.8,0) (10.1,6) +- (1.7,0) (5.9,7) +- (1.9,0) (12.9,8) +- (3.6,0)};
+\addplot[dpass] coordinates {(16.0,1) (17.8,2) (11.5,3) (10.6,4) (14.8,5) (3.4,6) (4.6,7) (8.9,8)};
+\addplot[npass] coordinates {(8.5,1) (7.7,2) (7.7,3) (7.6,4) (2.3,5) (5.7,6) (6.0,7) (6.2,8)};
+\addplot[flag]  coordinates {(57.9,1) (53.0,2) (38.7,3) (36.0,4) (26.7,5) (80.8,6) (83.5,7) (72.0,8)};
+\node[val, font=\scriptsize\itshape] at (axis cs:100,0.05) {silent};
+\node[val] at (axis cs:100,1) {17.6};
+\node[val] at (axis cs:100,2) {21.5};
+\node[val] at (axis cs:100,3) {42.1};
+\node[val] at (axis cs:100,4) {45.8};
+\node[val] at (axis cs:100,5) {56.2};
+\node[val] at (axis cs:100,6) {10.1};
+\node[val] at (axis cs:100,7) {\textbf{5.9}};
+\node[val] at (axis cs:100,8) {12.9};
+\draw[black, line width=0.7pt, rounded corners=1pt] (axis cs:-1.5,6.52) rectangle (axis cs:117,7.48);
+\end{axis}
+\begin{axis}[rqone, name=he, at={($(ce.east)+(1.05cm,0)$)}, anchor=west, title={HumanEval+},
+  yticklabels={}]
+\addplot[sil, error bars/.cd, x dir=both, x explicit, error bar style={line width=0.7pt, black},
+  error mark options={rotate=90, mark size=1.6pt, line width=0.7pt}] coordinates {(20.4,1) +- (3.8,0) (21.5,2) +- (3.9,0) (28.2,3) +- (2.1,0) (28.5,4) +- (2.0,0) (27.3,5) +- (2.8,0) (12.7,6) +- (1.6,0) (5.6,7) +- (1.4,0) (15.7,8) +- (2.7,0)};
+\addplot[dpass] coordinates {(59.7,1) (61.0,2) (37.2,3) (35.8,4) (45.8,5) (27.8,6) (32.8,7) (52.2,8)};
+\addplot[npass] coordinates {(1.3,1) (1.2,2) (14.5,3) (15.3,4) (4.9,5) (8.1,6) (6.1,7) (4.2,8)};
+\addplot[flag]  coordinates {(18.6,1) (16.3,2) (20.1,3) (20.4,4) (22.0,5) (51.4,6) (55.5,7) (27.9,8)};
+\node[val, font=\scriptsize\itshape] at (axis cs:100,0.05) {silent};
+\node[val] at (axis cs:100,1) {20.4};
+\node[val] at (axis cs:100,2) {21.5};
+\node[val] at (axis cs:100,3) {28.2};
+\node[val] at (axis cs:100,4) {28.5};
+\node[val] at (axis cs:100,5) {27.3};
+\node[val] at (axis cs:100,6) {12.7};
+\node[val] at (axis cs:100,7) {\textbf{5.6}};
+\node[val] at (axis cs:100,8) {15.7};
+\draw[black, line width=0.7pt, rounded corners=1pt] (axis cs:-1.5,6.52) rectangle (axis cs:117,7.48);
+\end{axis}
+% ---------------- legend (two rows)
+\begin{scope}[shift={($(ce.south west)+(-0.6cm,-1.2cm)$)}, every node/.style={font=\scriptsize, anchor=west, inner sep=1pt}]
+\draw[sil]   (0,0) rectangle ++(0.34,0.2);    \node at (0.42,0.1) {says done, fails (\emph{silent failure})};
+\draw[dpass] (7.0,0) rectangle ++(0.34,0.2);  \node at (7.42,0.1) {says done, passes};
+\draw[flag]  (0,-0.38) rectangle ++(0.34,0.2); \node at (0.42,-0.28) {does not say done, fails (\emph{flagged failure})};
+\draw[npass] (7.0,-0.38) rectangle ++(0.34,0.2); \node at (7.42,-0.28) {does not say done, passes};
+\end{scope}
+\end{tikzpicture}
+
 \caption{RQ1. Outcome of every run, split by the condition's own completion
 signal, pooled over seven models and three seeds (ClassEval: 2{,}100 runs per
 condition; HumanEval+: 3{,}444). Black: the run says done but fails the hidden
@@ -2960,7 +8254,65 @@ mutants. Coverage is relative to what is declared.
 
 \begin{figure*}[t]
 \centering
-\input{figures/fig-rq3-cost.tex}
+%
+% RQ3, cost of checking (replaces the former four-panel figure). Data: results/data/rq2_scale.csv and
+% results/data/runs.csv of run am2m-20261014-015948.
+% (a) median checker time on synthetic teams, 10 runs per size, log-log.
+% (b) wall-clock time per step of an AutoM2M run, Qwen2.5-Coder 32B on ClassEval (292 admitted runs);
+%     median (bar) and interquartile range (whisker); attribution, revision and repair over the runs that invoke them.
+\begin{tikzpicture}
+\tikzset{costlab/.style={font=\scriptsize, inner sep=1pt}}
+% ---------------- (a) scaling
+\begin{axis}[name=sa, width=5.2cm, height=5.0cm,
+  xmode=log, ymode=log, log basis x=10, log basis y=10,
+  xmin=2.5, xmax=6000, ymin=1e-4, ymax=3, ytick={1e-4,1e-3,1e-2,1e-1,1},
+  xlabel={views per team}, ylabel={checker time per check (s)},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  title={(a) Cost of one check vs.\ team size}, title style={font=\small, yshift=-2pt},
+  axis line style={black!55}, tick style={black!55}, major tick length=2pt,
+  ymajorgrids, xmajorgrids, grid style={black!12, line width=0.3pt},
+  legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.9, text opacity=1,
+    at={(0.97,0.03)}, anchor=south east, row sep=-1pt, inner sep=1pt},
+  legend cell align=left]
+\fill[black!12] (axis cs:3,1e-4) rectangle (axis cs:6,3);
+\node[costlab, rotate=90, text=black!75] at (axis cs:4.25,2e-3) {builder teams};
+\addplot[black, line width=0.8pt, mark=*, mark size=1.4pt] coordinates
+  {(10,0.000446) (30,0.001099) (100,0.003627) (300,0.011461) (1000,0.048707) (2000,0.126931) (3000,0.262371)};
+\addplot[black, line width=0.8pt, densely dashed, mark=square*, mark size=1.3pt, mark options={solid, fill=white}] coordinates
+  {(10,0.000830) (30,0.002440) (100,0.008318) (300,0.026125) (1000,0.105457) (2000,0.282958) (3000,0.550871)};
+\legend{chain, DAG}
+\end{axis}
+% ---------------- (b) where the time of a run goes
+\begin{axis}[name=sb, at={($(sa.east)+(3.0cm,0)$)}, anchor=west, width=4.7cm, height=5.0cm,
+  xbar, bar width=6pt, bar shift=0pt, xmode=log, log basis x=10, log origin=infty,
+  xmin=1e-3, xmax=5e3, ymin=0.4, ymax=9.6, y dir=reverse,
+  ytick={1,...,9}, yticklabels={builder proposal, revision, compilation, \textbf{admission checks}, LLM bindings,
+    validators, attribution, repair, \textbf{whole run}},
+  xlabel={seconds per run (median, IQR)},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  title={(b) Where the time of a run goes}, title style={font=\small, yshift=-2pt},
+  axis line style={black!55}, tick style={black!55}, major tick length=2pt,
+  xmajorgrids, grid style={black!12, line width=0.3pt}, clip=false,
+  error bars/x dir=both, error bars/x explicit,
+  error bars/error bar style={black, line width=0.5pt},
+  error bars/error mark options={rotate=90, mark size=1.5pt, line width=0.5pt}]
+% median +- (q3-median) -- (median-q1); pgfplots draws asymmetric whiskers via +=/-=
+\addplot[fill=black!35, draw=black, line width=0.3pt] coordinates {
+  (122.6,1) += (22.2,0) -= (14.6,0)
+  (127.7,2) += (201.1,0) -= (73.6,0)
+  (0.138,3) += (0.044,0) -= (0.038,0)
+  (472.1,5) += (311.4,0) -= (208.8,0)
+  (2.67,6)  += (1.22,0) -= (0.89,0)
+  (793.3,7) += (385.8,0) -= (314.0,0)
+  (61.1,8)  += (25.9,0) -= (9.2,0)};
+\addplot[fill=black, draw=black, line width=0.3pt] coordinates {
+  (0.0030,4) += (0.0006,0) -= (0.0013,0)
+  (1443.9,9) += (766.3,0) -= (725.1,0)};
+\node[costlab, anchor=west] at (axis cs:0.0045,4) {3.0\,ms};
+\node[costlab, anchor=west, text=white] at (axis cs:0.0015,9) {1{,}444\,s};
+\end{axis}
+\end{tikzpicture}
+
 \caption{RQ3, cost of checking. (a)~Median checker time per check on synthetic
 teams of growing size, 10 runs per size, log--log: \emph{chain} teams, in which
 view $i$ reads view $i{-}1$, and \emph{DAG} teams, in which each view reads
@@ -2991,7 +8343,41 @@ its LLM calls, not of its checks.
 
 \begin{figure}[t]
 \centering
-\input{figures/fig-admission.tex}
+%
+% RQ3, the price of prevention: outcome of the builder sessions per model, both benchmarks pooled
+% (792 sessions per model). Data: results/data/runs.csv (condition autom2m, admitted / admitted_round),
+% run am2m-20261014-015948. Models sorted by the share of admitted sessions.
+\begin{tikzpicture}
+\tikzset{
+  adm0/.style={fill=black!70, draw=black, line width=0.3pt},
+  adm1/.style={fill=black!25, draw=black, line width=0.3pt},
+  admn/.style={fill=white, draw=black, line width=0.3pt},
+  vlab/.style={font=\scriptsize, anchor=west, inner sep=1pt, xshift=2pt}}
+\begin{axis}[name=adm, xbar stacked, width=8.4cm, height=4.6cm, bar width=7.4pt,
+  xmin=0, xmax=100, ymin=0.4, ymax=7.6, y dir=reverse,
+  ytick={1,...,7}, yticklabels={Qwen2.5-Coder 32B, Devstral 24B, StarCoder2 15B, Gemma~3 27B,
+    Qwen2.5-Coder 7B, Code Llama 13B, Granite-Code 20B},
+  xtick={0,25,50,75,100}, xlabel={\% of builder sessions},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  axis line style={black!55}, tick style={black!55}, major tick length=2pt,
+  xmajorgrids, grid style={black!12, line width=0.3pt}, clip=false,
+  legend style={font=\scriptsize, draw=none, at={(0.5,1.03)}, anchor=south, legend columns=3,
+    /tikz/every even column/.append style={column sep=8pt}},
+  area legend]
+\addplot[adm0] coordinates {(93.6,1) (93.2,2) (75.1,3) (51.9,4) (36.9,5) (31.4,6) (12.2,7)};
+\addplot[adm1] coordinates {(2.6,1) (4.0,2) (4.4,3) (3.4,4) (12.0,5) (9.3,6) (6.3,7)};
+\addplot[admn] coordinates {(3.8,1) (2.8,2) (20.5,3) (44.8,4) (51.0,5) (59.2,6) (81.4,7)};
+\legend{admitted at first proposal, after 1--3 diagnostic rounds, never admitted}
+\node[vlab] at (axis cs:100,1) {3.8};
+\node[vlab] at (axis cs:100,2) {2.8};
+\node[vlab] at (axis cs:100,3) {20.5};
+\node[vlab] at (axis cs:100,4) {44.8};
+\node[vlab] at (axis cs:100,5) {51.0};
+\node[vlab] at (axis cs:100,6) {59.2};
+\node[vlab] at (axis cs:100,7) {81.4};
+\end{axis}
+\end{tikzpicture}
+
 \caption{RQ3, the price of prevention: outcome of the builder sessions per
 model, both benchmarks pooled (792 sessions per model), sorted by the share of
 admitted sessions. Right: share of sessions never admitted within
