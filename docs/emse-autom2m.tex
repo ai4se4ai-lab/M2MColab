@@ -321,7 +321,8 @@ fixtures, the analysis pipeline and all raw data (Section~\ref{sec:data}).
 \item \emph{Reliability.} \auto{} has the fewest silent failures of the eight
 conditions on both benchmarks (5.9\% and 5.6\% of runs). Part of this is
 abstention, but admitted teams alone still fail silently about half as often as
-a single agent. A compute-matched single agent that runs the task's docstring
+a single agent. On ClassEval, the repair rounds add more silent failures than
+successes. A compute-matched single agent that runs the task's docstring
 examples before stopping fails silently more often than a plain one. The price of
 \auto{}'s caution is that more than half of its correct ClassEval results are
 not reported as done.
@@ -336,7 +337,8 @@ anchoring rejects teams whose producers never see the goal.
 and succeeds less often (10.6\% against 24.5\% on ClassEval), because weak
 builders often write no admissible team and typed teams lose success on
 class-level tasks. A post-hoc revision recovers much of this loss on held-out
-tasks but, with a weak model, brings back silent failures; a larger sampling
+tasks; with a weak model, most of the recovery comes from falling back to a
+hand-written team, which also brings back silent failures. A larger sampling
 budget does not close the gap (pre-registered).
 \end{itemize}
 
@@ -453,16 +455,30 @@ consequence.
 A composition defect is a property of an agent team's \emph{specification}:
 which agent owns which work, what is handed over, which tools are where, and
 how completion is decided. It is not a property of what one agent produces from
-a given input. A specification has a composition defect if even agents that
-answer every request correctly cannot make the team deliver its task.
+a given input. A specification has a composition defect if either
+(a)~even agents that answer every request correctly cannot make the team
+deliver its task, or (b)~the specification leaves the delivery of the task, or
+the success of a hand-off, to an agent's unchecked judgement, so that a wrong
+output of a fallible agent can pass through or end the run unnoticed.
 \end{definition}
+
+Part~(a) covers hard impossibilities, such as an unowned part of the task, a
+reference the receiver cannot resolve or a required tool that no agent has.
+Part~(b) covers missing safeguards: with ideal agents, a team whose
+completion is a claimed \code{TERMINATE} (\D{4}), whose checks never read the
+goal (\D{1}, check side) or whose artefacts have two writers (\D{3}) could
+still deliver, but with the stochastic agents of practice nothing would detect
+it when they do not. Section~\ref{sec:res-prev} shows that teams with defects
+of kind~(b) can pass their tasks; such a defect is a hazard, not a guaranteed
+failure.
 
 Table~\ref{tab:defects} lists the five defects (\D{1}--\D{5}) and the
 consequence C, together with the published failure modes that each subsumes.
 The mapping from failure modes to defects is analytical; we do not estimate
 how often each defect decides a failure (Section~\ref{sec:rqs} explains why),
 but test whether the checker catches each defect (RQ3).
-Single-agent reasoning errors (MAST FM-1.1, 2.2, 2.6) are not composition
+Single-agent reasoning errors (failure modes FM-1.1, 2.2 and 2.6 of the MAST
+taxonomy~\cite{cemri2025mast}) are not composition
 defects, because no composition can make an individual LLM reason correctly.
 
 \begin{table}[t]
@@ -482,7 +498,7 @@ Defect & What goes wrong & Published modes & Audit evidence \\
 \D{2} Hand-off mismatch & What a producer emits is not what its consumer needs, in form, reference or content. & SC, RD; FM-1.4, 2.1, 2.5 & 0/356 roles state their output \\
 \D{3} Ownership conflict & Two agents act on the same artefact, or none knows it is theirs. & FM-1.2, FM-1.3 & 0/356 roles name a teammate \\
 \D{4} Unverifiable completion & ``Done'' is a claim in the conversation, not a checked property. & FM-1.5, 3.1, 3.3 & 82/126 failed runs ended with a \code{TERMINATE} \\
-\D{5} Capability mismatch & Work is routed to an agent that lacks the needed tool or skill. & CG & search-only verifiers check code \\
+\D{5} Capability mismatch & Work is routed to an agent that lacks the needed tool or skill. & CG & not auditable: 0/356 roles declare a tool set \\
 \midrule
 \multicolumn{4}{@{}l}{\emph{Consequence}} \\
 C Opaque attribution & A failure cannot be traced to the defect or agent that caused it. & -- & 53.5\%/14.2\% agent/step accuracy~\cite{zhang2025whowhen} \\
@@ -494,9 +510,25 @@ The audit column of Table~\ref{tab:defects} was produced by a deterministic
 script. For each of the 126 failures of automatically assembled teams in
 Who\&When, it reads the generated role prompts and the manager brief (the plan
 that CaptainAgent writes) and records only what the specification
-\emph{states}. The audit therefore shows what the specifications lack, not that
-the lack caused each failure. We do not claim such a causal link anywhere in
-this paper (Section~\ref{sec:rqs} explains why).
+\emph{states}, with lexical criteria that are given in full in the script
+(\code{evaluation/rq1/audit\_whowhen.py}). A role prompt \emph{names a
+teammate} if another role's identifier (for example \code{QA\_Expert}) occurs
+in it as a whole word. It \emph{states its output} if it contains a directive
+of the form ``you must/should/will output (produce, return, deliver,
+\ldots)'', ``your output (result, deliverable) is/must'' or ``output
+format:''. A plan \emph{assigns a step to a named role} if a numbered step of
+the brief's ``Plan for solving the task'' contains a role identifier. A run
+\emph{ended with \code{TERMINATE}} if a message of an agent other than the
+code terminal contains that token. Every match is written to a file for manual
+inspection. Lexical criteria can miss paraphrases: 32 of the 356 role prompts
+mention ``other experts'' or a similar phrase without naming one, and every
+brief has a team-level ``Output format'' section, which the role-level count
+of \D{2} deliberately excludes. \D{5} could not be audited, because the role
+prompts are prose without a declared tool set; its evidence rests on the
+published failure modes alone. The audit therefore shows what the
+specifications lack, not that the lack caused each failure. We do not claim
+such a causal link anywhere in this paper (Section~\ref{sec:rqs} explains
+why).
 
 \paragraph{Defects in the running example} The free-form team of
 Listing~\ref{lst:freeteam} contains every defect of Table~\ref{tab:defects} in
@@ -551,6 +583,15 @@ no cycles, every constraint in $\Phi$ holds, and every external reference
 points to an object of the right class in the referenced model.
 $\Mods{\MM}=\{M\mid M\conformsTo\MM\}$ is the set of models of $\MM$.
 \end{definition}
+
+The symbol $\conformsTo$ for \emph{conforms to} follows the megamodel notation
+of B\'ezivin and colleagues~\cite{bezivin2005unification}. For a metamodel
+with external references, conformance is relative to the referenced models:
+$M\conformsTo\MM$ is evaluated together with the models $M'$ of the
+referenced metamodels $\MM'$, and $\Mods{\MM}$ is the set of models that
+conform given those models. In \auto{}, every external reference points into
+the goal view, so conformance of an agent's view is always evaluated relative
+to the goal model $M_0$.
 
 In the running example, the task of Listing~\ref{lst:task} is turned into a
 model with one \cls{Task}, three \cls{Method} and three \cls{Example} objects.
@@ -684,7 +725,7 @@ revision rounds; D~the admitted team is compiled and run; E~if the acceptance
 predicate $\varphi$ fails, attribution reads the trace models; F~a repair delta
 $\Delta$ is applied only if the checker admits the edited team $\Team\oplus\Delta$.
 $\varphi$ is evaluated by the engine from four clauses: every goal object is
-covered by a checked value (cover), every accepted value is still valid
+covered by a checked value (cover(G)), every accepted value is still valid
 (valid), no value is outdated (fresh), and no value failed for good (noEsc).
 In \auto{}, no team reaches the compiler without passing the checker; the
 ablation Typed-NC is the exception, and the post-hoc extension R1 of
@@ -812,7 +853,7 @@ Figure~\ref{fig:pipeline}.
   \If{$\Delta \neq \emptyset$ \textbf{and} $\textsc{Admit}(\Team\oplus\Delta) = \emptyset$} \Comment{step F; Alg.~\ref{alg:admit}}
     \State $\Team \gets \textsc{Apply}(\Team, \Delta)$ \Comment{in place, by extension or rebuild}
   \EndIf
-  \State mark the values in $\mathit{retry}$ for re-sampling
+  \State clear the escalation marks of the values in $\mathit{retry}$ \Comment{fresh budget of $\ksamp$}
 \EndFor
 \State \Return \textsc{Failed}$(R)$ \Comment{fault reports of the last round}
 \end{algorithmic}
@@ -836,10 +877,25 @@ footprint, or an edit proposed by the builder's LLM). Only the delta changes the
 specification, so only the delta passes the checker (line~11); a delta that the
 checker rejects is discarded and $\Team$ stays as it was. $\Team\oplus\Delta$
 denotes the edited team; \textsc{Apply} (line~12) installs it in the running
-team in one of three modes (Section~\ref{sec:app-attr}). Line~13 marks the
-values to be re-sampled in the next run, and if the last round still fails,
-the fault reports are returned (line~14). In our implementation, line~9
-attributes at most two failures per round (Section~\ref{sec:impl}).
+team in one of three modes (Section~\ref{sec:app-attr}). Line~13 clears the
+escalation marks of the values to be retried, so that the next run samples
+them again with a fresh budget, and if the last round still fails, the fault
+reports are returned (line~14). In our implementation, line~9 attributes at
+most two failures per round (Section~\ref{sec:impl}).
+
+All rounds of the loop share one \emph{session}: the compiled team, the
+current models of all views, their trace models, stamps and escalation marks.
+\textsc{RunTeam} compiles $\Team$ only when the session does not yet hold a
+compiled form of it, and otherwise continues from the session's state; only a
+rebuild (Section~\ref{sec:app-attr}) starts a new session. A value therefore
+keeps its stamp across rounds unless something makes it stale: a changed
+source location, an in-place delta that changes its rule, prompt or
+validator (which removes its stamp), or the re-sampling of an upstream value
+(which removes that value's stamp, so that its dependants become stale through
+their digests). A retry, in contrast, only clears an escalation mark. In the
+evaluated implementation, it does not remove the stamp of a value that was
+accepted and later fails $\mathit{valid}$; such a value is re-sampled only
+if one of the other changes makes it stale (Section~\ref{sec:impl}).
 
 \paragraph{The running example through Figure~\ref{fig:pipeline}} The lifter
 turns \code{TaskBoard} into a goal model with one task, three methods and three
@@ -874,7 +930,7 @@ examples is therefore visible in its data flow, which the coverage check of
 Section~\ref{sec:app-check} relies on.
 
 \begin{figure}[tb]
-\captionof{lstlisting}{Goal view and agent views of the typed \devteam{} in KM3 notation~\cite{jouault2006km3}; \code{Goal.Method} is an external (cross-view) reference.}\label{lst:views}
+\captionof{lstlisting}{Goal view and agent views of the typed \devteam{} in KM3 notation~\cite{jouault2006km3}; \code{Goal.Method} is an external (cross-view) reference. KM3 writes a qualified class as \code{View.Class}; the rules in ATL syntax (Listing~\ref{lst:rules}) write the same class as \code{View!Class}.}\label{lst:views}
 \begin{codebox}[language=KM3, style=model]
 package Goal {                                                   -- MM0, filled by Lift
   class Task       { attribute name : String;  attribute description : String;
@@ -928,21 +984,26 @@ the LLM its own rejected value and the validator's message;
 Section~\ref{sec:app-runtime}.) Second, a validator may read data that the LLM
 does not see; for example, a test validator may compare a test against the
 goal's examples even when the LLM writes the test from the docstring. A version
-stamp, finally, records the inputs a value was produced and checked from, so
-that the value can be recomputed when these inputs change. (A behaviour
-validator also sees the other values of the deliverable, which the stamp does
-not cover; Section~\ref{sec:app-runtime} explains how the run handles this.)
+stamp, finally, records the source inputs a value was produced and checked
+from, so that the value can be recomputed when these inputs change. (A
+behaviour validator also sees the other values of the deliverable, which the
+stamp does not cover; Section~\ref{sec:app-runtime} explains how the run
+handles this.)
 
 \begin{definition}[Footprint, validator reads, version stamp]\label{def:footprint}
 Let $b$ be a stochastic binding of rule $r$ and $m$ a match of $r$. A
 \emph{location} is a pair (object, feature) of a source model. The
 \emph{footprint} $\fp_b(m)$ is the set of locations that the expression $e_b$
 navigates for $m$; they are the only values the LLM may see. The
-\emph{validator reads} $\mathit{vr}_b(m)$ are the locations that $\chk_b$
-inspects besides the candidate value; $\chk_b$ is a predicate over the
-candidate value and the values at $\mathit{vr}_b(m)$. The \emph{version stamp}
-of an accepted value is the digest $\#(\fp_b(m)\cup\mathit{vr}_b(m))$ of the
-values at all locations its production and its check read.
+\emph{validator reads} $\mathit{vr}_b(m)$ are the source locations that
+$\chk_b$ inspects besides the candidate value. $\chk_b(v,\mathit{vr}_b(m),M_t)$
+is a predicate over the candidate value $v$, the values at
+$\mathit{vr}_b(m)$ and the target model $M_t$ into which $v$ is placed; a
+form validator ignores $M_t$, whereas a behaviour validator executes $v$
+inside the deliverable assembled from $M_t$, that is, together with the
+sibling values of $M_t$. The \emph{version stamp} of an accepted value is the
+digest $\#(\fp_b(m)\cup\mathit{vr}_b(m))$ of the values at all source
+locations its production and its check read; it does not cover $M_t$.
 \end{definition}
 
 A value written by an LLM must not decide which objects exist; otherwise the
@@ -957,8 +1018,18 @@ type lies in a \emph{source} view (for example \code{method <- m}, typed
 being resolved through the trace, because agents' views refer to the goal by
 design. ATL would resolve \code{m} to the target that \code{m}'s own rule
 created, which here has the wrong type; we apply that resolution only to
-references whose type lies in the \emph{target} view. In addition, trace models
-are persisted, as in MeTAGeM-Trace~\cite{vara2014metagem}.
+references whose type lies in the \emph{target} view. Two consequences make
+this rule precise. First, resolution uses only the trace model of the
+hand-off being executed, never those of earlier hand-offs: a binding whose
+type lies in a source view $\MM_k$ must itself evaluate to an object of
+$\MM_k$ (\W{3} checks this statically). Second, every rule of a typed team has
+exactly one target variable, so a trace link always has one target object;
+when a target-view reference yields a source object that occurs in several
+matches of a rule with a multi-variable source pattern, the engine resolves
+it to the target of the first such match in match order, and \W{3} only
+checks that some rule maps the object's class to the expected class, not
+that the resolution is unique. In addition, trace models are persisted, as in
+MeTAGeM-Trace~\cite{vara2014metagem}.
 
 We can now state what a hybrid hand-off means. Because its values are sampled,
 a hand-off cannot denote a single target model. It denotes the set of targets
@@ -971,16 +1042,25 @@ $T$ with every stochastic binding removed. Given source models $\vec M$, the
 initialisation, with the cross-view links above, and is deterministic. Like a
 relation of QVT Relations (QVT-R)~\cite{omg2016qvt,stevens2010qvt}, and unlike
 an ATL function, $T$ denotes the \emph{set} of admissible targets
-\[\llbracket T\rrbracket(\vec M)=\{M_t\mid M_t\sqsupseteq T^{\mathrm{str}}(\vec M)\ \wedge\ \forall(m,b):\ \chk_b(M_t[m,b],\mathit{vr}_b(m))\},\]
+\[\llbracket T\rrbracket(\vec M)=\{M_t\mid M_t\sqsupseteq T^{\mathrm{str}}(\vec M)\ \wedge\ \forall(m,b):\ \chk_b(M_t[m,b],\mathit{vr}_b(m),M_t)\},\]
 where $M_t\sqsupseteq T^{\mathrm{str}}(\vec M)$ means that $M_t$ extends the
 skeleton by exactly one value $M_t[m,b]$ for each match $m$ and stochastic
-binding $b$. We require that $T$'s target view is not one of its source views
+binding $b$. Because a behaviour validator reads the whole of $M_t$,
+admissibility is a joint constraint on all values of $M_t$, not a conjunction
+of independent constraints per value. We require that $T$'s target view is not one of its source views
 ($\mathit{tgt}(T)\notin\mathit{src}(T)$). An execution
 of $T$ samples one element of this set, or \emph{escalates} the bindings for
 which no admissible value was found. An escalated execution lies outside
 $\llbracket T\rrbracket$ and makes the run fail; an escalation is a recorded
 fault, not a hand-over to a person.
 \end{definition}
+
+During execution, each value is checked as soon as it is sampled, on the
+partially filled $M_t$ in which values not yet accepted are replaced by stubs.
+That a complete $M_t$ lies in $\llbracket T\rrbracket(\vec M)$ is decided only
+at the end of the run, by the clause $\mathit{valid}$
+(Definition~\ref{def:accept}), which re-evaluates every validator on the final
+models.
 
 A team of hand-offs denotes the set of tuples of models, one per view, in which
 every hand-off's target is admissible for its sources. On an acyclic hand-off
@@ -1046,8 +1126,8 @@ $\mathit{src}(T)\subseteq V$ and one target view $\mathit{tgt}(T)\neq\MM_0$.
 \item $\kappa:A\to2^{\mathit{Tools}}$: the tools of each agent.
 \item $G$: a set of \emph{goal obligations} $(C,s,\mu,F_C)$. Each names a goal
 class $C$, a \emph{scope} predicate $s$ that selects the objects of $C$ it
-concerns, a set of \emph{anchor features} $F_C$ of $C$ (by default, all
-attributes of $C$), and a mode $\mu$. Mode $\mathit{checked}$ requires that the
+concerns, a mode $\mu$, and a set of \emph{anchor features} $F_C$ of $C$ (by
+default, all attributes of $C$). Mode $\mathit{checked}$ requires that the
 anchor features of every in-scope object reach a behavioural check; mode
 $\mathit{delivered}$ requires a deliverable for every in-scope object.
 \item $\delta=(D,g)$: the \emph{deliverable feature}, a target class $D$ and
@@ -1143,7 +1223,7 @@ hand-off.
 \caption{\tool{} runtime: running a team and executing one hybrid hand-off}\label{alg:handoff}
 \begin{algorithmic}[1]
 \Function{RunTeam}{$\Team, M_0$}
-  \State compile $\Team$ into metamodels and rule modules; load $M_0$
+  \State compile $\Team$ and load $M_0$, unless the session already holds them \Comment{state persists across rounds}
   \Repeat \Comment{at most $p_{\max}$ passes}
     \For{each hand-off $T$ of $\Team$ in topological order of the hand-off graph}
       \State $\mathit{Esc}_T \gets \textsc{ExecuteHandOff}(T)$
@@ -1154,10 +1234,10 @@ hand-off.
 \Statex
 \Function{ExecuteHandOff}{$T$} \Comment{sources $\vec M$, target $M_t$, trace model $\TL_T$}
   \State update the skeleton $T^{\mathrm{str}}(\vec M)$ in $M_t$ and $\TL_T$ \Comment{match, create, delete, link}
-  \State $\mathit{Esc} \gets \emptyset$
+  \State $\mathit{Esc} \gets \{(t,b) \mid \mathit{esc}(t,b)$ equals the current digest of $b$ for $t\}$ \Comment{still open}
   \For{each trace link $(m, t, r) \in \TL_T$ and each stochastic binding $b$ of $r$}
     \State $d \gets \#(\fp_b(m) \cup \mathit{vr}_b(m))$ \Comment{digest of all that $b$ depends on}
-    \If{$\mathit{stamp}(t, b) = d$} \textbf{continue} \EndIf \Comment{the value is fresh: keep it}
+    \If{$\mathit{stamp}(t, b) = d$ \textbf{or} $\mathit{esc}(t,b) = d$} \textbf{continue} \EndIf \Comment{fresh, or failed on this input}
     \State $\mathit{prompt} \gets$ role prompt of $\mathit{owner}(T)$, $\pi_b$, values at $\fp_b(m)$
     \State $\mathit{accepted} \gets \mathit{false}$
     \For{$i = 1$ \textbf{to} $\ksamp$ \textbf{while not} $\mathit{accepted}$}
@@ -1168,7 +1248,7 @@ hand-off.
         \State append $v$ and the validator's message to $\mathit{prompt}$ \Comment{feedback}
       \EndIf
     \EndFor
-    \If{\textbf{not} $\mathit{accepted}$} $\mathit{Esc} \gets \mathit{Esc} \cup \{(t, b)\}$ \EndIf \Comment{escalate}
+    \If{\textbf{not} $\mathit{accepted}$} $\mathit{Esc} \gets \mathit{Esc} \cup \{(t, b)\}$;\ \ $\mathit{esc}(t,b) \gets d$ \EndIf \Comment{escalate}
   \EndFor
   \State \Return $\mathit{Esc}$
 \EndFunction
@@ -1176,19 +1256,21 @@ hand-off.
 \end{algorithm}
 
 \textbf{How to read Algorithm~\ref{alg:handoff}.} \textsc{RunTeam} (lines~1--7)
-executes the hand-offs in topological order, which exists because \W{5} requires
-the hand-off graph to be acyclic, and repeats the pass until no model changes,
-because behaviour validators judge a value inside the deliverable assembled
-from all values accepted so far, so a sibling value accepted later can change an
-earlier verdict; the final clause $\mathit{valid}$ re-checks every value. In
-\textsc{ExecuteHandOff}, line~9 performs ATL's matching and initialisation,
-made incremental~\cite{jouault2010incremental}: it creates a target object for
-every new match, deletes the objects of matches that disappeared, and evaluates
-all structural bindings. This step is deterministic and calls no LLM.
-Lines~11--22 then visit every stochastic binding of every match, written
-$(t,b)$ for the target object $t$ and the binding $b$ whose feature $f$ it fills.
-Line~13 skips a value whose stamp equals the current digest of its footprint and
-validator reads: nothing it depends on has changed. Otherwise, the owner's LLM
+executes the hand-offs in topological order, which exists because \W{5}
+requires the hand-off graph to be acyclic, and repeats the pass until no model
+changes, at most $p_{\max}$ times. In \textsc{ExecuteHandOff}, line~9 performs
+ATL's matching and initialisation, made
+incremental~\cite{jouault2010incremental}: it creates a target object for every
+new match, deletes the objects of matches that disappeared, and evaluates all
+structural bindings. This step is deterministic and calls no LLM.
+Lines~11--22 then visit every stochastic binding of every match in match
+order, which follows the order of the goal model (for methods, docstring
+order). Every rule of a typed team has a single target variable, so each trace
+link has one target object $t$, and we write $(t,b)$ for it and the binding
+$b$ whose feature $f$ it fills. Line~13 skips a value whose stamp equals the
+current digest of its footprint and validator reads, because nothing it
+depends on has changed, and a binding that already escalated on that digest,
+which line~10 keeps as an open escalation. Otherwise, the owner's LLM
 is prompted with the footprint (line~14), and a sample is accepted as soon as
 the validator accepts it (lines~18--19). After a rejection, the next prompt also
 contains the rejected value and the validator's message (line~21), so that the
@@ -1198,6 +1280,34 @@ is the only way in which validator reads reach the LLM. After $\ksamp$
 rejections, the binding \emph{escalates} (line~22): it is recorded as a failure,
 not handed to a person. The escalations of all hand-offs make the clause
 $\mathit{noEsc}$ of $\varphi$ fail and are the starting points of attribution.
+
+\paragraph{Sibling values} A behaviour validator executes a value together
+with the other values of the deliverable (Definition~\ref{def:footprint}),
+which the stamp does not cover. Two consequences follow, and the runtime does
+not hide them. First, a value checked early in a pass is checked against stubs
+of siblings that are accepted later; for example, if \code{mark\_done} were
+implemented before \code{add\_task}, its examples would fail on the stub of
+\code{add\_task}, and the value would escalate. Second, a value accepted
+earlier keeps its stamp when a sibling changes later, although its verdict on
+the final deliverable may differ. Repeating the pass does not resolve either
+case: on an acyclic team executed in topological order, a second pass finds
+every digest unchanged and therefore re-samples nothing, unless a request of
+the first pass failed without a verdict (for example on a time-out), which
+the pass then retries. Cross-sibling effects are instead caught at the end of
+the run: the clause $\mathit{valid}$ re-checks every accepted value on the
+final models, and the escalation of a value that failed only against a stub
+is open in $\mathit{noEsc}$. Both go to the outer loop of
+Algorithm~\ref{alg:auto}. For an escalation, attribution replays the value
+inside the now complete deliverable, where it typically passes, and classifies
+the fault as \textsc{Sampling}; the retry gives the binding a fresh budget in
+the next round. For an accepted value that fails only $\mathit{valid}$, the
+evaluated implementation is less complete: a retry does not remove its stamp,
+so it is re-sampled only if a delta or an upstream re-sample makes it stale,
+and otherwise the run fails with that value flagged, which is a lost success
+but not a silent failure. Match order mitigates the first case, because methods are visited in
+docstring order, in which set-up methods such as \code{add\_task} usually
+come first. The repeated pass matters mainly for unchecked teams, which may
+contain cycles (Section~\ref{sec:design}).
 
 \paragraph{Agents at run time} An agent is a role prompt, a model and a declared
 set of tools $\kappa(a)$. Agents do not converse. Each stochastic binding is one
@@ -1215,9 +1325,14 @@ stochastic binding becomes \emph{stale} if its footprint or validator reads
 contain a location in $\mathit{loc}(\Delta)$, or a location written by a pair
 that is already stale. The \emph{stale set} $\Stale(\Delta)$ is the least set of
 pairs, over the trace models of all hand-offs, that is closed under these two
-rules. All other values keep their stamps, so re-establishing the acceptance
-predicate costs at most $\ksamp\cdot|\Stale(\Delta)|$ LLM calls per pass. This is an
-analytical property of the runtime; we use it for repair
+rules. All other values keep their stamps, so re-sampling after $\Delta$ costs
+at most $\ksamp\cdot|\Stale(\Delta)|$ LLM calls per run. The bound covers only
+the values in $\Stale(\Delta)$. Because stamps do not cover sibling values, a
+change of one method can invalidate a sibling that is not in
+$\Stale(\Delta)$; $\mathit{valid}$ then detects this at the end of the run,
+and re-sampling the sibling needs a further repair round. The bound therefore
+limits the cost of one run after $\Delta$, not the cost of re-establishing
+$\varphi$. This is an analytical property of the runtime; we use it for repair
 (Section~\ref{sec:app-attr}) but do not evaluate arbitrary source changes in
 this paper.
 
@@ -1234,7 +1349,13 @@ it.
 \begin{definition}[Run record, descendant]\label{def:record}
 At run time, every trace link $(m,t,r)$ carries, for each stochastic binding
 $b$ of $r$, a \emph{run record} $(b,\fp_b(m),\mathit{vr}_b(m),\mathit{stamp},v)$
-with the accepted value $v$ or an escalation mark. The link \emph{connects} to
+with the accepted value $v$ or an escalation mark. The record stores the
+\emph{values} at the locations of $\fp_b(m)$ and $\mathit{vr}_b(m)$ as they
+were when $v$ was produced, not only the locations. Attribution
+(Section~\ref{sec:app-attr}) replays a binding on its footprint evaluated on
+the final models; these values equal the recorded ones unless a location was
+overwritten after $v$ was accepted, in which case the stamp no longer matches
+and $\mathit{fresh}$ reports it. The link \emph{connects} to
 each object in $t$ every object of $m$ and every object that owns a location in
 a recorded footprint or validator read. An object $o'$ is a \emph{descendant}
 of $o$ if a chain of connections leads from $o$ to $o'$.
@@ -1308,7 +1429,8 @@ its check must test against the goal.
 \begin{definition}[Anchoring]\label{def:anchor}
 Write $\to_p^*$ for a path of zero or more production edges. A goal obligation
 $(C,s,\mathit{checked},F_C)$ is \emph{anchored} at $(D,g)\in\mathcal{B}$ if,
-for every anchor feature $f\in F_C$,
+for every anchor feature $f\in F_C$ (all anchor features must reach the same
+$(D,g)$, not each its own),
 \begin{enumerate}[label=(\roman*), leftmargin=2em, itemsep=1pt, topsep=2pt]
 \item \emph{production side:} $(C,f)\to_p^*\,\to_p(D,g)$, and
 \item \emph{check side:} $(C,f)\to_p^*(C',f')\to_c(D,g)$ for some node $(C',f')$.
@@ -1374,12 +1496,15 @@ source view yields objects of that type.
 \begin{enumerate}[label=(\alph*), leftmargin=2em, itemsep=1pt, topsep=2pt]
 \item Every obligation of mode \emph{checked} is anchored at some feature of
 $\mathcal{B}$ (Definition~\ref{def:anchor}).
-\item Every source-pattern class of a rule on an anchoring path should be
-\emph{total}: it is a goal class, or it is created by a rule whose guard is
-implied by the obligation's scope. Totality ensures that the rule's other
-source variables can be filled for every in-scope goal object. Because
-implication between guards is undecidable in general, the checker tests it
-syntactically (the guard is \code{true}, equals the scope, or is a join) and
+\item Every source-pattern class of a rule on an anchoring path must be
+\emph{total}, inductively along its creation chain: a class is total if it is
+a goal class, or if it is created by a rule all of whose source-pattern
+classes are total. A class that is not total is a violation. Totality ensures
+that the rule's other source variables can be filled for every in-scope goal
+object. In addition, every rule on the chain should have a guard that is
+implied by the obligation's scope. Because implication between guards is
+undecidable in general, the checker tests it syntactically (the guard is
+\code{true}, equals the scope, or is a \emph{join}, defined below) and
 \emph{warns} about every other guard instead of rejecting the team.
 \item Every obligation of mode \emph{delivered} reaches the deliverable feature
 $\delta$: at least one of its anchor features has a path of production edges to
@@ -1409,7 +1534,7 @@ evaluated for each of them.
 \caption{\textsc{Admit}: deciding whether a typed team $\Team$ may run}\label{alg:admit}
 \begin{algorithmic}[1]
 \Require typed team $\Team=(A,V,\mathbf{T},\omega,\kappa,G,\delta,\varphi)$; validator library
-\Ensure the set $\mathit{diag}$ of diagnostics; $\Team$ is admitted iff $\mathit{diag}=\emptyset$
+\Ensure the set $\mathit{diag}$ of diagnostics; $\Team$ is admitted iff $\mathit{diag}=\emptyset$; warnings are reported separately and never reject
 \State $\mathit{diag} \gets \textsc{TypeErrors}(\mathbf{T}, V) \cup \textsc{StratificationErrors}(\mathbf{T})$ \Comment{\W{1}}
 \State $\mathit{diag} \gets \mathit{diag} \cup \textsc{SharedWriters}(\omega, \mathbf{T})$ \Comment{\W{2}}
 \State $\mathit{diag} \gets \mathit{diag} \cup \textsc{IncompleteTargets}(\mathbf{T})$ \Comment{\W{3}}
@@ -1421,9 +1546,9 @@ evaluated for each of them.
   \If{$\mu = \mathit{delivered}$ \textbf{and} no $f \in F_C$ has a production path to $\delta$}
     \State $\mathit{diag} \gets \mathit{diag} \cup \{(\W{4}, o, \text{``does not reach the deliverable''})\}$
   \EndIf
-  \State warn about every guard on an anchoring path of $o$ that is not implied by $s$
+  \State add to $\mathit{diag}$ every non-total source class on an anchoring path of $o$; warn about every guard there that is neither implied by $s$ nor a join
 \EndFor
-\For{each view $V' \in V$} \Comment{\W{4}(d)}
+\For{each view $V' \in V\setminus\{\MM_0\}$} \Comment{\W{4}(d)}
   \If{$V'$ is unreachable from $\MM_0$ \textbf{or} reaches no feature of $\mathcal{B}$}
     \State $\mathit{diag} \gets \mathit{diag} \cup \{(\W{4}, V', \text{``idle or unverified view''})\}$
   \EndIf
@@ -1445,8 +1570,10 @@ operate. For an obligation of mode \emph{checked}, line~6 searches for a
 behaviour-checked feature at which it is anchored, that is, which every anchor
 feature reaches both through production edges and through a check edge
 (Definition~\ref{def:anchor}; Figure~\ref{fig:w4}); this is a reachability
-question on $\mathcal{F}_\Team$. Line~10 records the guards that the checker
-cannot prove harmless as warnings. Lines~11--13 reject idle views and views
+question on $\mathcal{F}_\Team$. Line~10 rejects anchoring paths through
+classes that are not total (\W{4}(b)) and records the guards that the checker
+cannot prove harmless as warnings, which are returned alongside
+$\mathit{diag}$ but do not prevent admission. Lines~11--13 reject idle views and views
 whose work is never verified. Line~14 checks completion and acyclicity, and
 lines~15--16 compare the tools a binding needs with those of every agent that
 may write its target. Each diagnostic names the violated rule, the
@@ -1494,13 +1621,40 @@ A second property explains why admission makes failures easier to locate. We
 would like a failed $\mathit{cover}(G)$ clause never to stem from missing
 structure, so that it always points at a value an LLM was asked to produce.
 The property needs one more notion. A guard that equates two structural
-references to the same goal object is a \emph{join}; in the running example,
-\code{t.method = d.method} in \code{Design2Impl} is a join.
+references typed by the same goal class is a \emph{join}; in the running
+example, \code{t.method = d.method} in \code{Design2Impl} is a join.
+
+Because $\mathcal{F}_\Team$ is a graph of classes and features, not of
+objects, the property also needs three assumptions about the goal model and
+the structural bindings, which the checker does not verify:
+\begin{enumerate}[label=(A\arabic*), leftmargin=2.4em, itemsep=1pt, topsep=2pt]
+\item \emph{Non-empty navigation.} Every reference path that a rule on an
+anchoring path navigates from its source variables to the class of the next
+node yields, for each in-scope descendant of $o$, at least one object, and
+the objects it yields include the descendant of $o$ (the path is surjective
+onto in-scope objects). Containment paths of the goal view, such as
+\code{Method.examples}, are surjective onto their contained objects, but an
+optional reference may be empty: \code{export\_csv} has no examples, so an
+obligation on \cls{Method} whose only anchoring path runs through
+\code{Method.examples} has no descendant along that path for
+\code{export\_csv}.
+\item \emph{Inhabited source classes.} For every in-scope $o$, every other
+source variable of a rule on the chain can be filled by an object that the
+rule's guard relates to $o$; for a goal class, this requires the goal model
+to contain such an object.
+\item \emph{Identity-preserving joins.} The two sides of every join on the
+chain are set by structural bindings that copy, along their creation chains,
+a reference to the same goal variable, so that for the descendants of $o$
+both sides point to the same goal object.
+\end{enumerate}
+All three hold for the teams of the running example, and (A3) holds whenever
+both sides are copies of the goal object matched by the creating rules, as in
+\code{method <- m}.
 
 \begin{proposition}[Structural coverage]\label{prop:struct}
-Let $\Team$ be admitted, and let every guard of the rules on the paths that
+Let $\Team$ be admitted, let every guard of the rules on the paths that
 anchor an obligation $(C,s,\mathit{checked},F_C)$ either be implied by $s$ or
-be a join. Then, for every object $o$ of class $C$ that satisfies $s$, the
+be a join, and let (A1)--(A3) hold. Then, for every object $o$ of class $C$ that satisfies $s$, the
 skeletons $T^{\mathrm{str}}$ create a chain of descendants of $o$ that ends in
 a target object $t$ with a behaviour-checked feature, whose footprint and validator
 reads both contain data derived from $o$. Consequently, if
@@ -1516,10 +1670,11 @@ first $i$ rules on the path have run, an object of the class of the $i$-th node
 exists and is a descendant of $o$. \emph{Step:} the $(i{+}1)$-th edge stems
 from a rule whose source pattern contains that object, or an object from which
 the rule's footprint navigates to it. (1)~This source variable is filled by the
-hypothesis. (2)~The other source variables are filled because their classes are
-total (\W{4}(b)). (3)~The rule's guard holds, either because $s$ implies it or
-because it is a join whose two sides were linked to the same goal object by
-structural bindings. (4)~The rule therefore fires and, by \W{3}, creates its
+hypothesis, and by (A1) the navigation reaches the object. (2)~The other
+source variables are filled because their classes are total (\W{4}(b),
+inductively along their creation chains) and, by (A2), inhabited. (3)~The
+rule's guard holds, either because $s$ implies it or because it is a join
+whose two sides, by (A3), point to the same goal object. (4)~The rule therefore fires and, by \W{3}, creates its
 target with all mandatory features. Hence every object on the chain exists, and
 only stochastic values can be missing. By Algorithm~\ref{alg:handoff}, a
 missing or rejected value is escalated, or reported by $\mathit{valid}$.
@@ -1528,9 +1683,11 @@ missing or rejected value is escalated, or reported by $\mathit{valid}$.
 Proposition~\ref{prop:struct} turns locating the symptom of a coverage failure
 into a lookup: such a failure is never a silent structural gap but points at a
 named binding. Its premise on guards is exactly what the checker verifies
-syntactically in \W{4}(b); for a team admitted with a guard warning, the
-proposition does not apply, and $\mathit{cover}(G)$ still detects the gap at
-run time, although without naming a binding.
+syntactically in \W{4}(b); for a team admitted with a guard warning, or a
+goal model or team that violates (A1)--(A3), the proposition does not apply,
+and $\mathit{cover}(G)$ still detects the gap at run time, although without
+naming a binding (Section~\ref{sec:app-attr} reports such failures as
+\textsc{Coverage}).
 
 \paragraph{Limits} Whether a guard excludes in-scope objects is undecidable in
 general. The checker accepts guards that are implied by the obligation's scope,
@@ -1569,7 +1726,7 @@ revises, and only Algorithm~\ref{alg:admit} admits.
 \For{$\mathit{round} = 1$ \textbf{to} $k_{\mathit{adm}}$ \textbf{while} $\mathit{diag} \neq \emptyset$}
   \State $P \gets \textsc{Fragments}(\Team, \mathit{diag})$ \Comment{rules, views, write rights, \ldots{} that $\mathit{diag}$ names}
   \State $\Pi \gets \textsc{TypedPaths}(\Team, P)$ \Comment{paths that type-check from each rule's variables}
-  \State $\mathcal{R} \gets \{\, \Team \lhd \textsc{ReviseFragments}(\Team, \mathit{diag}, P, \Pi) \mid \text{one call per } i = 1..k_{\mathit{rev}} \,\}$
+  \State $\mathcal{R} \gets \{\, \Team \lhd \textsc{ReviseFragments}_i(\Team, \mathit{diag}, P, \Pi) \mid i = 1..k_{\mathit{rev}} \,\}$ \Comment{$k_{\mathit{rev}}$ independent samples}
   \If{no $\Team' \in \mathcal{R}$ has fewer diagnostics than $\Team$}
     \State $\mathcal{R} \gets \mathcal{R} \cup \{\textsc{ReviseWhole}(\Team, \mathit{diag})\}$ \Comment{fallback: one whole-team revision}
   \EndIf
@@ -1654,9 +1811,9 @@ no test succeeds.
 \caption{\textsc{Attribute}: classifying the fault behind a failed value $(t,b)$}\label{alg:attr}
 \begin{algorithmic}[1]
 \Require failed value $v$ of binding $b$ of rule $r$ in match $m$; recorded footprint $\mathit{Fp} = \fp_b(m)$; replay cap $n_{\mathit{rep}}$; hop limit $h$;
-\Statex \hspace{\algorithmicindent} acceptance test $\mathit{ok}(\cdot)$, by default $\mathit{ok}(u) = \chk_b(u, \text{values at } \mathit{vr}_b(m))$
+\Statex \hspace{\algorithmicindent} stability re-runs $n_{\mathit{val}}$; acceptance test $\mathit{ok}(\cdot)$, by default $\mathit{ok}(w) = \chk_b(w, \text{values at } \mathit{vr}_b(m), M_t)$
 \Ensure a fault class, with the information its repair needs
-\If{re-running $\mathit{ok}(v)$ three times does not reproduce the recorded verdict}
+\If{re-running $\mathit{ok}(v)$ $n_{\mathit{val}}$ times does not reproduce the recorded verdict}
   \State \Return \textsc{Validator} \Comment{the check is unstable; no LLM call}
 \EndIf
 \If{$\textsc{Replays}(b, \mathit{Fp})$} \Return \textsc{Sampling} \EndIf \Comment{the same input can succeed}
@@ -1665,8 +1822,8 @@ no test succeeds.
   \If{$\textsc{Replays}(b, \mathit{Fp}_j)$} \Return \textsc{Footprint}$(j)$ with the minimal added paths \EndIf
 \EndFor
 \For{each value $u$ in $\mathit{Fp}$ or $\mathit{vr}_b(m)$ that a stochastic binding $b'$ wrote}
-  \State $u' \gets$ re-sample $b'$ until $b'$'s own validator accepts, at most $n_{\mathit{rep}}$ times
-  \If{$u'$ exists \textbf{and} $\textsc{Replays}(b, \mathit{Fp}[u \mapsto u'])$}
+  \State $u' \gets$ the first re-sample of $b'$ that $b'$'s own validator accepts, of at most $n_{\mathit{rep}}$
+  \If{$u'$ exists \textbf{and} $\textsc{Replays}(b, \mathit{Fp})$ with $u'$ in place of $u$ in the models} \Comment{in $\mathit{Fp}$ and $\mathit{vr}_b(m)$}
     \State $\mathit{inner} \gets \textsc{Attribute}(b' \text{ with failed value } u,\ \mathit{ok}')$ where $\mathit{ok}'(w)$ holds iff
     \Statex \hspace{2\algorithmicindent} $b'$'s validator accepts $w$ \textbf{and} $b$ passes with $w$ in place of $u$
     \State \Return \textsc{Upstream}$(b')$ with $\mathit{inner}$ \Comment{the cause lies one hand-off earlier}
@@ -1693,9 +1850,13 @@ follows at most $j$ references and ends in an attribute; if a replay then
 passes, the LLM lacked information (\textsc{Footprint}), and the paths that are
 needed are kept for the repair (a greedy minimisation drops each added path
 whose removal still lets a replay pass). Lines~7--11 test the inputs that other
-LLMs produced: each upstream value $u$ is replaced by a fresh value $u'$ that
-passes its own validator, and if $b$ then passes, the upstream value was the
-cause. The recursive call of line~10 classifies why $u$ was wrong; there, a
+LLMs produced: each upstream value $u$ is replaced by the first fresh value
+$u'$ that passes its own validator, and if $b$ then passes, the upstream value
+was the cause. The replacement is made in the models, so both the replays'
+footprint and the validator reads of $b$ see $u'$. Only one accepted $u'$ is
+tested per upstream value; if this $u'$ is as wrong as $u$ (because $b'$'s
+validator is weak), the upstream test fails and the fault falls through to
+\textsc{Specification}. The recursive call of line~10 classifies why $u$ was wrong; there, a
 candidate $w$ for $u$ counts as passing only if it passes $b'$'s own validator
 \emph{and} the downstream binding $b$ then passes, first with its old failed
 value and otherwise with one fresh sample. This criterion ties the upstream
@@ -1716,9 +1877,12 @@ replays for the sampling test, $h\cdot n_{\mathit{rep}}$ for the footprint
 tests, and, for each of the $|\mathit{up}(b)|$ upstream values, at most
 $n_{\mathit{rep}}$ re-samples and $n_{\mathit{rep}}$ replays, where $\mathit{up}(b)$ is the set of
 upstream values in $b$'s footprint and validator reads: in total at most
-$(h+1+2|\mathit{up}(b)|)\,n_{\mathit{rep}}$ LLM calls, plus the replays that
-minimise a footprint repair. Recursion visits at most as many bindings as the
-longest path in the hand-off graph.
+$(h+1+2|\mathit{up}(b)|)\,n_{\mathit{rep}}$ LLM calls at the top level, plus
+the replays that minimise a footprint repair. Recursion visits at most as many
+bindings as the longest path in the hand-off graph. Within a recursive call,
+each evaluation of $\mathit{ok}'(w)$ may draw one further sample of the
+downstream binding $b$, when $b$'s old value fails with $w$; a recursive call
+on $b'$ therefore costs at most twice the bound for $b'$.
 \end{remark}
 
 \paragraph{Checked repair} The planner of Algorithm~\ref{alg:auto} (line~10)
@@ -1753,7 +1917,8 @@ the first proposal to an accepted deliverable.
 \item \emph{Admission.} The first proposal (Listing~\ref{lst:proposal}) is
 rejected with five diagnostics (Listing~\ref{lst:diag}). The reviser rewrites
 only the named fragments: the hand-offs and views for \W{1} and \W{4}
-(including the rules that should carry the unanchored goal), the write rights
+(including, for the unanchored goal, the rules that read the goal view,
+among them \code{Method2Design}, which no diagnostic names directly), the write rights
 for \W{2}, $\varphi$ for \W{5}, and the agents' tools for \W{6}. Its revision
 replaces \code{Impl2Run} by \code{Method2Test} (Listing~\ref{lst:rules}), gives
 the Tester \code{exec}, removes the Developer's write right on Test, adds
@@ -1771,9 +1936,12 @@ and widening the footprint does not help. The upstream test, however, is
 suspicious: the Tester's first test called \code{mark\_done(1)} on a fresh
 board, without the \code{add\_task} that E2.1 relies on, so every correct
 implementation failed it. \code{test\_valid} had accepted that test because it
-runs, fails on a stub and asserts every example. Of up to three re-samples of
-the test from its own footprint, one happens to create a board first; with this
-test, the replays of the implementation pass. The fault is \textsc{Upstream},
+runs, fails on a stub and asserts every example. The first re-sample of the
+test from its own footprint that \code{test\_valid} accepts happens to create
+a board first; with this test in place, the replays of the implementation
+pass. (Had it again omitted the set-up, this test would have failed and, since
+only one accepted re-sample is tried, the fault would have been classified as
+\textsc{Specification}.) The fault is \textsc{Upstream},
 in $(\mathit{test}_{\code{mark\_done}},\code{code})$, owned by the Tester.
 \item \emph{Classify the test.} Algorithm~\ref{alg:attr} recurses on the test,
 with the criterion that a candidate test must also let the implementation pass.
@@ -1872,7 +2040,13 @@ ontologies long before LLMs~\cite{finin1994kqml}. For LLM agents, MCP and A2A
 standardise the transport between agents and tools~\cite{mcp2024,a2a2025};
 Agora lets agents negotiate protocol documents~\cite{marro2024agora}; and
 PatchBoard grounds collaboration in schema-validated patches to a shared
-state~\cite{zhang2026patchboard}. Constrained decoding guarantees that outputs
+state~\cite{zhang2026patchboard}. In PatchBoard, an Architect LLM writes a
+task-specific blueprint, consisting of a state schema and per-worker read and
+write contracts on paths of that state; a deterministic kernel checks that the
+blueprint is well formed and then validates every patch against the schema and
+the worker's write contract before it commits it, and it logs every commit.
+PatchBoard is thus LLM-built and enforces write permissions, but per patch, at
+run time, on one shared state. Constrained decoding guarantees that outputs
 conform to a grammar or JSON schema~\cite{willard2023outlines}. Practitioner
 frameworks type hand-offs too: LangGraph declares a typed state schema for a
 graph of agents~\cite{langgraph2025}, CrewAI validates a task's output against
@@ -1885,8 +2059,13 @@ reliably transported or permitted. They do not check properties of the
 that every artefact has one writer, that completion is decided by the system,
 or that work goes to an agent with the needed tools. A single shared schema
 also removes heterogeneity by decree, whereas \auto{} keeps one view per agent,
-sized to its job, and records correspondences in trace models. We use a
-PatchBoard-style shared schema as a baseline (Section~\ref{sec:design}).
+sized to its job, and records correspondences in trace models. PatchBoard's
+write contracts come closest to \W{2}, but they are enforced on each patch
+during the run, and nothing checks before the run that every path has a
+single writer or that every part of the task reaches a check; \W{2} and
+\W{4} decide both statically, across exogenous transformations between
+distinct views. We use a PatchBoard-style shared schema as a baseline
+(Section~\ref{sec:design}).
 
 Closest to the \tool{} runtime are LLM programming systems that interleave
 deterministic control with generated parts: LMQL constrains and scripts
@@ -1986,7 +2165,9 @@ defect is ruled out before the team runs. \emph{Attrib.}: a failure can be
 traced to a responsible component without reading a transcript. \emph{Dial.}:
 agents may converse freely, which \auto{} gives up. For \auto{}: \D{1} only
 relative to the declared obligations; \D{5} only for tools in the declared
-vocabulary.}
+vocabulary. For PatchBoard, \D{3} is \pmark{} because write contracts are
+enforced per patch at run time rather than checked for single writers before
+the run.}
 \label{tab:rw}
 \scriptsize\setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{@{}l c c c c c c c c c@{}}
@@ -1999,8 +2180,8 @@ Per-task builders~\cite{song2024captain,ke2025maszero} & \cmark & \xmark & \xmar
 FSM builder (MetaAgent)~\cite{zhang2025metaagent} & \cmark & \xmark & \xmark & \xmark & \pmark & \pmark & \xmark & \xmark & \cmark \\
 Workflow search~\cite{hu2025adas,zhang2025aflow} & \cmark & \pmark & \xmark & \xmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
 Learned orchestration~\cite{nielsen2026conductor} & \cmark & \pmark & \xmark & \xmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
-Structured messages~\cite{khattab2024dspy,zhang2026patchboard} & \xmark & \cmark & \xmark & \pmark & \xmark & \xmark & \xmark & \pmark & \pmark \\
-LLM programming~\cite{beurerkellner2023lmql,zheng2024sglang} & \xmark & \cmark & \xmark & \pmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
+PatchBoard~\cite{zhang2026patchboard} & \cmark & \cmark & \xmark & \pmark & \pmark & \xmark & \xmark & \pmark & \pmark \\
+LLM programming~\cite{beurerkellner2023lmql,khattab2024dspy} & \xmark & \cmark & \xmark & \pmark & \xmark & \xmark & \xmark & \xmark & \cmark \\
 MT static analysis~\cite{cuadrado2017static,burgueno2015static} & \xmark & -- & \xmark & \cmark & \pmark & -- & -- & \pmark & -- \\
 Typed MT chains~\cite{vanhooff2007uniti} & \xmark & \cmark & \xmark & \pmark & -- & -- & -- & \xmark & -- \\
 \textbf{\auto{}} (this paper) & \cmark & \cmark & \pmark & \cmark & \cmark & \cmark & \pmark & \cmark & \xmark \\
@@ -2140,7 +2321,8 @@ Methods without an accepted value yet are replaced by stubs, and examples run
 in docstring order on one object, as doctest does, so that E2.1 can rely on the
 task that E1.1 added. A consequence is that a validator's verdict also depends on
 the sibling values, which are not part of the stamp; the clause
-$\mathit{valid}$ therefore re-checks every value at the end of the run. When a
+$\mathit{valid}$ therefore re-checks every value at the end of the run
+(Section~\ref{sec:app-runtime}, \emph{Sibling values}). When a
 method escalates, the deliverable still contains its last rejected candidate,
 so that every condition is scored on the code it produced; such a run never
 says done. Validators that execute code run in a separate process with
@@ -2157,9 +2339,32 @@ it fails on a stub of $m$, are executed.
 with the adaptive budget, a hop limit of $h=2$, and three re-runs of the
 validator for the stability test. Per repair round, at most two failures are
 attributed, escalations first, then $\mathit{valid}$ and then
-$\mathit{cover}(G)$ failures. Replays in attribution are drawn without the
-rejection feedback of Algorithm~\ref{alg:handoff}, line~21, so they sample from
-the footprint alone.
+$\mathit{cover}(G)$ failures. A retry clears the binding's escalation mark;
+it does not remove the stamp of a value that was accepted and later failed
+$\mathit{valid}$ (Section~\ref{sec:app-runtime}), a gap of the evaluated
+implementation that can only cost success, because such a run never says
+done.
+
+Replays in attribution are drawn without the rejection feedback of
+Algorithm~\ref{alg:handoff}, line~21, so they sample from the footprint
+alone. We chose this so that each test of Algorithm~\ref{alg:attr} asks one
+question about one input: whether the \emph{declared} footprint (or a
+widened or repaired one) supports an acceptable value. With feedback, a replay
+would also see the validator's message, which may mention data outside the
+footprint, and a pass could no longer be credited to the footprint. The
+choice has a cost. Under the runtime's sampling, a value that is accepted only
+at the second or third try, after feedback, has a lower pass rate in replay,
+so attribution is biased away from \textsc{Sampling} and towards the later
+classes, \textsc{Specification} in particular. The injected sampling faults of
+Section~\ref{sec:res-trace} do not expose this bias, because their failure
+probability does not depend on the prompt. On the natural failures of the
+main study (3{,}500 and 2{,}196 attributed faults of \auto{} runs),
+attribution classified 78.7\% (ClassEval) and 83.4\% (HumanEval+) as
+\textsc{Specification}, 6.7\% and 5.9\% as \textsc{Sampling}, 7.7\% and
+4.5\% as \textsc{Footprint}, 5.9\% and 5.2\% as \textsc{Upstream}, and at most
+0.6\% as \textsc{Validator}; we cannot tell how much of
+this skew comes from the missing feedback. Replays that reproduce the
+runtime's multi-turn feedback are a direct variant that we did not evaluate.
 
 \paragraph{Versions} We distinguish two versions of the implementation. The
 \emph{frozen} version produced every result of
@@ -2251,7 +2456,11 @@ ill-typed bindings escalate, agent claims in $\varphi$ are ignored, and the
 runtime stops after $p_{\max}=3$ passes (4 for \auto{}), because an unchecked
 team may contain cycles. It thus keeps the typed \emph{format} and the
 engine-decided completion but removes the whole build--check--repair loop, so it measures the joint contribution of
-checking, ranking, revision and repair, not of the checker alone. Typed-Ref
+checking, ranking, revision and repair, not of the checker alone.
+Section~\ref{sec:res-rel} separates static admission from repair in the
+existing logs, by splitting Typed-NC runs by whether the checker would have
+admitted their team and \auto{} runs by whether they said done before any
+repair. Typed-Ref
 replaces the \emph{builder} by a hand-written team; the same ClassEval team is
 used for HumanEval+, where each task has a single method.
 
@@ -2282,7 +2491,13 @@ pre-registered experiment, and report it separately. These \emph{held-out}
 tasks were not used to pilot the revision, but they were part of the main
 study whose aggregate results motivated it. The baselines were not changed.
 
-\paragraph{Metrics} \emph{Success}: all hidden tests pass. For RQ1 we treat
+\paragraph{Metrics} \emph{Success}: all hidden tests pass. Success is scored
+on the code a run produced, whether or not the run says done: for an \auto{}
+run that ends with \textsc{Failed}, this is the deliverable with the last
+rejected candidate of each escalated method (Section~\ref{sec:impl}); a refused
+session has no code and fails. Success therefore counts $\mathit{TP}$ and
+$\mathit{FN}$ runs alike; a user who trusts the completion signal would keep
+only the $\mathit{TP}$ runs. For RQ1 we treat
 each condition's own completion signal (``says done'') as a classifier of
 success. A \emph{run} is one condition on one task with one model and seed; for
 \auto{}, it starts with one builder \emph{session}, so sessions and runs
@@ -2411,10 +2626,39 @@ including both strong builders on both benchmarks (for example 6.3\% against
 14.7\% for Qwen2.5-Coder 32B on ClassEval), and as many or more in the others.
 The pooled difference comes mainly from Granite-Code, Code Llama and StarCoder2,
 whose unchecked teams fail silently in 7--36\% of runs while their \auto{}
-sessions are mostly refused or never reach $\varphi$. We therefore read the ablation as evidence that the typed format
-and engine-decided completion carry much of the reliability by themselves, and
-that the build--check--repair loop mainly protects against weak builders; the
-ablation does not isolate the checker. For the same reason, the hand-written
+sessions are mostly refused or never reach $\varphi$.
+
+Because the ablation removes the whole loop, we separated its parts in the
+existing logs, without new LLM runs. \emph{Static admission:} we ran the
+checker on every Typed-NC team as the builder wrote it. Teams that the
+checker would have admitted (801 ClassEval and 1{,}339 HumanEval+ runs) fail
+silently in 6.4\% and 6.2\% of runs, with a precision of ``done'' of 52.8\%
+and 89.7\%; teams it would have rejected (1{,}299 and 2{,}105 runs) fail
+silently in 12.5\% and 16.8\%, with a precision of 8.0\% and 40.2\%, and
+succeed far less often (3.9\% against 17.5\%; 17.7\% against 64.4\%). This
+split is observational, because weak builders write most of the rejected
+teams; within the two strong builders, rejected teams do not fail silently
+more often (for example Qwen2.5-Coder 32B on ClassEval: 0.0\% of 39 rejected
+against 7.3\% of 261 admissible runs), so the checker's verdict mainly
+separates the weak builders' teams. \emph{Runtime repair:} a run that says
+done before any repair round ($j=0$ in Algorithm~\ref{alg:auto}) ends there,
+so the silent failures that repair adds can be counted. On ClassEval, repair
+rounds turned 27 runs into correct ``done'' runs and 52 into silent failures;
+on HumanEval+, 116 and 34. Before repair, admitted \auto{} teams fail
+silently in 5.6\% (ClassEval) and 7.3\% (HumanEval+) of runs, against 9.7\%
+and 8.8\% after it. This explains the reversal for the strong builders: for
+Qwen2.5-Coder 32B on ClassEval, \auto{} fails silently in 6.7\% of runs before
+repair, about as often as Typed-NC (6.3\%), and repair raises this to 14.7\%;
+for Devstral, from 12.3\% to 17.0\% (Typed-NC: 11.0\%). Of the 52 ClassEval
+runs, 25 involved the re-sampling of an upstream value and 29 a builder delta:
+a re-sampled test that the weak \code{test\_valid} accepts, or a delta that
+rewrites a test or validator, can let an implementation pass its checks while
+it still fails the hidden tests. The admission check thus helps where builders
+are weak, and repair on ClassEval trades silent failures for a few successes.
+We therefore read the ablation as evidence that the typed format and
+engine-decided completion carry much of the reliability by themselves, that
+static admission mainly protects against weak builders, and that runtime
+repair, as implemented, costs reliability on class-level tasks. For the same reason, the hand-written
 Typed-Ref team, which is checked but used for every task, can fail silently more
 often (12.9\% on ClassEval) than the unchecked Typed-NC teams, which rarely reach
 $\varphi$ at all (13.5\% say done, against 21.8\% for Typed-Ref).
@@ -2434,7 +2678,8 @@ runs, a third to a quarter of a single agent's rate) and flags more than 90\%
 of its failures. Part of this comes from abstention, but admitted teams still
 fail silently about half as often as a single agent (9.7\% and 8.8\%). The
 typed format alone, without the build--check--repair loop, already removes much
-of the gap. Its
+of the gap; static admission helps mainly with weak builders, and on
+ClassEval runtime repair adds more silent failures than successes. Its
 ``done'' is the most reliable signal of success on HumanEval+ and as reliable as
 a single agent's on ClassEval. \emph{Price:} \auto{} says done less often,
 discards more than half of its correct ClassEval results, succeeds less often,
@@ -2519,9 +2764,15 @@ one hand-off later. The best transcript method locates the responsible step in
 team (responsible binding 96--100\%). The responsible \emph{agent} is named in
 78\% of cases, against at most 55\% by transcript methods. The gap between the
 binding (98\%) and the agent (78\%) has one cause: every binding has a single
-owner (\W{2}), but when attribution blames the \emph{validator}, it names no
-agent. Of the 153 reference-team failures with the correct binding but the wrong
-agent, 152 are sampling faults taken for validator faults or the reverse.
+owner (\W{2}), but a validator fault is charged to the check, not to an
+agent: its ground truth is ``no agent'', and attribution names no agent when
+it blames the validator. Of the 153 reference-team failures with the correct
+binding but the wrong agent, 152 are sampling faults taken for validator
+faults (65) or the reverse (87). The transcript methods were scored the same
+way: they could answer ``(validator)'' instead of an agent. If, instead, every
+fault were charged to the owner of the binding whose value failed, the agent
+named by the trace would be correct whenever the binding is (98.3\% and
+96.3\%).
 
 \paragraph{(2) The trace explains what kind of fault occurred} With adaptive
 replay, \auto{} names the fault class correctly in 75.3\% of reference-team
@@ -2560,9 +2811,23 @@ injections (flaky validator, unsatisfiable validator, narrowed footprint)
 correspond directly to one of its tests. The comparison therefore shows that the
 trace and bounded replay recover a known taxonomy of faults far better than a
 transcript does; it does not show how well this taxonomy covers natural
-failures. The transcript methods were also adapted to our runs and to a 32B
-judge rather than used on their native conversations with the proprietary
-judges of their original papers.
+failures. The comparison also mixes two kinds of evidence. \emph{Locating}
+the symptom is passive: the trace answers it by lookup, without LLM calls,
+from what the run recorded. \emph{Classifying} the fault is active: it
+re-runs the validator, re-samples bindings and widens footprints along the
+metamodel, that is, it executes counterfactuals that a single transcript
+cannot show. Of the transcript methods, only agentic replay could act: it
+could re-run any step on its recorded input with the subject model, but it
+could not re-run validators, query the views or change a footprint. The gap
+in fault-class accuracy therefore measures the value of active, model-aware
+probing as much as that of the trace. Locating the symptom is due to the
+trace alone; locating the responsible binding of an upstream fault, one
+hand-off earlier, also uses replays. On the natural failures of the
+main study, attribution named \textsc{Specification} for about four in five
+faults (Section~\ref{sec:impl}); we have no ground truth for them. The
+transcript methods were also adapted to our runs and to a 32B judge rather
+than used on their native conversations with the proprietary judges of their
+original papers.
 
 \paragraph{The price} Traceability is not free. Adaptive attribution uses 7.7
 LLM calls per failure, against one call for the cheapest transcript method; for
@@ -2838,7 +3103,10 @@ in three ways that target the lost work rather than the checker:
 deliverable binding by the goal method's docstring and examples, if the builder
 left them out, and adds an \code{examples\_run} validator; this edit only adds
 reads and a check, but it is applied to the admitted team without a second
-check;
+check. It adds the validator only if every writer of the deliverable's view
+has the \code{exec} tool, so it cannot introduce a \W{6} violation; the added
+paths are features of the goal method that the rule already binds, so they
+type-check (\W{1});
 \item[(R2)] when a method escalates, the deliverable contains the rejected
 candidate that passes the most documented examples, instead of the last
 rejected candidate;
@@ -2853,14 +3121,30 @@ values are the main-study runs on the held-out tasks ($\ksamp=3$); the revised
 values are those of Experiment~1 at $\ksamp=1$ (Table~\ref{tab:exp1}), so the
 gain is not due to more samples. The comparison is exploratory.
 
+The three changes are bundled, but the logs record which sessions ran the
+library team (R3), so its share can be separated. With Qwen2.5-Coder 7B, R3
+ran in 98 of 240 ClassEval and 248 of 393 HumanEval+ sessions, and these
+sessions contributed 8.8 of the 21.2 points of success on ClassEval and 44.3
+of the 71.8 points on HumanEval+. Most of the gain for the weak builder is
+thus the hand-written team; the builder's own teams, now with R1 and R2,
+contributed 12.5 and 27.5 points, against 9.6 and 28.8 points for the whole
+frozen version. With Qwen2.5-Coder 32B, R3 ran in 5 of 240 and 17 of 393
+sessions (0.8 and 4.1 points), and the builder's own teams contributed 29.2
+points on ClassEval against 23.8, so for the strong builder the gain on
+ClassEval comes from R1 and R2. R1 and R2 cannot be separated from each other
+in these runs.
+
 The revision also shows the trade-off between success and reliability (same
 runs). With Qwen2.5-Coder 32B, it kept the reliability advantage: silent
 failures of 7.9\% (ClassEval) and 5.9\% (HumanEval+) against 28.8\% and 10.4\%
-for Single-Gate. With Qwen2.5-Coder 7B on HumanEval+, it did not: falling back
-to the library team and keeping best-effort candidates raised silent failures
-from 5.9\% (frozen version) to 16.3\%, above Single-Gate's 13.5\%. Recovering
-lost work can thus reintroduce the silent failures that the checker prevents,
-when the builder is weak.
+for Single-Gate. With Qwen2.5-Coder 7B, silent failures were 6.7\% on
+ClassEval (Single-Gate: 23.3\%) but 16.3\% on HumanEval+, up from 5.9\% in the
+frozen version and above Single-Gate's 13.5\%. Most of these came from the
+fallback: on HumanEval+, the library team failed silently in 20.2\% of the
+sessions in which it ran, the builder's own teams in 9.7\%, and the fallback
+sessions account for 12.7 of the 16.3 points (on ClassEval, 5.0 of 6.7).
+Recovering lost work with a fallback team can thus reintroduce the silent
+failures that the checker prevents, when the builder is weak.
 
 \begin{table}[t]
 \centering\small
@@ -2900,7 +3184,8 @@ for classes with at most three;
 \emph{H3} (negative control): on HumanEval+ there is no such difference.
 We varied the samples per binding $k\in\{1,2,4,8\}$, gave Single-Gate
 \auto{}'s median output tokens at each level as its budget cap, used the revised
-\auto{}, and ran on the held-out tasks with three seeds. Of the 80 held-out
+\auto{} (with R1--R3, so a refused session runs the library team), and ran on
+the held-out tasks with three seeds. Of the 80 held-out
 ClassEval classes, 30 have at most three methods and 13 at least six. For each
 benchmark and model, we fitted a logistic GEE with an exchangeable working
 correlation, clustered by task, with the terms condition, $\log_2 k$ and their
@@ -2937,8 +3222,8 @@ weak builders often cannot write admissible teams and because, on class-level
 tasks, even admitted and hand-written typed teams succeed less often than a
 single agent; on function-level tasks, strong builders are on par with
 multi-agent teams. A post-hoc revision recovers
-much of the lost work on held-out tasks but, with a weak model, also part of the
-silent failures. A larger budget does not close the gap: the pre-registered
+much of the lost work on held-out tasks; with a weak model, mostly through a
+hand-written fallback team, which also brings back silent failures. A larger budget does not close the gap: the pre-registered
 hypotheses were not supported for either model.
 \end{answerbox}
 
@@ -3010,9 +3295,12 @@ that agents emit.
 \paragraph{Future work} The revised \auto{} was evaluated on two models only.
 Running it on all seven models and both benchmarks, and finding a recovery
 strategy for refused sessions that does not reintroduce silent failures, is the
-most direct next step. Others are builders trained on the checker's
-diagnostics, validators whose adequacy is itself checked, and a human-coded
-study of failure causes.
+most direct next step. A second is a repair that does not trade silent
+failures for successes on class-level tasks, for example by accepting a
+re-sampled upstream test only if it also passes the goal's examples. Others are
+builders trained on the checker's diagnostics, validators whose adequacy is
+itself checked, attribution replays that reproduce the runtime's feedback, and
+a human-coded study of failure causes.
 
 % =========================================================================
 \section{Threats to Validity}\label{sec:threats}
@@ -3038,10 +3326,16 @@ can be accepted.
 systems, and the runtime, checker, baselines and reference team come from the
 same author. Typed conditions run on \tool{} and the others in a group-chat
 harness with the same time-outs and sandbox. The Typed-NC ablation removes the
-whole build--check--repair loop, not only the checker. Re-samples after a
+whole build--check--repair loop, not only the checker; our post-hoc splits of
+its runs by admissibility and of \auto{}'s runs by repair round are
+observational. Re-samples after a
 rejection see the rejected value and the validator's message, whereas replays
 in attribution do not, so a replay may succeed less often than the original
-sampling and push a fault towards \textsc{Specification}. The runtime does not
+sampling and push a fault towards \textsc{Specification}, the class that
+attribution assigns to about four in five natural faults. Stamps do not cover
+sibling values, and a retry does not re-sample an accepted value that fails
+$\mathit{valid}$; both can only cost success, not reliability, because such
+runs never say done. The runtime does not
 confine validators to their owner's declared tools, so \W{6} is a property of
 the specification only. The revision of Section~\ref{sec:res-cost} was designed
 after seeing the main results; we piloted it on a development subset,

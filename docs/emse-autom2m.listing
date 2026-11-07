@@ -1,0 +1,8 @@
+W1  Design2Impl.body: footprint path 'd.returnType':
+        Design!MethodDesign has no feature 'returnType'
+W2  view Test written by ['Developer', 'Tester']; needs exactly one writer
+W4  goal (Example, all, checked): anchor features {call, expected}
+        reach no behaviour-checked value
+W5  done-clause Tester.says('ALL TESTS PASS') is not an engine clause
+W6  Impl2Run.verdict needs ['exec']; writer Tester has []
+REJECTED: 5 violation(s)
