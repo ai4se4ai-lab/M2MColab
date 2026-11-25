@@ -14,3 +14,25 @@ rorqual: pull granite-code:20b rc=255
 verifying sha256 digest [K
 writing manifest [K
 success [K[?25h[?2026l
+Traceback (most recent call last):
+  File "/home/majid/Documents/PROJECTS/M2MColab/hpc/scripts/fleet.py", line 282, in <module>
+  File "/home/majid/Documents/PROJECTS/M2MColab/hpc/scripts/fleet.py", line 276, in main
+    "fetch": fetch, "merge": merge, "shards": shards}[a.cmd](a)
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/majid/Documents/PROJECTS/M2MColab/hpc/scripts/fleet.py", line 143, in pull_model
+    print(f"{s}: pull {a.model} rc={code}\n{txt[-800:]}")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/majid/Documents/PROJECTS/M2MColab/hpc/scripts/fleet.py", line 58, in rsh
+    r = subprocess.run(["ssh", *ssh_opts(site), target(site), cmd], capture_output=True, text=True, timeout=timeout)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 2116, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+  File "/usr/lib/python3.12/subprocess.py", line 1253, in _check_timeout
+    raise TimeoutExpired(
+subprocess.TimeoutExpired: Command '['ssh', '-o', 'ControlPath=/home/majid/Documents/PROJECTS/M2MColab/hpc/.ssh/rorqual', '-o', 'ControlMaster=no', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=20', 'mbabaei@rorqual.alliancecan.ca', "export OLLAMA_MODELS=/scratch/mbabaei/autom2m/models OLLAMA_HOST=127.0.0.1:31510 OLLAMA_NOPRUNE=1; (/scratch/mbabaei/heartness-work/ollama/bin/ollama serve > /tmp/am2m_pull_31510.log 2>&1 &); sleep 6; /scratch/mbabaei/heartness-work/ollama/bin/ollama pull devstral:24b 2>&1 | tail -3; pkill -f 'OLLAMA_HOST=127.0.0.1:31510' ; kill $(lsof -t -i:31510 2>/dev/null) 2>/dev/null; true"]' timed out after 7200 seconds

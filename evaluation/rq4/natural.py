@@ -6,6 +6,8 @@ binding that trace lookup (and the first attribution) named.
 """
 from __future__ import annotations
 
+import os
+
 import argparse
 import glob
 import json
@@ -17,6 +19,7 @@ from evaluation import llms
 from evaluation.coding import render_run
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS_DIR = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 PROMPT = """A typed team of LLM agents failed its task. Every value an agent produced is one message below, with the
 check verdict. Decide which agent and which value (the binding, written Rule.feature) is RESPONSIBLE for the failure:
@@ -29,7 +32,7 @@ Answer JSON {{"agent": str, "binding": "Rule.feature"}}."""
 
 def items(n: int, seed: int = 0) -> list[dict]:
     out = []
-    for f in sorted(glob.glob(str(ROOT / "results" / "runs" / "*" / "*" / "autom2m" / "*.json"))):
+    for f in sorted(glob.glob(str(RESULTS_DIR / "runs" / "*" / "*" / "autom2m" / "*.json"))):
         d = json.loads(Path(f).read_text())
         det = d.get("detail") or {}
         reps = det.get("fault_reports") or []
@@ -49,7 +52,7 @@ def main(argv=None) -> int:
     ap.add_argument("--workers", type=int, default=8)
     a = ap.parse_args(argv)
     specs = llms.coders()
-    out = ROOT / "results" / "rq4" / "natural.jsonl"
+    out = RESULTS_DIR / "rq4" / "natural.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
 
     def work(item):

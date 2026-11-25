@@ -24,6 +24,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS_DIR = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 
 def candidates(model: str, n: int, seed: int = 0) -> list[tuple[str, str, int]]:
@@ -31,7 +32,7 @@ def candidates(model: str, n: int, seed: int = 0) -> list[tuple[str, str, int]]:
 
     out = []
     for bench in ("classeval", "humanevalplus"):
-        for f in sorted(glob.glob(str(ROOT / "results" / "runs" / bench / _safe(model) / "autom2m" / "*.json"))):
+        for f in sorted(glob.glob(str(RESULTS_DIR / "runs" / bench / _safe(model) / "autom2m" / "*.json"))):
             d = json.loads(Path(f).read_text())
             if d.get("status") == "failed" and (d.get("detail") or {}).get("final_team"):
                 out.append((bench, d["task"], d["seed"]))
@@ -49,10 +50,10 @@ def run_one(bench: str, task_id: str, seed: int, model: str) -> dict:
     from autom2m.vlib import RunContext
     from evaluation.benchmarks import tasks as T
     from evaluation.harness.workbench import TaskWorkbench
-    from evaluation.run_matrix import _safe, make_llm
+    from evaluation.run_matrix import _safe, make_llm, typed_config
 
     task = {t.task_id: t for t in T.load(bench)}[task_id]
-    d = json.loads((ROOT / "results" / "runs" / bench / _safe(model) / "autom2m" / f"{_safe(task_id)}__s{seed}.json").read_text())
+    d = json.loads((RESULTS_DIR / "runs" / bench / _safe(model) / "autom2m" / f"{_safe(task_id)}__s{seed}.json").read_text())
     team_json = d["detail"]["final_team"]
     workdir = Path(os.environ.get("TMPDIR", "/tmp")) / f"rq4rep_{bench}_{_safe(task_id)}_{seed}"
     llm = make_llm(model, seed + 100, budget=None)
@@ -69,12 +70,18 @@ def run_one(bench: str, task_id: str, seed: int, model: str) -> dict:
         if res.phi:
             return row
         llm.role = "attribution"
-        reports, calls = attribute_all(s, res.failures)
+        lean = typed_config("autom2m")
+        mech = lean["mechanisms"]
+        s.stop_on_fixpoint = "fixpoint" in mech
+        s.compact_footprints = "compact" in mech
+        reports, calls = attribute_all(s, res.failures, pooled="pooled" in mech, equivalence="equivalence" in mech,
+                                       cache="cache" in mech)
         row["faults"] = [r.fault_class for r in reports]
         summaries = [r.summary() for r in reports]
         snap_tokens = llm.totals()["out_tokens"]
         # (a) one checked delta
-        am = AutoM2M(llm, workdir=workdir / "repair")
+        am = AutoM2M(llm, workdir=workdir / "repair", **{k: v for k, v in lean.items() if k != "n_examples"})
+        am._task = task
         llm.role = "repair"
         s2, info = am._repair(s, reports, task)
         llm.role = "binding"
@@ -85,10 +92,21 @@ def run_one(bench: str, task_id: str, seed: int, model: str) -> dict:
                          "preserved": (info.get("kept") / info["before"]) if info.get("before") else None}
         # (b) rebuild from scratch with the same fault report
         t_before = llm.totals()["out_tokens"]
-        builder = AutoM2M(llm, workdir=workdir / "rebuild", repair_enabled=False)
-        prompt = propose_prompt(task.prompt, task.kind) + "\n\nA previous team for this task failed with these fault " \
-            "reports; build a new team from scratch that avoids them:\n" + "\n".join(summaries)
-        new_team = builder._builder(prompt, "rebuild")
+        builder = AutoM2M(llm, workdir=workdir / "rebuild", **{**lean, "repair_enabled": False})
+        note = ("\n\nA previous team for this task failed with these fault reports; build a new team from scratch "
+                "that avoids them:\n" + "\n".join(summaries))
+        if builder.builder == "v3":  # the same builder as AutoM2M: a sketch, completed by wiring inference
+            from autom2m.prompts import sketch_prompt
+            from autom2m.sketch import SKETCH_SCHEMA, expand
+            from autom2m.wiring import infer
+
+            sk = builder._builder(sketch_prompt(task.prompt, task.kind) + note, "rebuild", SKETCH_SCHEMA)
+            try:
+                new_team = infer(expand(sk), task.kind) if sk else None
+            except Exception:  # noqa: BLE001 - an unreadable sketch: no admissible rebuild
+                new_team = None
+        else:
+            new_team = builder._builder(propose_prompt(task.prompt, task.kind) + note, "rebuild")
         out = builder.solve(task, task.prompt, TaskWorkbench(task), initial_team=new_team)
         code_rb = T.assemble(task, {k: (T.extract_function(v, k) or v) for k, v in out.deliverables.items()}) \
             if out.deliverables else ""
@@ -109,7 +127,7 @@ def main(argv=None) -> int:
     ap.add_argument("--n", type=int, default=100)
     ap.add_argument("--workers", type=int, default=8)
     a = ap.parse_args(argv)
-    out = ROOT / "results" / "rq4" / f"repair__{a.model.replace(':', '_')}.jsonl"
+    out = RESULTS_DIR / "rq4" / f"repair__{a.model.replace(':', '_')}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = set()
     if out.exists():

@@ -128,7 +128,7 @@ def main(argv=None) -> int:
     matches: list = []
     ag = audit_algorithm_generated(os.path.join(root, "Algorithm-Generated"), matches)
     hc = audit_hand_crafted(os.path.join(root, "Hand-Crafted"))
-    out = Path("results/rq1")
+    out = Path(os.environ.get("AM2M_RESULTS", "results")) / "rq1"
     out.mkdir(parents=True, exist_ok=True)
     (out / "audit_whowhen.json").write_text(json.dumps({"algorithm_generated": ag, "hand_crafted": hc}, indent=1))
     with (out / "audit_matches.jsonl").open("w") as fh:

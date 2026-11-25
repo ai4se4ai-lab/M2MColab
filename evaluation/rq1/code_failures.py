@@ -13,6 +13,8 @@ secondary code). The analysis computes shares with bootstrap CIs and kappa.
 """
 from __future__ import annotations
 
+import os
+
 import argparse
 import glob
 import json
@@ -25,8 +27,9 @@ from evaluation import llms
 from evaluation.coding import _clip, code_item, render_run
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS_DIR = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 WW = ROOT / "data" / "Agents_Failure_Attribution" / "Who&When"
-RESULTS = ROOT / "results"
+RESULTS = RESULTS_DIR
 
 
 def whowhen_items() -> list[dict]:

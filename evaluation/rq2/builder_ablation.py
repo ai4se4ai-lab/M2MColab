@@ -1,6 +1,7 @@
-"""RQ2: builder v1 (one proposal, full-team revisions) versus builder v2
-(schema-constrained, checker-ranked proposals, localized repair) on the same
-tasks and seeds; admission only (no team is run).
+"""RQ2: builder v1 (one proposal, full-team revisions), builder v2
+(schema-constrained, checker-ranked proposals, localized repair) and builder
+v3 (sketches completed by wiring inference) on the same tasks and seeds;
+admission only (no team is run).
 
     python -m evaluation.rq2.builder_ablation --tasks first:30 --seeds 1 --workers 12
 """
@@ -14,6 +15,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+RESULTS_DIR = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 
 
 def run_one(task_id: str, builder: str, model: str, seed: int) -> dict:
@@ -26,7 +28,8 @@ def run_one(task_id: str, builder: str, model: str, seed: int) -> dict:
     llm = make_llm(model, seed, budget=None)
     wd = Path(os.environ.get("TMPDIR", "/tmp")) / f"bab_{builder}_{_safe(task_id)}_{seed}"
     try:
-        out = AutoM2M(llm, builder=builder, workdir=wd).solve(task, task.prompt, TaskWorkbench(task), admission_only=True)
+        out = AutoM2M(llm, builder=builder, workdir=wd,
+                      mechanisms={"wiring"} if builder == "v3" else set()).solve(task, task.prompt, TaskWorkbench(task), admission_only=True)
     finally:
         shutil.rmtree(wd, ignore_errors=True)
     return {"task": task_id, "builder": builder, "seed": seed, "admitted": out.admitted_round is not None,
@@ -44,10 +47,10 @@ def main(argv=None) -> int:
     ap.add_argument("--model", default="qwen2.5-coder:7b")
     ap.add_argument("--tasks", default="first:30")
     ap.add_argument("--seeds", default="1")
-    ap.add_argument("--builders", default="v1,v2")
+    ap.add_argument("--builders", default="v1,v2,v3")
     ap.add_argument("--workers", type=int, default=12)
     a = ap.parse_args(argv)
-    out = ROOT / "results" / "rq2" / f"builder_ablation__{a.model.replace(':', '_')}.jsonl"
+    out = RESULTS_DIR / "rq2" / f"builder_ablation__{a.model.replace(':', '_')}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = set()
     if out.exists():
