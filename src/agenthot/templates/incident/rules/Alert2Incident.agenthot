@@ -1,0 +1,17 @@
+-- Monitor -> Triage: turns each raw Alert into a triaged Incident.
+module Alert2Incident;
+create OUT : Incidents from IN : Alerts;
+uses 'helpers.py';
+
+rule Alert2IncidentRule {
+  from a : Alerts!Alert
+  to  i : Incidents!Incident (
+    id       <- a.id,
+    alert    <- a,
+    summary  <- @llm('Summarize this alert as a one-sentence incident summary',
+                      a.message),
+    @check summary.notTooShort(),
+    severity <- @llm('Rate the risk severity of this incident as low, medium, or high. Respond with exactly one of those three words.',
+                      a.message),
+    @check severity.parsesRisk() )
+}

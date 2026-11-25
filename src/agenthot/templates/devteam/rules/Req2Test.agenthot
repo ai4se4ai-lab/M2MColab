@@ -1,0 +1,15 @@
+-- T4 (Analyst -> Tester): every acceptance criterion gets a test case, so
+-- no criterion can be silently dropped between Analyst and Tester (P1).
+module Req2Test;
+create OUT : Test from IN : Req;
+uses 'helpers.py';
+
+rule Criterion2TestCase {
+  from c : Req!Criterion
+  to  tc : Test!TestCase (
+    name      <- c.id,
+    criterion <- c,
+    oracle    <- @llm('Write a test oracle for this acceptance criterion: Python code defining a function test_oracle() that calls implementation() and asserts the criterion holds. Answer with Python code only.',
+                       c.text),
+    @check oracle.failsOnStub() )
+}

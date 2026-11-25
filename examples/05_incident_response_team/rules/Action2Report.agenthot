@@ -1,0 +1,16 @@
+-- Remediation -> Postmortem: every RemediationAction gets a narrative
+-- postmortem, completing the four-agent pipeline (Monitor -> Triage ->
+-- Remediation -> Postmortem).
+module Action2Report;
+create OUT : Reports from IN : Actions;
+uses 'helpers.py';
+
+rule Action2PostmortemReport {
+  from ra : Actions!RemediationAction
+  to  pr : Reports!PostmortemReport (
+    id        <- ra.id,
+    action    <- ra,
+    narrative <- @llm('Write a brief postmortem narrative describing this remediation action and its outcome',
+                       ra.command),
+    @check narrative.notTooShort() )
+}

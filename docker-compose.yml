@@ -1,0 +1,26 @@
+services:
+  autom2m:
+    build: .
+    ports:
+      - "${AUTOM2M_PORT:-8765}:8765"   # host port; override if 8765 is taken: AUTOM2M_PORT=8766 docker compose up
+    volumes:
+      - autom2m-data:/data          # API keys (SQLite) and per-key projects
+    # Validators execute code submitted by API-key holders. The image isolates every run with
+    # bubblewrap (AGENTHOT_SANDBOX=bwrap: no network, no view of /data or other tenants), which needs
+    # user namespaces: the two options below, and a host that allows unprivileged user namespaces
+    # (on Ubuntu 24.04+: sysctl kernel.apparmor_restrict_unprivileged_userns=0, or an AppArmor profile
+    # for bwrap). If the sandbox cannot start, /api/health reports execution disabled and such values
+    # are refused (fail closed); everything else keeps working.
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+    environment:
+      AGENTHOT_LLM: host            # MCP clients (Claude) do the LLM work
+      # AGENTHOT_ALLOW_UNSANDBOXED_EXEC: "1"   # ONLY if every key holder is trusted (runs their code unisolated)
+      # AGENTHOT_SOLVE_LLM: anthropic   # enable unattended auto_solve / POST /api/auto/solve
+      # ANTHROPIC_API_KEY: ...
+      # LLM_MODEL: claude-sonnet-5-5
+      # AGENTHOT_ALLOWED_HOSTS: autom2m.example.org   # opt-in DNS-rebinding protection for /mcp
+    restart: unless-stopped
+volumes:
+  autom2m-data:

@@ -1,0 +1,230 @@
+{
+  "name": "devteam",
+  "goal_view": "Goal",
+  "agents": [
+    {
+      "name": "Architect",
+      "role": "You state, for one method, a precise contract: inputs, result, side effects on the object's fields and the errors it raises.",
+      "tools": []
+    },
+    {
+      "name": "Tester",
+      "role": "You turn one method's documentation and examples into executable unittest tests with concrete expected values.",
+      "tools": []
+    },
+    {
+      "name": "Developer",
+      "role": "You implement one method of the class so that it meets its contract and passes its tests.",
+      "tools": [
+        "exec"
+      ]
+    }
+  ],
+  "views": {
+    "Design": {
+      "classes": {
+        "MethodDesign": {
+          "attributes": {
+            "name": "string",
+            "contract": "string"
+          },
+          "references": {
+            "method": {
+              "type": "Goal.Method",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Test": {
+      "classes": {
+        "TestRun": {
+          "attributes": {
+            "verdict": "string"
+          }
+        }
+      }
+    },
+    "Code": {
+      "classes": {
+        "MethodImpl": {
+          "attributes": {
+            "name": "string",
+            "body": "string"
+          },
+          "references": {
+            "method": {
+              "type": "Goal.Method",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "writes": {
+    "Architect": [
+      "Design"
+    ],
+    "Tester": [
+      "Test"
+    ],
+    "Developer": [
+      "Code",
+      "Test"
+    ]
+  },
+  "handoffs": [
+    {
+      "name": "Method2Design",
+      "sources": [
+        "Goal"
+      ],
+      "target": "Design",
+      "rules": [
+        {
+          "name": "Method2Design",
+          "from": [
+            {
+              "var": "m",
+              "type": "Goal!Method"
+            }
+          ],
+          "to": {
+            "var": "d",
+            "type": "Design!MethodDesign"
+          },
+          "bind": {
+            "name": "m.name",
+            "method": "m"
+          },
+          "llm": [
+            {
+              "feature": "contract",
+              "prompt": "State a contract",
+              "footprint": [
+                "m.name",
+                "m.signature"
+              ],
+              "validator": [
+                {
+                  "id": "nonempty"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Design2Impl",
+      "sources": [
+        "Design"
+      ],
+      "target": "Code",
+      "rules": [
+        {
+          "name": "Design2Impl",
+          "from": [
+            {
+              "var": "d",
+              "type": "Design!MethodDesign"
+            }
+          ],
+          "to": {
+            "var": "i",
+            "type": "Code!MethodImpl"
+          },
+          "bind": {
+            "name": "d.name",
+            "method": "d.method"
+          },
+          "llm": [
+            {
+              "feature": "body",
+              "prompt": "Implement the method",
+              "footprint": [
+                "d.contract",
+                "d.returnType"
+              ],
+              "validator": [
+                {
+                  "id": "compiles"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Impl2Run",
+      "sources": [
+        "Code"
+      ],
+      "target": "Test",
+      "rules": [
+        {
+          "name": "Impl2Run",
+          "from": [
+            {
+              "var": "i",
+              "type": "Code!MethodImpl"
+            }
+          ],
+          "to": {
+            "var": "r",
+            "type": "Test!TestRun"
+          },
+          "bind": {},
+          "llm": [
+            {
+              "feature": "verdict",
+              "prompt": "Run and judge",
+              "footprint": [
+                "i.body"
+              ],
+              "validator": [
+                {
+                  "id": "smoke_test",
+                  "args": {
+                    "body": "i.body"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "goal": [
+    {
+      "class": "Example",
+      "scope": "all",
+      "mode": "checked",
+      "anchors": [
+        "call",
+        "expected"
+      ]
+    },
+    {
+      "class": "Method",
+      "scope": "all",
+      "mode": "delivered"
+    }
+  ],
+  "deliverable": {
+    "view": "Code",
+    "class": "MethodImpl",
+    "feature": "body"
+  },
+  "done": [
+    "cover(G)",
+    "valid",
+    "fresh",
+    "noEsc",
+    "Tester.says('ALL TESTS PASS')"
+  ]
+}

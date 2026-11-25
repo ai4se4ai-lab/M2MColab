@@ -1,0 +1,66 @@
+host=fc10512 job=6085371 model=qwen2.5-coder:7b bench=classeval tag=smoke gpu=NVIDIA H100 80GB HBM3, 81559 MiB
+{"version":"0.32.14"}
+residency size=20023743610 vram=20023743610 ratio=1.000 digest=dae161e27b0e90dd
+50 runs to do (0 already done) -> /scratch/mbabaei/autom2m/results/smoke/raw/classeval__qwen2.5-coder_7b__sh0of4.jsonl
+[1/50 4m eta 3.4h] ClassEval_16 autom2m s1 error ok=False done=False rate=0.00 246.0s out_tok=7622
+[2/50 4m eta 1.7h] ClassEval_8 autom2m_base s1 error ok=False done=False rate=0.00 248.8s out_tok=7812
+[3/50 4m eta 1.2h] ClassEval_28 autom2m s1 error ok=False done=False rate=0.00 264.4s out_tok=8319
+[4/50 5m eta 1.0h] ClassEval_20 autom2m s1 error ok=False done=False rate=0.00 298.0s out_tok=9171
+[5/50 5m eta 0.8h] ClassEval_8 autom2m s1 error ok=False done=False rate=0.00 299.4s out_tok=9040
+[6/50 5m eta 0.6h] ClassEval_0 autom2m s1 error ok=False done=False rate=0.00 304.1s out_tok=9678
+[7/50 6m eta 0.6h] ClassEval_28 autom2m_base s1 error ok=False done=False rate=0.00 356.5s out_tok=11776
+[8/50 6m eta 0.6h] ClassEval_16 autom2m_base s1 not_admitted ok=False done=False rate=0.00 377.1s out_tok=13057
+[9/50 7m eta 0.5h] ClassEval_0 autom2m_base s1 error ok=False done=False rate=0.00 394.8s out_tok=13103
+[10/50 7m eta 0.5h] ClassEval_20 autom2m_base s1 error ok=False done=False rate=0.00 408.7s out_tok=13692
+[11/50 7m eta 0.4h] ClassEval_32 autom2m s1 failed ok=False done=False rate=0.00 167.0s out_tok=5590
+[12/50 7m eta 0.4h] ClassEval_12 autom2m_base s1 not_admitted ok=False done=False rate=0.00 430.0s out_tok=14767
+[13/50 8m eta 0.4h] ClassEval_40 autom2m s1 error ok=False done=False rate=0.00 150.0s out_tok=5345
+[14/50 8m eta 0.3h] ClassEval_36 autom2m s1 error ok=False done=False rate=0.00 188.2s out_tok=6632
+[15/50 8m eta 0.3h] ClassEval_4 autom2m s1 error ok=False done=False rate=0.00 485.5s out_tok=16038
+[16/50 8m eta 0.3h] ClassEval_32 autom2m_base s1 error ok=False done=False rate=0.00 254.3s out_tok=9231
+[17/50 9m eta 0.3h] ClassEval_48 autom2m s1 error ok=False done=False rate=0.00 130.2s out_tok=4643
+[18/50 9m eta 0.3h] ClassEval_24 autom2m s1 error ok=False done=False rate=0.00 540.5s out_tok=18317
+[19/50 9m eta 0.3h] ClassEval_24 autom2m_base s1 error ok=False done=False rate=0.00 557.0s out_tok=17965
+[20/50 9m eta 0.2h] ClassEval_48 autom2m_base s1 error ok=False done=False rate=0.00 156.8s out_tok=5888
+[21/50 10m eta 0.2h] ClassEval_40 autom2m_base s1 error ok=False done=False rate=0.00 320.2s out_tok=12135
+[22/50 11m eta 0.2h] ClassEval_64 autom2m s1 error ok=False done=False rate=0.00 125.3s out_tok=4516
+[23/50 11m eta 0.2h] ClassEval_12 autom2m s1 error ok=False done=False rate=0.00 653.2s out_tok=22807
+<unknown>:10: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:21: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:32: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:43: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:55: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:64: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:73: SyntaxWarning: invalid escape sequence '\s'
+[24/50 11m eta 0.2h] ClassEval_68 autom2m s1 failed ok=False done=False rate=0.00 103.2s out_tok=3680
+[25/50 11m eta 0.2h] ClassEval_36 autom2m_base s1 error ok=False done=False rate=0.00 367.4s out_tok=13816
+[26/50 12m eta 0.2h] ClassEval_68 autom2m_base s1 error ok=False done=False rate=0.00 144.1s out_tok=5181
+[27/50 12m eta 0.2h] ClassEval_64 autom2m_base s1 error ok=False done=False rate=0.00 185.6s out_tok=6731
+[28/50 12m eta 0.2h] ClassEval_56 autom2m s1 error ok=False done=False rate=0.00 296.4s out_tok=10567
+[29/50 13m eta 0.2h] ClassEval_44 autom2m_base s1 not_admitted ok=False done=False rate=0.00 387.6s out_tok=15046
+[30/50 13m eta 0.1h] ClassEval_56 autom2m_base s1 error ok=False done=False rate=0.00 331.0s out_tok=12584
+[31/50 13m eta 0.1h] ClassEval_76 autom2m s1 error ok=False done=False rate=0.00 153.3s out_tok=5613
+[32/50 13m eta 0.1h] ClassEval_44 autom2m s1 failed ok=False done=False rate=0.00 452.2s out_tok=16606
+<unknown>:10: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:21: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:32: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:43: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:55: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:64: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:73: SyntaxWarning: invalid escape sequence '\s'
+[33/50 14m eta 0.1h] ClassEval_80 autom2m s1 error ok=False done=False rate=0.00 172.0s out_tok=6339
+[34/50 14m eta 0.1h] ClassEval_60 autom2m_base s1 error ok=False done=False rate=0.00 364.6s out_tok=14072
+[35/50 15m eta 0.1h] ClassEval_60 autom2m s1 error ok=False done=False rate=0.00 394.5s out_tok=14573
+[36/50 16m eta 0.1h] ClassEval_76 autom2m_base s1 error ok=False done=False rate=0.00 268.9s out_tok=9881
+[37/50 16m eta 0.1h] ClassEval_92 autom2m s1 error ok=False done=False rate=0.00 139.4s out_tok=4693
+[38/50 16m eta 0.1h] ClassEval_84 autom2m_base s1 error ok=False done=False rate=0.00 200.6s out_tok=6931
+[39/50 16m eta 0.1h] ClassEval_80 autom2m_base s1 error ok=False done=False rate=0.00 247.2s out_tok=8714
+[40/50 16m eta 0.1h] ClassEval_88 autom2m s1 error ok=False done=False rate=0.00 197.7s out_tok=6761
+[41/50 17m eta 0.1h] ClassEval_96 autom2m_base s1 error ok=False done=False rate=0.00 168.3s out_tok=5220
+<unknown>:1: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\d'
+[2026-11-25T09:55:35.695] error: *** JOB 6085371 ON fc10512 CANCELLED AT 2026-11-25T09:55:35 DUE to SIGNAL Terminated ***
+[42/50 18m eta 0.1h] ClassEval_84 autom2m s1 error ok=False done=False rate=0.00 330.5s out_tok=10752

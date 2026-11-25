@@ -1,0 +1,311 @@
+{
+  "name": "reqteam_pilot",
+  "goal_view": "Req",
+  "agents": [
+    {
+      "name": "Architect",
+      "role": "Designs components and API operations.",
+      "tools": []
+    },
+    {
+      "name": "Developer",
+      "role": "Implements operations.",
+      "tools": [
+        "exec"
+      ]
+    },
+    {
+      "name": "Tester",
+      "role": "Writes test oracles.",
+      "tools": [
+        "exec"
+      ]
+    }
+  ],
+  "views": {
+    "Req": {
+      "classes": {
+        "Epic": {
+          "attributes": {
+            "name": "string"
+          }
+        },
+        "UserStory": {
+          "attributes": {
+            "id": "string",
+            "title": "string",
+            "status": "string"
+          },
+          "references": {
+            "criteria": {
+              "type": "Req.Criterion",
+              "many": true
+            },
+            "epic": {
+              "type": "Req.Epic",
+              "required": true
+            }
+          }
+        },
+        "Criterion": {
+          "attributes": {
+            "id": "string",
+            "text": "string"
+          },
+          "references": {
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Arch": {
+      "classes": {
+        "Component": {
+          "attributes": {
+            "name": "string"
+          },
+          "references": {
+            "epic": {
+              "type": "Req.Epic",
+              "required": true
+            }
+          }
+        },
+        "Operation": {
+          "attributes": {
+            "name": "string",
+            "signature": "string"
+          },
+          "references": {
+            "component": {
+              "type": "Arch.Component",
+              "required": true
+            },
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Code": {
+      "classes": {
+        "CodeEdit": {
+          "attributes": {
+            "file": "string",
+            "body": "string"
+          },
+          "references": {
+            "operation": {
+              "type": "Arch.Operation",
+              "required": true
+            },
+            "story": {
+              "type": "Req.UserStory",
+              "required": true
+            }
+          }
+        }
+      }
+    },
+    "Test": {
+      "classes": {
+        "TestCase": {
+          "attributes": {
+            "name": "string",
+            "oracle": "string"
+          },
+          "references": {
+            "criterion": {
+              "type": "Req.Criterion",
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "writes": {
+    "Architect": [
+      "Arch"
+    ],
+    "Developer": [
+      "Code"
+    ],
+    "Tester": [
+      "Test"
+    ]
+  },
+  "handoffs": [
+    {
+      "name": "Req2Arch",
+      "sources": [
+        "Req"
+      ],
+      "target": "Arch",
+      "rules": [
+        {
+          "name": "Epic2Component",
+          "from": [
+            {
+              "var": "ep",
+              "type": "Req!Epic"
+            }
+          ],
+          "to": {
+            "var": "c",
+            "type": "Arch!Component"
+          },
+          "bind": {
+            "name": "ep.name",
+            "epic": "ep"
+          },
+          "llm": []
+        },
+        {
+          "name": "Story2Operation",
+          "from": [
+            {
+              "var": "s",
+              "type": "Req!UserStory"
+            }
+          ],
+          "guard": "s.status = 'accepted'",
+          "to": {
+            "var": "op",
+            "type": "Arch!Operation"
+          },
+          "bind": {
+            "name": "s.title",
+            "component": "s.epic",
+            "story": "s"
+          },
+          "llm": [
+            {
+              "feature": "signature",
+              "prompt": "Derive an API signature",
+              "footprint": [
+                "s.title",
+                "s.criteria"
+              ],
+              "validator": [
+                {
+                  "id": "compiles"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Arch2Code",
+      "sources": [
+        "Arch",
+        "Req"
+      ],
+      "target": "Code",
+      "rules": [
+        {
+          "name": "Op2Edit",
+          "from": [
+            {
+              "var": "op",
+              "type": "Arch!Operation"
+            }
+          ],
+          "to": {
+            "var": "e",
+            "type": "Code!CodeEdit"
+          },
+          "bind": {
+            "file": "op.name",
+            "operation": "op",
+            "story": "op.story"
+          },
+          "llm": [
+            {
+              "feature": "body",
+              "prompt": "Implement the operation",
+              "footprint": [
+                "op.signature",
+                "op.story.criteria"
+              ],
+              "validator": [
+                {
+                  "id": "compiles"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Req2Test",
+      "sources": [
+        "Req"
+      ],
+      "target": "Test",
+      "rules": [
+        {
+          "name": "Criterion2TestCase",
+          "from": [
+            {
+              "var": "c",
+              "type": "Req!Criterion"
+            }
+          ],
+          "guard": "c.story.status = 'accepted'",
+          "to": {
+            "var": "tc",
+            "type": "Test!TestCase"
+          },
+          "bind": {
+            "name": "c.id",
+            "criterion": "c"
+          },
+          "llm": [
+            {
+              "feature": "oracle",
+              "prompt": "Write a test oracle",
+              "footprint": [
+                "c.text"
+              ],
+              "validator": [
+                {
+                  "id": "nonempty"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "goal": [
+    {
+      "class": "Criterion",
+      "scope": "c.story.status = 'accepted'",
+      "mode": "checked",
+      "anchors": [
+        "text"
+      ]
+    }
+  ],
+  "deliverable": {
+    "view": "Code",
+    "class": "CodeEdit",
+    "feature": "body"
+  },
+  "done": [
+    "cover(G)",
+    "valid",
+    "fresh",
+    "noEsc"
+  ]
+}
