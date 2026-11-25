@@ -341,6 +341,15 @@ def run_task(task_id: str, team_kind: str, model: str, faults: list[str], seed: 
                             (rep.fault_class, 0)
                         row[f"class_n{n}"] = cls
                         row[f"calls_n{n}"] = calls
+                        # AutoM2M-Lean: pooled group test first, equivalent experiments re-used (same draws)
+                        cls, calls = derive(rep.steps, n, pooled=True, equivalent=True) \
+                            if rep.fault_class not in ("validator", "unlocated") else (rep.fault_class, 0)
+                        row[f"class_lean_n{n}"] = cls
+                        row[f"calls_lean_n{n}"] = calls
+                        cls, calls = derive(rep.steps, n, equivalent=True) \
+                            if rep.fault_class not in ("validator", "unlocated") else (rep.fault_class, 0)
+                        row[f"class_equiv_n{n}"] = cls
+                        row[f"calls_equiv_n{n}"] = calls
                     _ = before
                     row["registry"] = dict(s.ct.registry)
                     row["owners"] = {f"{r}.{b}": m.owner for (r, b), m in s.ct.bindings.items()}

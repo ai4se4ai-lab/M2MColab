@@ -1,0 +1,25 @@
+rorqual: setup rc=1
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/tmp/pip-build-env-mqcghc67/overlay/lib/python3.12/site-packages/setuptools/command/build_ext.py", line 273, in build_extension
+          _build_ext.build_extension(self, ext)
+        File "/tmp/pip-build-env-mqcghc67/overlay/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py", line 585, in build_extension
+          objects = self.compiler.compile(
+                    ^^^^^^^^^^^^^^^^^^^^^^
+        File "/tmp/pip-build-env-mqcghc67/overlay/lib/python3.12/site-packages/pybind11/setup_helpers.py", line 470, in compile_function
+          with ThreadPool(threads) as pool:
+               ^^^^^^^^^^^^^^^^^^^
+        File "/cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/python/3.12.4/lib/python3.12/multiprocessing/pool.py", line 930, in __init__
+          Pool.__init__(self, processes, initializer, initargs)
+        File "/cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/python/3.12.4/lib/python3.12/multiprocessing/pool.py", line 219, in __init__
+          p.terminate()
+          ^^^^^^^^^^^
+      AttributeError: 'DummyProcess' object has no attribute 'terminate'
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for pillow
+error: failed-wheel-build-for-install
+
+× Failed to build installable wheels for some pyproject.toml based projects
+╰─> pillow
+rorqual: nltk data rc=0

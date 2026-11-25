@@ -108,11 +108,21 @@ class Session:
 
     # per-run registries
     def _enter(self):
-        return CURRENT.set(self.ctx), rt_helpers.REGISTRY.set(self.ct.registry)
+        from .engine.binding import SAMPLER_FIXPOINT
+
+        return (CURRENT.set(self.ctx), rt_helpers.REGISTRY.set(self.ct.registry),
+                SAMPLER_FIXPOINT.set(bool(getattr(self, "stop_on_fixpoint", False))),
+                rt_helpers.FOOTPRINT_COMPACT.set(bool(getattr(self, "compact_footprints", False))))
 
     def _exit(self, toks) -> None:
+        from .engine.binding import SAMPLER_FIXPOINT
+
         CURRENT.reset(toks[0])
         rt_helpers.REGISTRY.reset(toks[1])
+        if len(toks) > 2:
+            SAMPLER_FIXPOINT.reset(toks[2])
+        if len(toks) > 3:
+            rt_helpers.FOOTPRINT_COMPACT.reset(toks[3])
 
     # ---- objects and links -------------------------------------------
     def objects(self) -> dict[str, Any]:

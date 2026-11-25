@@ -1,0 +1,16 @@
+rorqual: pull qwen2.5-coder:32b rc=255
+verifying sha256 digest [K
+writing manifest [K
+success [K[?25h[?2026l
+rorqual: pull starcoder2:15b rc=255
+verifying sha256 digest [K
+writing manifest [K
+success [K[?25h[?2026l
+rorqual: pull codellama:13b rc=255
+verifying sha256 digest [K
+writing manifest [K
+success [K[?25h[?2026l
+rorqual: pull granite-code:20b rc=255
+verifying sha256 digest [K
+writing manifest [K
+success [K[?25h[?2026l

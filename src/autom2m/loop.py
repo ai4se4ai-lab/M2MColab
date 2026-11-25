@@ -68,6 +68,8 @@ class AutoOutcome:
     accepted_values: int = 0
     seconds: float = 0.0
     error: str = ""
+    sketches: int = 0  # builder v3: sketches proposed or revised
+    mechanisms: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return dict(self.__dict__)
@@ -95,13 +97,34 @@ def json_from(text: str) -> dict | None:
 _json_from = json_from  # older name
 
 
+# The cost-reduction mechanisms of AutoM2M-Lean (each can be switched off for the ablation):
+#   wiring       builder v3: the builder writes a sketch, wiring inference completes it (wiring.py)
+#   equivalence  attribution never re-runs an experiment with an identical prompt (hypothesis equivalence)
+#   pooled       attribution group-tests all interventions before the sequential steps
+#   cache        attribution re-uses the verdict of an identical experiment from an earlier repair round
+#   fixpoint     a binding stops re-sampling when its retry prompt repeats (the sampler reached a fixed point)
+#   compact      a footprint value contained in another value of the same prompt is not rendered twice
+MECHANISMS = ("wiring", "equivalence", "pooled", "cache", "fixpoint", "compact")
+
+
 class AutoM2M:
     def __init__(self, llm, *, k_adm: int = 3, k_rep: int = 2, k: int = 3, n_rep: int = 3, h: int = 2,
                  builder_temperature: float = 0.6, temperature: float = 0.2, builder_max_tokens: int = 4096,
                  check_enabled: bool = True, repair_enabled: bool = True, n_examples: int = 3,
                  attribution_limit: int = 2, builder: str = "v2", k_prop: int = 3, k_rev: int = 2,
-                 workdir: Path | None = None, log=None) -> None:
+                 workdir: Path | None = None, log=None, lean: bool | None = None,
+                 mechanisms: set[str] | frozenset[str] | None = None) -> None:
         self.llm = llm
+        if mechanisms is None:
+            mechanisms = set(MECHANISMS) if (lean or (lean is None and builder == "v3")) else set()
+        unknown = set(mechanisms) - set(MECHANISMS)
+        if unknown:
+            raise ValueError(f"unknown mechanisms {sorted(unknown)}")
+        self.mechanisms = frozenset(mechanisms)
+        if "wiring" in self.mechanisms and builder in ("v1", "v2"):
+            builder = "v3"
+        if builder == "v3" and "wiring" not in self.mechanisms:
+            self.mechanisms = self.mechanisms | {"wiring"}
         # builder "v1": one proposal, full-team revisions (the paper's first description);
         # builder "v2": schema-constrained, checker-ranked proposals, localized repair (builder.py)
         self.builder, self.k_prop, self.k_rev = builder, k_prop, k_rev
@@ -150,6 +173,18 @@ class AutoM2M:
             self._out.checks += 1
             self._out.check_seconds += res.seconds
         return res
+
+    def _wire(self, team_json: dict | None) -> dict | None:
+        """Wiring inference on a builder-changed team (identity without the mechanism)."""
+        if team_json is None or "wiring" not in self.mechanisms:
+            return team_json
+        from .wiring import infer
+
+        kind = getattr(getattr(self, "_task", None), "kind", "class")
+        try:
+            return infer(team_json, kind)
+        except Exception:  # noqa: BLE001 - leave an unreadable delta to the checker
+            return team_json
 
     def _admit(self, team_json: dict | None, task) -> tuple[TypedTeam | None, list[str], Any, str | None]:
         """Parse, check (Alg. 3) and compile. Returns (team, diagnostics, compiled, first violated condition)."""
@@ -213,9 +248,13 @@ class AutoM2M:
         t0 = time.time()
         out = AutoOutcome(status="not_admitted")
         self._out = out
+        self._task = task
+        out.mechanisms = sorted(self.mechanisms)
         if initial_team is None and self.check_enabled and self.builder == "v2":
             team_json, team, diags, ct, first = self._build_v2(task, task_text, out)
             out.first_team = out.first_team or team_json
+        elif initial_team is None and self.builder == "v3":
+            team_json, team, diags, ct, first = self._build_v3(task, task_text, out)
         else:
             schema = None
             if self.builder == "v2":  # Typed-NC with the checked builder: one schema-constrained proposal
@@ -226,8 +265,8 @@ class AutoM2M:
             team, diags, ct, first = self._admit(team_json, task)
             out.diagnostics.append(diags)
             out.first_violation = first
-        while diags and out.admission_rounds < self.k_adm and not (self.builder == "v2" and initial_team is None
-                                                                    and self.check_enabled):
+        while diags and out.admission_rounds < self.k_adm and not (self.builder in ("v2", "v3") and initial_team is None
+                                                                    and (self.check_enabled or self.builder == "v3")):
             if not self.check_enabled and team_json is not None:
                 break  # Typed-NC re-prompts only when the JSON does not parse
             out.admission_rounds += 1
@@ -254,6 +293,8 @@ class AutoM2M:
         ctx = RunContext(bench)
         session = Session(ct, self.llm, ctx, k=self.k, temperature=self.temperature,
                           max_passes=4 if self.check_enabled else 3)
+        session.stop_on_fixpoint = "fixpoint" in self.mechanisms
+        session.compact_footprints = "compact" in self.mechanisms
         self.session = session
         bench.bind(session.current_bodies)
         res = self._run(session)
@@ -262,7 +303,10 @@ class AutoM2M:
                 break
             self._role("attribution")
             ta = time.perf_counter()
-            reports, calls = attribute_all(session, res.failures, n_rep=self.n_rep, h=self.h, limit=self.attribution_limit)
+            reports, calls = attribute_all(session, res.failures, n_rep=self.n_rep, h=self.h, limit=self.attribution_limit,
+                                           pooled="pooled" in self.mechanisms,
+                                           equivalence="equivalence" in self.mechanisms,
+                                           cache="cache" in self.mechanisms)
             self._tick("attribution", ta)
             out.attribution_calls += calls
             out.fault_reports += [rep.to_dict() for rep in reports]
@@ -275,6 +319,8 @@ class AutoM2M:
             if info["mode"] == "none":
                 break
             self.session = session
+            session.stop_on_fixpoint = "fixpoint" in self.mechanisms
+            session.compact_footprints = "compact" in self.mechanisms
             res = self._run(session)
         out.deliverables, out.accepted, out.phi, out.clauses = res.deliverables, res.accepted, res.phi, res.clauses
         out.escalations = len(res.escalations)
@@ -357,6 +403,83 @@ class AutoM2M:
         out.checks -= 1 if self.check_enabled else 0
         return team_json, team, diags, ct, out.first_violation
 
+    # ---- the sketch builder (v3, AutoM2M-Lean) -------------------------
+    def _assess_sketch(self, sk: dict | None, kind: str):
+        """(score, sketch, inferred team JSON, team, diagnostics)."""
+        from .checker import Diagnostic
+        from .sketch import expand
+        from .wiring import infer
+
+        if sk is None:
+            return (10 ** 6, None, None, None, None)
+        t0 = time.perf_counter()
+        try:
+            tj = infer(expand(sk), kind)
+        except (TeamFormatError, Exception) as exc:  # noqa: BLE001 - an unreadable sketch is a W1 diagnostic
+            return (10 ** 5, sk, None, None, [Diagnostic("W1", "format", f"the sketch cannot be read: {exc}"[:300])])
+        finally:
+            self._tick("inference", t0)
+        if not self.check_enabled:
+            try:
+                return (0, sk, tj, parse_team(normalize(tj)), [])
+            except TeamFormatError as exc:
+                return (10 ** 5, sk, tj, None, [Diagnostic("W1", "format", str(exc))])
+        score, team, diags = self._assess(tj)
+        return (score, sk, tj, team, diags)
+
+    def _build_v3(self, task, task_text: str, out: AutoOutcome):
+        """Propose sketches (schema-constrained) until one is admitted after
+        wiring inference (at most k_prop); otherwise revise the best sketch
+        from the residual diagnostics for up to k_adm rounds (k_rev samples
+        per round). Typed-NC: one sketch, inferred, compiled without a check
+        (re-prompted only if it cannot be read)."""
+        from .prompts import sketch_prompt, sketch_revise_prompt
+        from .sketch import SKETCH_SCHEMA
+
+        prompt = sketch_prompt(task_text, task.kind, n_examples=self.n_examples)
+        cands = []
+        for i in range(max(1, self.k_prop) if self.check_enabled else 1 + self.k_adm):
+            sk = self._builder(prompt, "propose", SKETCH_SCHEMA)
+            if sk is None:
+                out.unparsable += 1
+            c = self._assess_sketch(sk, task.kind)
+            cands.append(c)
+            if c[0] == 0:
+                break
+        out.first_team = cands[0][2] or cands[0][1]
+        out.__dict__.setdefault("sketches", 0)
+        out.sketches = len(cands)
+        best = min(cands, key=lambda c: c[0])
+        out.first_violation = (best[4][0].cond if best[4] else None) if best[1] is not None else "parse"
+        out.diagnostics.append([d.with_hint() for d in best[4] or []] if best[1] is not None
+                               else ["W1  the builder output is not a JSON object"])
+        while self.check_enabled and best[0] > 0 and out.admission_rounds < self.k_adm and best[1] is not None:
+            out.admission_rounds += 1
+            rp = sketch_revise_prompt(json.dumps(best[1], separators=(",", ":")), [d.with_hint() for d in best[4] or []])
+            trials = []
+            for _ in range(max(1, self.k_rev)):
+                sk = self._builder(rp, "revise", SKETCH_SCHEMA)
+                if sk is None:
+                    continue
+                c = self._assess_sketch(sk, task.kind)
+                trials.append(c)
+                out.sketches += 1
+                if c[0] == 0:
+                    break
+            if trials:
+                cand = min(trials, key=lambda c: c[0])
+                if cand[0] <= best[0]:
+                    best = cand
+            out.diagnostics.append([d.with_hint() for d in best[4] or []])
+        team_json = best[2]
+        if best[0] != 0 or team_json is None:
+            diags = [d.with_hint() for d in best[4] or []] or ["W1  the builder output is not a JSON object"]
+            return team_json, best[3], diags, None, out.first_violation
+        team, diags, ct, _first = self._admit(team_json, task)  # compile (the checker already admitted it)
+        if self.check_enabled:
+            out.checks -= 1
+        return team_json, team, diags, ct, out.first_violation
+
     # ---- Repair (step F) ----------------------------------------------
     def _delta_v2(self, cur: dict, reports: list[FaultReport]) -> tuple[dict | None, int]:
         """Localized builder delta: pointer fixes to the fragments the fault
@@ -381,7 +504,7 @@ class AutoM2M:
             fx = self._builder(dp, "delta", FIX_SCHEMA)
             if fx is None:
                 continue
-            tj = apply_fixes(cur, fx.get("fixes"), set(frags))
+            tj = self._wire(apply_fixes(cur, fx.get("fixes"), set(frags)))
             if json.dumps(tj, sort_keys=True) == json.dumps(cur, sort_keys=True):
                 continue  # no change is no repair
             cand = (*self._assess(tj)[::2], tj)  # (score, diagnostics, team_json)
@@ -399,7 +522,7 @@ class AutoM2M:
                 fx = self._builder(rp, "revise", FIX_SCHEMA)
                 if fx is None:
                     continue
-                tj = apply_fixes(best[2], fx.get("fixes"), set(rf))
+                tj = self._wire(apply_fixes(best[2], fx.get("fixes"), set(rf)))
                 cand = (*self._assess(tj)[::2], tj)
                 if cand[0] < best[0]:
                     best = cand
@@ -417,10 +540,11 @@ class AutoM2M:
         new_json = widen_delta(cur, p.widen) if p.widen else None
         if p.builder:
             proposed = None
-            if self.builder == "v2":
+            if self.builder in ("v2", "v3"):
                 proposed, info["delta_rounds"] = self._delta_v2(new_json or cur, p.builder)
             if proposed is None:  # v1, or no admissible localized delta: the full-team delta
-                proposed = self._builder(delta_prompt(json.dumps(new_json or cur), [r.summary() for r in p.builder]), "delta")
+                proposed = self._wire(self._builder(delta_prompt(json.dumps(new_json or cur), [r.summary() for r in p.builder]),
+                                                    "delta"))
                 info["delta_full"] = True
             if proposed is not None:
                 new_json = proposed

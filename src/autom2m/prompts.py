@@ -119,3 +119,75 @@ Fault reports:
 {rep}
 
 Output only the JSON object of the full revised typed team."""
+
+
+# ---------------------------------------------------------------------------
+# builder v3 (AutoM2M-Lean): the builder writes a sketch, inference wires it
+# ---------------------------------------------------------------------------
+
+SKETCH_FORMAT = """A team sketch is ONE JSON object with these keys:
+- "name": string
+- "agents": [{"name", "role" (how the agent thinks, prose), "writes": [the ONE view it fills in]}]
+- "views": {ViewName: {ClassName: [attribute names]}}   (never declare the Goal view; it is fixed, see below)
+   Every class automatically gets a reference "method" to the goal Method it is about, so a rule can read
+   e.g. "d.method.signature" or "d.method.task.outline".
+- "rules": [{"name", "from": [{"var", "type": "View!Class"}], "to": {"var", "type": "View!Class"},
+             "llm": [{"feature": an attribute of the "to" class, "prompt", "footprint": [paths the LLM may read],
+                      "validator": [validator ids]}]}]
+   For every match of "from" the engine creates one "to" object and asks the writing agent's LLM for each "llm"
+   feature, showing it ONLY the footprint. Paths navigate attributes and references (e.g. "m.examples.call").
+   A rule with several "from" variables joins them on the same goal method.
+The engine fills in everything else (bindings, joins, validator arguments, tools, goal, deliverable, completion).
+"""
+
+SKETCH_RULES = """The deterministic checker admits a team only if: every view has exactly one writing agent and
+each class is created by one rule; every footprint path exists; every view is reached from Goal and its work
+reaches a behaviour-checked value (test_valid, passes_tests or examples_run); the code of each method is checked
+by passes_tests or examples_run; the rules form no cycle.
+"""
+
+
+def sketch_prompt(task_text: str, kind: str, *, n_examples: int = 3) -> str:
+    from .sketch import sketch_examples_text
+
+    unit = ("a Python class; each Method object is one method of it" if kind == "class" else
+            "a single Python function; there is one Method object, the function itself")
+    return f"""You are a team builder. Design a team of LLM agents that solves the programming task below, as a
+TEAM SKETCH in the JSON format described here.
+
+{SKETCH_FORMAT}
+The task is already lifted into the Goal view (fixed metamodel):
+{goal_view_text()}
+Goal contains one Task (with the class outline), one Method per method to implement ({unit}), and one Example per
+documented example (call and expected result). Method.docstring does NOT contain the examples.
+The team must produce the Python source of each Method.
+
+Validators (ids):
+{catalogue()}
+
+{SKETCH_RULES}
+Worked examples:
+{sketch_examples_text(n_examples)}
+
+TASK:
+{task_text}
+
+Design a team that fits THIS task; do not copy an example. Output only the JSON object of the team sketch."""
+
+
+def sketch_revise_prompt(sketch_json: str, diagnostics: list[str]) -> str:
+    diag = "\n".join(diagnostics)
+    return f"""You are a team builder. The deterministic checker REJECTED your team sketch.
+
+{SKETCH_FORMAT}
+Validators (ids):
+{catalogue()}
+
+{SKETCH_RULES}
+Your sketch:
+{sketch_json}
+
+Checker diagnostics (fix every one; keep everything else):
+{diag}
+
+Output only the corrected JSON object of the full team sketch."""

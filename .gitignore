@@ -54,3 +54,8 @@ docs/*.synctex.gz
 docs/*.toc
 docs/*.vrb
 docs/*.xdv
+
+# --- HPC (hpc/README.md): sockets and node-local scratch are never committed ---
+hpc/.ssh/
+hpc/payload/
+!hpc/**/*.log

@@ -1,0 +1,6 @@
+host=fc10512 job=6083177 model=qwen2.5-coder:7b bench=classeval tag=smoke gpu=NVIDIA H100 80GB HBM3, 81559 MiB
+{"version":"0.32.14"}
+residency size=20369406688 vram=0 ratio=0.000 digest=dae161e27b0e90dd
+Traceback (most recent call last):
+  File "<stdin>", line 7, in <module>
+AssertionError: model not fully GPU resident

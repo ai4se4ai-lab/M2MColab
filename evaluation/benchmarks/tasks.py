@@ -42,6 +42,9 @@ from .sandbox import RESULT_MARK, run_python_json
 
 @lru_cache(maxsize=1)
 def load_classeval() -> list[Task]:
+    exported = _from_export("classeval")
+    if exported is not None:
+        return exported
     from datasets import load_dataset
 
     ds = load_dataset("FudanSELab/ClassEval", split="test")
@@ -65,6 +68,9 @@ def load_classeval() -> list[Task]:
 
 @lru_cache(maxsize=1)
 def load_humanevalplus() -> list[Task]:
+    exported = _from_export("humanevalplus")
+    if exported is not None:
+        return exported
     from datasets import load_dataset
 
     ds = load_dataset("evalplus/humanevalplus", split="test")
@@ -87,7 +93,32 @@ def load_humanevalplus() -> list[Task]:
     return tasks
 
 
+def _from_export(bench: str) -> list[Task] | None:
+    """Tasks from an exported JSONL file (AM2M_DATA_DIR/<bench>.jsonl), so that
+    machines without the Hugging Face datasets (the HPC nodes) load the very
+    same tasks. Written by `python -m evaluation.benchmarks.export`."""
+    import dataclasses
+    import os
+    from pathlib import Path
+
+    d = os.environ.get("AM2M_DATA_DIR")
+    p = Path(d) / f"{bench}.jsonl" if d else None
+    if p is None or not p.exists():
+        return None
+    out = []
+    for line in p.read_text().splitlines():
+        r = json.loads(line)
+        r["methods"] = [MethodSpec(**m) for m in r["methods"]]
+        fields = {f.name for f in dataclasses.fields(Task)}
+        out.append(Task(**{k: v for k, v in r.items() if k in fields}))
+    return out
+
+
+@lru_cache(maxsize=2)
 def load(bench: str) -> list[Task]:
+    exported = _from_export(bench)
+    if exported is not None:
+        return exported
     return {"classeval": load_classeval, "humanevalplus": load_humanevalplus}[bench]()
 
 

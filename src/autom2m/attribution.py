@@ -41,6 +41,12 @@ from agenthot.session import Failure, Session
 
 from .typed_team import rule_env, type_path
 
+def digest_text(*parts: str) -> str:
+    import hashlib
+
+    return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()[:20]
+
+
 FAULT_CLASSES = ("validator", "sampling", "footprint", "upstream", "specification")
 
 
@@ -83,25 +89,65 @@ class FaultReport:
         return f"{self.fault_class} fault at {where} (agent {self.agent}){up}{wid}: {self.reason[:200]}"
 
 
-def derive(steps: list[dict], n: int, *, adaptive: bool = True) -> tuple[str, int]:
+def derive(steps: list[dict], n: int, *, adaptive: bool = True, pooled: bool = False,
+           equivalent: bool = False) -> tuple[str, int]:
     """Classification and LLM calls under a replay budget of n draws per
-    step, from an exhaustive record (the same draws as the adaptive run)."""
+    step, from an exhaustive record (the same draws as the adaptive run).
+
+    pooled: the group test of all interventions runs first; if none of its
+    draws pass, the fault is a specification fault and no other step runs.
+    equivalent: a step whose prompt equals an earlier step's prompt reuses
+    that step's draws at no cost (hypothesis-equivalence pruning)."""
     calls = 0
-    for st in steps:
-        calls += st.get("pre_calls", 0)
-        draws = st["draws"][:n]
+    seq = [st for st in steps if st["step"] != "pooled"]
+    pool = next((st for st in steps if st["step"] == "pooled"), None)
+    if pooled and pool is not None:
+        calls += pool.get("pre_calls", 0)
+        draws = pool["draws"][:n]
         hit = next((i for i, d in enumerate(draws) if d), None)
         calls += (hit + 1) if (hit is not None and adaptive) else len(draws)
-        if hit is not None:
+        if hit is None:
+            return "specification", calls
+    seen: dict[str, list[bool]] = {}
+    for st in seq:
+        reused_pre = equivalent and (st.get("pre_reused") or (pooled and pool is not None and st["step"].startswith("upstream")))
+        calls += 0 if reused_pre else st.get("pre_calls", 0)
+        key = st.get("prompt")
+        if equivalent and key and key in seen:
+            draws = seen[key]
+        else:
+            draws = st["draws"][:n]
+            hit = next((i for i, d in enumerate(draws) if d), None)
+            calls += (hit + 1) if (hit is not None and adaptive) else len(draws)
+            if key:
+                seen[key] = draws
+        if any(draws):
             name = st["step"]
             return ("footprint" if name.startswith("footprint") else "upstream" if name.startswith("upstream") else name), calls
+    if pooled and pool is not None:  # the pool passed, no single intervention did (non-monotone)
+        return pool.get("fallback", "upstream"), calls
     return "specification", calls
 
 
 class Attributor:
     def __init__(self, session: Session, *, n_rep: int = 3, h: int = 2, exhaustive: bool = False,
-                 minimize: bool = True, max_minimize_probes: int = 8, max_depth: int | None = None) -> None:
+                 minimize: bool = True, max_minimize_probes: int = 8, max_depth: int | None = None,
+                 pooled: bool = False, equivalence: bool = False, cache: bool = False) -> None:
+        """pooled: group-test all interventions before the sequential steps;
+        equivalence: never re-run an experiment whose prompt (and oracle) was
+        already run, and re-use an upstream re-sample; cache: re-use the
+        verdict of an identical experiment from an earlier repair round
+        (content-addressed by prompt, footprint and validator)."""
         self.s = session
+        self.pooled = pooled
+        self.equivalence = equivalence
+        self.cache = cache
+        # content-addressed stores, kept on the session across repair rounds
+        store = session.__dict__.setdefault("_attribution_store", {"draws": {}, "upstream": {}, "verdicts": {}})
+        self._draws = store["draws"] if equivalence else {}
+        self._upstream = store["upstream"] if equivalence else {}
+        self._verdicts = store["verdicts"]
+        self.saved_calls = 0
         self.n_rep = n_rep
         self.h = h
         self.exhaustive = exhaustive
@@ -137,9 +183,12 @@ class Attributor:
         except Exception:  # noqa: BLE001
             return False
 
-    def _sample(self, b, match, helpers, footprint) -> str:
+    def _prompt(self, b, match, helpers, footprint) -> str:
         head = eval_expr(b.prompt_expr, match.bindings, helpers)
-        prompt = f"{head}\n\nContext (footprint only):\n{_footprint_to_text(footprint)}"
+        return f"{head}\n\nContext (footprint only):\n{_footprint_to_text(footprint)}"
+
+    def _sample(self, b, match, helpers, footprint) -> str:
+        prompt = self._prompt(b, match, helpers, footprint)
         self.calls += 1
         try:
             return self.s.llm.generate(prompt, temperature=self.s.temperature)
@@ -326,19 +375,109 @@ class Attributor:
                 return rep
 
         steps: list[dict] = []
+        okey = id(oracle) if oracle is not None else None
 
-        def record(name: str, draw: Callable[[], bool], pre_calls: int = 0) -> bool:
+        # verdict cache: the same experiment (prompt, footprint, validator, failed value) as in an
+        # earlier repair round has the same verdict; re-running it would only repeat its draws
+        vkey = None
+        if self.cache and oracle is None:
+            vkey = digest_text(self._prompt(b, match, helpers, footprint), str(b.check_expr), str(cand), target_key)
+            hit = self._verdicts.get(vkey)
+            if hit is not None:
+                old = FaultReport(**{k: v for k, v in hit.items() if k in FaultReport.__dataclass_fields__})
+                old.clause, old.reason, old.goal_element = clause, reason, goal_element
+                old.steps = [{"step": "cached", "draws": [], "calls": 0, "pre_calls": 0, "verdict": old.fault_class}]
+                old.llm_calls = 0
+                return old
+
+        def record(name: str, fp, pre_calls: int = 0, pre_reused: bool = False) -> bool:
+            """Replays of b on footprint fp. An experiment whose prompt was
+            already run (with the same oracle) is not run again."""
+            prompt = self._prompt(b, match, helpers, fp)
+            key = (target_key, binding, okey, digest_text(prompt))
+            if self.equivalence and key in self._draws:
+                draws = self._draws[key]
+                steps.append({"step": name, "draws": draws, "calls": pre_calls, "pre_calls": pre_calls,
+                              "reused": True, "pre_reused": pre_reused, "prompt": key[3]})
+                self.saved_calls += len(draws)
+                return any(draws)
             before = self.calls
-            draws = self._replays(draw)
-            steps.append({"step": name, "draws": draws, "calls": self.calls - before + pre_calls, "pre_calls": pre_calls})
+            draws = self._replays(lambda: accepts(self._sample(b, match, helpers, fp)))
+            if self.equivalence:
+                self._draws[key] = draws
+            steps.append({"step": name, "draws": draws, "calls": self.calls - before + pre_calls, "pre_calls": pre_calls,
+                          "pre_reused": pre_reused, "prompt": key[3]})
             return any(draws)
+
+        def resample(up_meta, up_obj, up_feat, tk):
+            """An accepted re-sample of an upstream value (cached per value)."""
+            ukey = (tk, up_feat, digest_text(str(getattr(up_obj, up_feat, ""))))
+            if self.equivalence and ukey in self._upstream:
+                return self._upstream[ukey], 0, True
+            uh, utp, ub, umatch, uobj, _ul = self._context(up_meta.handoff, up_rule_of[(tk, up_feat)], tk, up_feat)
+            if umatch is None:
+                return None, 0, False
+            try:
+                ufp = eval_expr(ub.footprint_expr, umatch.bindings, uh)
+            except Exception:  # noqa: BLE001
+                return None, 0, False
+            before = self.calls
+            new_val = None
+            for _ in range(self.n_rep):  # re-sample u until its own validator accepts it
+                v = self._sample(ub, umatch, uh, ufp)
+                if self._check(ub, utp, uobj, umatch, uh, v):
+                    new_val = v
+                    break
+            if self.equivalence:
+                self._upstream[ukey] = new_val
+            return new_val, self.calls - before, False
+
+        current = list(meta.footprint) if meta else []
+        ups = []
+        up_rule_of: dict = {}
+        for up_obj, up_rule, up_feat in self._upstream_candidates(rule_name, binding, match):
+            up_meta = ct.bindings.get((up_rule, up_feat))
+            tk = getattr(up_obj, "_amt_target_key", None)
+            if up_meta is None or tk is None:
+                continue
+            up_rule_of[(tk, up_feat)] = up_rule
+            ups.append((up_obj, up_rule, up_feat, up_meta, tk))
+        added_h = [p for p in self.widen_paths(rule_name, self.h) if p not in current] if self.h else []
+
+        # group test: every intervention at once (widest footprint, every upstream value re-sampled).
+        # If even the pooled intervention never passes, no single one would (monotonicity), so the
+        # fault is a specification fault and the sequential steps are skipped.
+        pool_pass = None
+        if (self.pooled or self.exhaustive) and (added_h or ups):
+            pre, reused_all, saved = 0, True, []
+            for up_obj, up_rule, up_feat, up_meta, tk in ups:
+                nv, c, reused = resample(up_meta, up_obj, up_feat, tk)
+                pre += c
+                reused_all = reused_all and reused
+                if nv is not None:
+                    saved.append((up_obj, up_feat, getattr(up_obj, up_feat)))
+                    setattr(up_obj, up_feat, nv)
+            try:
+                pfp = self._footprint_for(current + added_h, match) if added_h else \
+                    eval_expr(b.footprint_expr, match.bindings, helpers)
+                pool_pass = record("pooled", pfp, pre_calls=pre, pre_reused=reused_all)
+            finally:
+                for up_obj, up_feat, old in reversed(saved):
+                    setattr(up_obj, up_feat, old)
+            steps[-1]["fallback"] = "upstream" if ups else "footprint"
+            if self.pooled and not pool_pass and not self.exhaustive:
+                rep.steps = steps
+                rep.fault_class = "specification"
+                rep.reason = (reason + "; " if reason else "") + "no pooled intervention passes"
+                if vkey is not None:
+                    self._verdicts[vkey] = rep.to_dict()
+                return rep
 
         decided: str | None = None
         # 2. sampling
-        if record("sampling", lambda: accepts(self._sample(b, match, helpers, footprint))):
+        if record("sampling", footprint):
             decided = "sampling"
         # 3. footprint, widened by j references
-        current = list(meta.footprint) if meta else []
         widened_at: tuple[int, list[str]] | None = None
         for j in range(1, self.h + 1):
             if decided and not self.exhaustive:
@@ -348,46 +487,33 @@ class Attributor:
                 steps.append({"step": f"footprint{j}", "draws": [], "calls": 0, "pre_calls": 0})
                 continue
             wfp = self._footprint_for(current + added, match)
-            if record(f"footprint{j}", lambda wfp=wfp: accepts(self._sample(b, match, helpers, wfp))) and decided is None:
+            if record(f"footprint{j}", wfp) and decided is None:
                 decided, widened_at = "footprint", (j, added)
         # 4. upstream
         up_hit = None
-        for up_obj, up_rule, up_feat in self._upstream_candidates(rule_name, binding, match):
+        for up_obj, up_rule, up_feat, up_meta, tk in ups:
             if decided and not self.exhaustive:
                 break
-            up_meta = ct.bindings.get((up_rule, up_feat))
-            tk = getattr(up_obj, "_amt_target_key", None)
-            if up_meta is None or tk is None:
-                continue
-            uh, utp, ub, umatch, uobj, _ul = self._context(up_meta.handoff, up_rule, tk, up_feat)
-            if umatch is None:
-                continue
-            try:
-                ufp = eval_expr(ub.footprint_expr, umatch.bindings, uh)
-            except Exception:  # noqa: BLE001
-                continue
-            before = self.calls
-            new_val = None
-            for _ in range(self.n_rep):  # re-sample u until its own validator accepts it
-                v = self._sample(ub, umatch, uh, ufp)
-                if self._check(ub, utp, uobj, umatch, uh, v):
-                    new_val = v
-                    break
-            pre = self.calls - before
+            new_val, pre, reused = resample(up_meta, up_obj, up_feat, tk)
             old = getattr(up_obj, up_feat)
             if new_val is None:
-                steps.append({"step": f"upstream:{up_rule}.{up_feat}", "draws": [], "calls": pre, "pre_calls": pre})
+                steps.append({"step": f"upstream:{up_rule}.{up_feat}", "draws": [], "calls": pre, "pre_calls": pre,
+                              "pre_reused": reused})
                 continue
             try:
                 setattr(up_obj, up_feat, new_val)
                 fp2 = eval_expr(b.footprint_expr, match.bindings, helpers)
-                hit = record(f"upstream:{up_rule}.{up_feat}", lambda fp2=fp2: accepts(self._sample(b, match, helpers, fp2)),
-                             pre_calls=pre)
+                hit = record(f"upstream:{up_rule}.{up_feat}", fp2, pre_calls=pre, pre_reused=reused)
             finally:
                 setattr(up_obj, up_feat, old)
             if hit and decided is None:
                 decided = "upstream"
                 up_hit = (up_obj, up_rule, up_feat, up_meta, tk, new_val, old)
+        if decided is None and self.pooled and pool_pass and not self.exhaustive:
+            # the pooled intervention passed but no single one did: name the widest one
+            decided = "upstream" if ups else "footprint"
+            if decided == "footprint":
+                widened_at = (self.h, added_h)
         rep.steps = steps
         rep.fault_class = decided or "specification"
         if rep.fault_class == "footprint" and widened_at:
@@ -421,6 +547,8 @@ class Attributor:
                 inner = self.classify(up_meta.handoff, up_rule, tk, up_feat, clause="upstream", reason="",
                                       oracle=up_oracle, failed_value=old, depth=depth + 1)
                 rep.upstream["report"] = inner.to_dict()
+        if vkey is not None:
+            self._verdicts[vkey] = rep.to_dict()
         return rep
 
     def _minimize(self, b, match, helpers, accepts, current: list[str], added: list[str]) -> list[str]:
@@ -429,11 +557,16 @@ class Attributor:
         keep = list(added)
         probes = 0
 
+        # lean: one draw per probe and group-level probes only (a failed probe keeps the paths, so the
+        # error is conservative: the repair may widen more than strictly needed, never less)
+        draws_per_probe = 1 if self.pooled else self.n_rep
+        max_probes = min(self.max_minimize_probes, 3) if self.pooled else self.max_minimize_probes
+
         def passes(paths: list[str]) -> bool:
             nonlocal probes
             probes += 1
             wfp = self._footprint_for(current + paths, match)
-            for _ in range(self.n_rep):
+            for _ in range(draws_per_probe):
                 if accepts(self._sample(b, match, helpers, wfp)):
                     return True
             return False
@@ -442,14 +575,14 @@ class Attributor:
         for p in keep:
             groups.setdefault(".".join(p.split(".")[:2]), []).append(p)
         for g, ps in list(groups.items()):
-            if probes >= self.max_minimize_probes or len(groups) <= 1:
+            if probes >= max_probes or len(groups) <= 1:
                 break
             trial = [p for p in keep if p not in ps]
             if trial and passes(trial):
                 keep = trial
                 groups.pop(g)
-        for p in list(keep):
-            if probes >= self.max_minimize_probes or len(keep) <= 1:
+        for p in list(keep) if not self.pooled else []:
+            if probes >= max_probes or len(keep) <= 1:
                 break
             trial = [x for x in keep if x != p]
             if passes(trial):
@@ -458,11 +591,13 @@ class Attributor:
 
 
 def attribute_all(session: Session, failures: list[Failure], *, n_rep: int = 3, h: int = 2, limit: int = 2,
-                  exhaustive: bool = False, minimize: bool = True) -> tuple[list[FaultReport], int]:
+                  exhaustive: bool = False, minimize: bool = True, pooled: bool = False, equivalence: bool = False,
+                  cache: bool = False) -> tuple[list[FaultReport], int]:
     """Attribute up to `limit` distinct root failures. A cover(G) failure whose
     chain leads to an already located binding is not attributed again, nor
     is a stale stamp left behind by an escalation."""
-    att = Attributor(session, n_rep=n_rep, h=h, exhaustive=exhaustive, minimize=minimize)
+    att = Attributor(session, n_rep=n_rep, h=h, exhaustive=exhaustive, minimize=minimize, pooled=pooled,
+                     equivalence=equivalence, cache=cache)
     # escalations first (the symptoms nearest to their cause), then invalid values
     located = sorted((f for f in failures if f.clause in ("noEsc", "valid") and f.target_key),
                      key=lambda f: 0 if f.clause == "noEsc" else 1)

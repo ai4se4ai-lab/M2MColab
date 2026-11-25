@@ -29,11 +29,35 @@ RESULTS = Path(os.environ.get("AM2M_RESULTS", ROOT / "results"))
 OLLAMA = os.environ.get("AM2M_OLLAMA", "http://127.0.0.1:11435")
 BUDGET_OUT = int(os.environ.get("AM2M_BUDGET_OUT", "60000"))  # safety cap on generated tokens per run
 GATE_DEFAULT = int(os.environ.get("AM2M_GATE_BUDGET", "9000"))
-BUILDER = os.environ.get("AM2M_BUILDER", "v1")  # "v1" (paper Sec. 3) or "v2" (checked builder, autom2m/builder.py)
-CONDITIONS = ["single", "free", "critic", "schema", "typed_nc", "autom2m", "typed_ref", "single_gate"]
-TYPED = ("typed_nc", "autom2m", "typed_ref", "autom2m_1ex")
+BUILDER = os.environ.get("AM2M_BUILDER", "v3")  # "v1" (paper Sec. 3), "v2" (checked builder), "v3" (sketch + wiring)
+CONDITIONS = ["single", "free", "critic", "schema", "typed_nc", "autom2m", "typed_ref", "autom2m_base", "single_gate"]
+TYPED = ("typed_nc", "autom2m", "typed_ref", "autom2m_1ex", "autom2m_base", "autom2m_wire", "typed_ref_base")
 LABEL = {"single": "Single", "single_gate": "Single-Gate", "free": "Free", "critic": "Critic", "schema": "Schema",
-         "typed_nc": "Typed-NC", "autom2m": "AutoM2M", "typed_ref": "Typed-Ref", "autom2m_1ex": "AutoM2M (1 example)"}
+         "typed_nc": "Typed-NC", "autom2m": "AutoM2M", "typed_ref": "Typed-Ref", "autom2m_1ex": "AutoM2M (1 example)",
+         "autom2m_base": "AutoM2M-Base", "autom2m_wire": "AutoM2M (wiring only)", "typed_ref_base": "Typed-Ref-Base"}
+
+
+def typed_config(condition: str) -> dict:
+    """AutoM2M arguments of a typed condition. AutoM2M is the lean configuration
+    (sketch builder with wiring inference, and the cost mechanisms of
+    attribution and sampling); AutoM2M-Base is the configuration before them
+    (builder v2, no mechanism); AutoM2M (wiring only) isolates the builder."""
+    from autom2m.loop import MECHANISMS
+
+    lean = BUILDER == "v3"
+    base = {"builder": "v2", "mechanisms": set()}
+    full = {"builder": "v3", "mechanisms": set(MECHANISMS)} if lean else dict(base)
+    cfg = {
+        "autom2m": {**full, "check_enabled": True, "repair_enabled": True, "n_examples": 3},
+        "autom2m_1ex": {**full, "check_enabled": True, "repair_enabled": True, "n_examples": 1},
+        "typed_nc": {**full, "check_enabled": False, "repair_enabled": False, "n_examples": 3},
+        "typed_ref": {**full, "check_enabled": True, "repair_enabled": True, "n_examples": 3},
+        "autom2m_base": {**base, "check_enabled": True, "repair_enabled": True, "n_examples": 3},
+        "typed_ref_base": {**base, "check_enabled": True, "repair_enabled": True, "n_examples": 3},
+        "autom2m_wire": {"builder": "v3", "mechanisms": {"wiring"}, "check_enabled": True, "repair_enabled": True,
+                         "n_examples": 3},
+    }[condition]
+    return cfg
 
 
 def _safe(s: str) -> str:
@@ -84,10 +108,9 @@ def run_one(bench: str, task_id: str, condition: str, model: str, seed: int, gat
         else:
             wb = TaskWorkbench(task)
             initial = None
-            if condition == "typed_ref":
+            if condition in ("typed_ref", "typed_ref_base"):
                 initial = json.loads((ROOT / "teams" / "classeval_reference.json").read_text())
-            am = AutoM2M(llm, check_enabled=condition != "typed_nc", repair_enabled=condition in ("autom2m", "typed_ref", "autom2m_1ex"),
-                         n_examples=1 if condition == "autom2m_1ex" else 3, builder=BUILDER, workdir=workdir)
+            am = AutoM2M(llm, workdir=workdir, **typed_config(condition))
             out = am.solve(task, task.prompt, wb, initial_team=initial)
             status = out.status
             declared = bool(out.phi)
@@ -105,7 +128,7 @@ def run_one(bench: str, task_id: str, condition: str, model: str, seed: int, gat
         "bench": bench, "task": task_id, "condition": condition, "model": model, "seed": seed,
         "status": status, "success": bool(sc.get("success")), "test_pass_rate": float(sc.get("test_pass_rate", 0.0)),
         "tests_run": sc.get("tests_run"), "tests_passed": sc.get("tests_passed"), "declared_done": bool(declared),
-        "seconds": round(secs, 1), "builder": BUILDER if condition in TYPED else None, "tokens": llm.by_role(), "total": llm.totals(), "budget_hit": llm.budget_hit,
+        "seconds": round(secs, 1), "builder": typed_config(condition)["builder"] if condition in TYPED else None, "tokens": llm.by_role(), "total": llm.totals(), "budget_hit": llm.budget_hit,
     }
     if condition in ("single", "free", "critic", "schema", "single_gate"):
         ex = detail.get("extra") or {}
@@ -123,6 +146,7 @@ def run_one(bench: str, task_id: str, condition: str, model: str, seed: int, gat
                    builder_unchanged=[r.get("builder_unchanged") for r in detail.get("repairs") or [] if "builder_unchanged" in r],
                    fault_classes=[f.get("fault_class") for f in detail.get("fault_reports") or []],
                    attribution_calls=detail.get("attribution_calls"), timing=detail.get("timing"),
+                   mechanisms=detail.get("mechanisms"), sketches=detail.get("sketches"),
                    team_shape=team_shape(detail.get("final_team")), first_shape=team_shape(detail.get("first_team")),
                    unchecked_violations=sorted({d[:2] for d in detail.get("unchecked_diagnostics") or []}))
     out_dir = RESULTS / "runs" / bench / _safe(model) / condition
@@ -150,7 +174,11 @@ def done_keys(path: Path) -> set:
 
 
 def gate_budget(bench: str, model: str, tag: str = "") -> int:
-    """AutoM2M's median output tokens per task (same model and benchmark)."""
+    """AutoM2M's median output tokens per task (same model and benchmark).
+    AM2M_GATE_BUDGET_FIXED overrides it (sharded HPC runs compute the median
+    over all shards and pass it in)."""
+    if os.environ.get("AM2M_GATE_BUDGET_FIXED"):
+        return int(os.environ["AM2M_GATE_BUDGET_FIXED"])
     p = raw_path(bench, model, tag)
     toks = []
     if p.exists():
@@ -159,7 +187,7 @@ def gate_budget(bench: str, model: str, tag: str = "") -> int:
                 r = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if r.get("condition") == "autom2m" and r.get("status") != "error":
+            if r.get("condition") == os.environ.get("AM2M_GATE_FROM", "autom2m") and r.get("status") != "error":
                 toks.append(r.get("total", {}).get("out_tokens", 0))
     return int(statistics.median(toks)) if len(toks) >= 5 else GATE_DEFAULT
 

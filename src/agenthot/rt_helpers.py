@@ -93,7 +93,46 @@ class Footprint(list):
         self.owner_keys = owners
 
     def prompt_text(self) -> str:
-        return "\n".join(self) or "(empty)"
+        lines = compact_lines(list(self)) if FOOTPRINT_COMPACT.get() else list(self)
+        return "\n".join(lines) or "(empty)"
+
+
+# Footprint compaction (AutoM2M-Lean): an entry `label = value` whose value text
+# is contained in another entry's value adds no information the LLM does not
+# already see (e.g. a method's signature inside the class outline), so it is
+# not rendered. Only exact (whitespace-normalised) containment is removed, the
+# stamp is computed from the values, not from this text, and so the footprint
+# the trace records is unchanged.
+from contextvars import ContextVar as _CV  # noqa: E402
+
+FOOTPRINT_COMPACT: _CV[bool] = _CV("FOOTPRINT_COMPACT", default=False)
+
+
+def compact_lines(lines: list[str]) -> list[str]:
+    entries: list[list[str]] = []
+    for line in lines:
+        if entries and (line[:1].isspace() or " = " not in line):
+            entries[-1].append(line)
+        else:
+            entries.append([line])
+
+    def value(e: list[str]) -> str:
+        head = e[0].split(" = ", 1)
+        return " ".join(" ".join([head[1] if len(head) > 1 else ""] + e[1:]).split())
+
+    vals = [value(e) for e in entries]
+    keep = []
+    for i, e in enumerate(entries):
+        v = vals[i]
+        label = e[0].split(" = ", 1)[0].split("[")[0]
+        if label.endswith((".name", ".signature", ".call", ".expected")):  # identify the work item: always shown
+            keep += e
+            continue
+        dup = len(v) >= 80 and any(j != i and v in vals[j] and (len(vals[j]) > len(v) or j < i)
+                                   for j in range(len(entries)))
+        if not dup:
+            keep += e
+    return keep
 
 
 def fpv(_receiver: Any, n_visible: int, *triples: Any) -> Footprint:

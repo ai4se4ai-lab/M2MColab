@@ -13,6 +13,7 @@ is escalated, not retried forever.
 """
 from __future__ import annotations
 
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,6 +28,13 @@ from .trace import TraceLink, TraceModel, digest, element_key
 from .validators import Rejected
 
 _FEEDBACK_SNIPPET_CHARS = 400
+
+# Fixed-point detection in the resample loop (AutoM2M-Lean): a retry prompt is
+# the base prompt plus the last rejected answer and its reason. When a retry
+# prompt equals one already sent for this binding, the sampler has reached a
+# fixed point of prompt -> answer -> retry prompt, and a further draw repeats
+# an experiment already run; the binding escalates instead.
+SAMPLER_FIXPOINT: ContextVar[bool] = ContextVar("SAMPLER_FIXPOINT", default=False)
 
 
 def _retry_prompt(prompt: str, rejected: str, reason: str) -> str:
@@ -357,7 +365,14 @@ def apply_stochastic_binding(
     last_reason = "no attempts made"
     any_sample_rejected = False
     attempt_prompt = prompt
+    sent: set[str] = set()
+    stop_on_fixpoint = SAMPLER_FIXPOINT.get()
     for _attempt in range(max_resamples):
+        if stop_on_fixpoint:
+            if attempt_prompt in sent:
+                last_reason = f"{last_reason} (the same answer again: re-sampling stopped at a fixed point)"
+                break
+            sent.add(attempt_prompt)
         try:
             raw = llm.generate(attempt_prompt, temperature=temperature)
         except LLMError as exc:
